@@ -283,7 +283,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                 <div className="h-80">
                   <PriceChart 
                     title="30-Day Price History"
-                    data={generatePriceHistory()}
+                    deals={[deal]}
                     color="rgb(34, 197, 94)"
                   />
                 </div>
