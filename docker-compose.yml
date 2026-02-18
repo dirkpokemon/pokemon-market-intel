@@ -1,0 +1,175 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: pokemon-intel-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pokemon_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pokemon_password}
+      POSTGRES_DB: ${POSTGRES_DB:-pokemon_intel}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=en_US.UTF-8"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pokemon_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pokemon-network
+
+  # Backend API Service
+  backend:
+    build:
+      context: ./services/backend
+      dockerfile: Dockerfile
+    container_name: pokemon-intel-backend
+    restart: unless-stopped
+    env_file:
+      - ./services/backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-pokemon_user}:${POSTGRES_PASSWORD:-pokemon_password}@postgres:5432/${POSTGRES_DB:-pokemon_intel}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./services/backend/app:/app/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - pokemon-network
+
+  # Scraper Service
+  scraper:
+    build:
+      context: ./services/scraper
+      dockerfile: Dockerfile
+    container_name: pokemon-intel-scraper
+    restart: unless-stopped
+    env_file:
+      - ./services/scraper/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-pokemon_user}:${POSTGRES_PASSWORD:-pokemon_password}@postgres:5432/${POSTGRES_DB:-pokemon_intel}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./services/scraper/app:/app/app
+      - scraper_cache:/app/.cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pokemon-network
+    # Shared memory size for Playwright
+    shm_size: '2gb'
+
+  # Analysis Service
+  analysis:
+    build:
+      context: ./services/analysis
+      dockerfile: Dockerfile
+    container_name: pokemon-intel-analysis
+    restart: unless-stopped
+    env_file:
+      - ./services/analysis/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-pokemon_user}:${POSTGRES_PASSWORD:-pokemon_password}@postgres:5432/${POSTGRES_DB:-pokemon_intel}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./services/analysis/app:/app/app
+      - analysis_data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pokemon-network
+
+  # Alert Engine Service
+  alerts:
+    build:
+      context: ./services/alerts
+      dockerfile: Dockerfile
+    container_name: pokemon-intel-alerts
+    restart: unless-stopped
+    env_file:
+      - ./services/alerts/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-pokemon_user}:${POSTGRES_PASSWORD:-pokemon_password}@postgres:5432/${POSTGRES_DB:-pokemon_intel}
+      PYTHONUNBUFFERED: 1
+    volumes:
+      - ./services/alerts/app:/app/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pokemon-network
+
+  # Frontend Service
+  frontend:
+    build:
+      context: ./services/frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    container_name: pokemon-intel-frontend
+    restart: unless-stopped
+    env_file:
+      - ./services/frontend/.env
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    # No volumes needed for production standalone build
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - pokemon-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    build:
+      context: ./infrastructure/nginx
+      dockerfile: Dockerfile
+    container_name: pokemon-intel-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infrastructure/nginx/conf.d:/etc/nginx/conf.d:ro
+      - nginx_cache:/var/cache/nginx
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - pokemon-network
+
+networks:
+  pokemon-network:
+    driver: bridge
+    name: pokemon-intel-network
+
+volumes:
+  postgres_data:
+    name: pokemon-intel-postgres-data
+  scraper_cache:
+    name: pokemon-intel-scraper-cache
+  analysis_data:
+    name: pokemon-intel-analysis-data
+  frontend_node_modules:
+    name: pokemon-intel-frontend-node-modules
+  frontend_next:
+    name: pokemon-intel-frontend-next
+  nginx_cache:
+    name: pokemon-intel-nginx-cache

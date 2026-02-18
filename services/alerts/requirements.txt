@@ -1,0 +1,31 @@
+# Alert Engine Dependencies
+
+# Core
+python-dotenv==1.0.0
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Database
+SQLAlchemy==2.0.23
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+
+# Email
+sendgrid==6.11.0
+python-multipart==0.0.6
+
+# Telegram
+python-telegram-bot==20.7
+
+# HTTP
+httpx==0.25.2
+aiohttp==3.9.1
+
+# Scheduling (for cron jobs)
+APScheduler==3.10.4
+
+# Logging
+structlog==23.2.0
+
+# Utilities
+jinja2==3.1.2

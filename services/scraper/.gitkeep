@@ -1,0 +1,2 @@
+# .env.example is blocked by global ignore, so adding instructions here
+# Create a .env file with these variables from the service README

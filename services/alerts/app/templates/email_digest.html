@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Market Digest</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            border-bottom: 3px solid #2563eb;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2563eb;
+        }
+        .date {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        h1 {
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        .summary {
+            background-color: #eff6ff;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        .signal-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            background-color: #ffffff;
+        }
+        .signal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .signal-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .signal-score {
+            background-color: #10b981;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .signal-set {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        .signal-price {
+            font-size: 20px;
+            font-weight: bold;
+            color: #059669;
+            margin: 10px 0;
+        }
+        .signal-description {
+            color: #4b5563;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        .cta-button {
+            display: inline-block;
+            background-color: #2563eb;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 12px;
+            color: #6b7280;
+            text-align: center;
+        }
+        .footer a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🃏 Pokemon Intel EU</div>
+            <div class="date">{{ date }}</div>
+        </div>
+        
+        <h1>📊 Daily Market Digest</h1>
+        
+        <div class="summary">
+            <strong>{{ signal_count }}</strong> new market signals detected in the last 24 hours.
+        </div>
+        
+        {% for signal in signals %}
+        <div class="signal-card">
+            <div class="signal-header">
+                <div class="signal-name">{{ signal.product_name }}</div>
+                {% if signal.deal_score %}
+                <div class="signal-score">{{ "%.0f"|format(signal.deal_score) }}</div>
+                {% endif %}
+            </div>
+            
+            {% if signal.product_set %}
+            <div class="signal-set">{{ signal.product_set }}</div>
+            {% endif %}
+            
+            {% if signal.current_price %}
+            <div class="signal-price">€{{ "%.2f"|format(signal.current_price) }}</div>
+            {% endif %}
+            
+            {% if signal.description %}
+            <div class="signal-description">{{ signal.description }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        
+        <center>
+            <a href="{{ dashboard_url }}" class="cta-button">View Full Dashboard →</a>
+        </center>
+        
+        <div class="footer">
+            <p>This is your daily digest of medium-priority signals.</p>
+            <p><a href="{{ dashboard_url }}/settings">Manage Alert Preferences</a> | <a href="{{ dashboard_url }}">Dashboard</a></p>
+            <p>&copy; 2026 Pokemon Intel EU. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
