@@ -25,8 +25,8 @@ class Settings(BaseSettings):
     DATABASE_MAX_OVERFLOW: int = 10
 
     # Security
-    SECRET_KEY: str = ""  # Make it optional with default
-    JWT_SECRET: str = ""
+    SECRET_KEY: str  # Required for JWT tokens
+    JWT_SECRET: str = ""  # Optional, uses SECRET_KEY if not set
     ALGORITHM: str = "HS256"  # Alias for JWT_ALGORITHM
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
@@ -39,10 +39,10 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
 
-    # Stripe
-    STRIPE_SECRET_KEY: str
-    STRIPE_PUBLISHABLE_KEY: str
-    STRIPE_WEBHOOK_SECRET: str
+    # Stripe (optional - only needed for payment processing)
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_PRICE_ID_FREE: str = ""
     STRIPE_PRICE_ID_PRO: str = ""
     STRIPE_PRICE_ID_ENTERPRISE: str = ""
