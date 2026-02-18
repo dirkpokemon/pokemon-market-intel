@@ -7,6 +7,7 @@ import { marketApi, Signal, DealScore } from '@/lib/api';
 import MainNav from '@/components/MainNav';
 import StatCard from '@/components/StatCard';
 import DealModal from '@/components/DealModal';
+import OnboardingTour from '@/components/OnboardingTour';
 
 export default function HomePage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function HomePage() {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [dealScores, setDealScores] = useState<DealScore[]>([]);
   const [selectedDeal, setSelectedDeal] = useState<DealScore | null>(null);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -27,6 +29,12 @@ export default function HomePage() {
     
     if (userData) {
       setUser(JSON.parse(userData));
+    }
+
+    // Show onboarding for first-time users
+    const hasSeenTour = localStorage.getItem('onboarding_completed');
+    if (!hasSeenTour) {
+      setShowOnboarding(true);
     }
 
     loadData();
@@ -323,6 +331,14 @@ export default function HomePage() {
           deal={selectedDeal}
           onClose={() => setSelectedDeal(null)}
         />
+      )}
+
+      {/* Onboarding Tour - shows on first visit */}
+      {showOnboarding && (
+        <OnboardingTour onComplete={() => {
+          setShowOnboarding(false);
+          localStorage.setItem('onboarding_completed', 'true');
+        }} />
       )}
     </div>
   );
