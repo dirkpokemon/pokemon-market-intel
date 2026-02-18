@@ -198,7 +198,7 @@ export default function SettingsPage() {
       )}
 
       {showOnboarding && (
-        <OnboardingTour onClose={() => setShowOnboarding(false)} />
+        <OnboardingTour onComplete={() => setShowOnboarding(false)} />
       )}
     </div>
   );
