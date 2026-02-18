@@ -36,8 +36,14 @@ class Settings(BaseSettings):
     # Frontend
     FRONTEND_URL: str = "http://localhost:3000"
 
-    # CORS
-    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    # CORS - accepts comma-separated string or JSON array from env
+    CORS_ORIGINS: str = "http://localhost:3000,https://charming-contentment-production-ce0e.up.railway.app"
+    
+    @property
+    def cors_origins_list(self) -> list:
+        if self.CORS_ORIGINS == "*":
+            return ["*"]
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
     # Stripe (optional - only needed for payment processing)
     STRIPE_SECRET_KEY: str = ""
