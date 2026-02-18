@@ -1,286 +1,515 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { marketApi, Signal } from '@/lib/api';
-import MainNav from '@/components/MainNav';
+import { marketApi, Signal, DealScore } from '@/lib/api';
+import DashboardLayout from '@/components/DashboardLayout';
 
-export default function SignalsPage() {
+interface PriceAlert {
+  id: string;
+  productName: string;
+  targetPrice: number;
+  direction: 'below' | 'above';
+  createdAt: string;
+  triggered: boolean;
+}
+
+export default function PriceAlertsPage() {
   const router = useRouter();
   const [signals, setSignals] = useState<Signal[]>([]);
+  const [deals, setDeals] = useState<DealScore[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [user, setUser] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState<'signals' | 'my-alerts'>('signals');
   const [filterLevel, setFilterLevel] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [filterType, setFilterType] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Custom price alerts (persisted in localStorage)
+  const [priceAlerts, setPriceAlerts] = useState<PriceAlert[]>([]);
+  const [showCreateAlert, setShowCreateAlert] = useState(false);
+  const [newAlertSearch, setNewAlertSearch] = useState('');
+  const [newAlertPrice, setNewAlertPrice] = useState('');
+  const [newAlertDirection, setNewAlertDirection] = useState<'below' | 'above'>('below');
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    const userData = localStorage.getItem('user');
-    
-    if (!token) {
-      router.push('/login');
-      return;
-    }
+    // Load saved alerts
+    const saved = localStorage.getItem('price_alerts');
+    if (saved) setPriceAlerts(JSON.parse(saved));
+    loadData();
+  }, []);
 
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-
-    loadSignals();
-  }, [router]);
-
-  const loadSignals = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const data = await marketApi.getSignals();
-      setSignals(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to load signals');
+      const [sigResult, dealResult] = await Promise.allSettled([
+        marketApi.getSignals({ limit: 200 }),
+        marketApi.getDealScores({ limit: 100, min_score: 50 }),
+      ]);
+      if (sigResult.status === 'fulfilled') setSignals(sigResult.value);
+      if (dealResult.status === 'fulfilled') setDeals(dealResult.value);
+    } catch (err) {
+      console.error('Failed to load:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const getSignalBadgeColor = (level: string) => {
-    switch (level.toLowerCase()) {
-      case 'high':
-        return 'bg-red-100 text-red-800 border-red-300';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'low':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
+  // Save alerts to localStorage
+  const saveAlerts = (alerts: PriceAlert[]) => {
+    setPriceAlerts(alerts);
+    localStorage.setItem('price_alerts', JSON.stringify(alerts));
   };
 
-  const getSignalIcon = (level: string) => {
-    switch (level.toLowerCase()) {
-      case 'high':
-        return <span className="text-2xl">🔴</span>;
-      case 'medium':
-        return <span className="text-2xl">🟡</span>;
-      case 'low':
-        return <span className="text-2xl">🔵</span>;
-      default:
-        return <span className="text-2xl">⚪</span>;
-    }
+  const createAlert = () => {
+    if (!newAlertSearch.trim() || !newAlertPrice) return;
+    const alert: PriceAlert = {
+      id: Date.now().toString(),
+      productName: newAlertSearch.trim(),
+      targetPrice: parseFloat(newAlertPrice),
+      direction: newAlertDirection,
+      createdAt: new Date().toISOString(),
+      triggered: false,
+    };
+    saveAlerts([alert, ...priceAlerts]);
+    setNewAlertSearch('');
+    setNewAlertPrice('');
+    setShowCreateAlert(false);
   };
 
-  const filteredSignals = signals.filter(signal => {
-    const levelMatch = filterLevel === 'all' || signal.signal_level === filterLevel;
-    const typeMatch = filterType === 'all' || signal.signal_type === filterType;
-    return levelMatch && typeMatch;
-  });
+  const deleteAlert = (id: string) => {
+    saveAlerts(priceAlerts.filter(a => a.id !== id));
+  };
+
+  // Check if any alerts are triggered by current prices
+  const checkedAlerts = useMemo(() => {
+    return priceAlerts.map(alert => {
+      const matchingDeal = deals.find(d => 
+        d.product_name.toLowerCase().includes(alert.productName.toLowerCase())
+      );
+      if (matchingDeal) {
+        const isTriggered = alert.direction === 'below'
+          ? matchingDeal.current_price <= alert.targetPrice
+          : matchingDeal.current_price >= alert.targetPrice;
+        return { ...alert, triggered: isTriggered, currentPrice: matchingDeal.current_price };
+      }
+      return { ...alert, currentPrice: undefined };
+    });
+  }, [priceAlerts, deals]);
+
+  // Filtered signals
+  const filteredSignals = useMemo(() => {
+    return signals.filter(signal => {
+      const levelMatch = filterLevel === 'all' || signal.signal_level === filterLevel;
+      const typeMatch = filterType === 'all' || signal.signal_type === filterType;
+      const searchMatch = !searchQuery || 
+        signal.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        signal.signal_type.toLowerCase().includes(searchQuery.toLowerCase());
+      return levelMatch && typeMatch && searchMatch;
+    });
+  }, [signals, filterLevel, filterType, searchQuery]);
 
   const signalTypes = Array.from(new Set(signals.map(s => s.signal_type)));
 
-  const highSignals = filteredSignals.filter(s => s.signal_level === 'high').length;
-  const mediumSignals = filteredSignals.filter(s => s.signal_level === 'medium').length;
-  const lowSignals = filteredSignals.filter(s => s.signal_level === 'low').length;
+  const stats = useMemo(() => ({
+    total: signals.length,
+    high: signals.filter(s => s.signal_level === 'high').length,
+    medium: signals.filter(s => s.signal_level === 'medium').length,
+    low: signals.filter(s => s.signal_level === 'low').length,
+    alertsActive: priceAlerts.length,
+    alertsTriggered: checkedAlerts.filter(a => a.triggered).length,
+  }), [signals, priceAlerts, checkedAlerts]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <MainNav user={user} />
-        <div className="max-w-7xl mx-auto px-4 py-12">
-          <div className="text-center">
-            <div className="animate-spin text-6xl mb-4">🎯</div>
-            <p className="text-gray-600">Loading signals...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const getLevelConfig = (level: string) => {
+    switch (level) {
+      case 'high': return { bg: 'bg-red-50', text: 'text-red-700', border: 'border-red-200', badge: 'bg-red-100 text-red-800', dot: 'bg-red-500' };
+      case 'medium': return { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', badge: 'bg-amber-100 text-amber-800', dot: 'bg-amber-500' };
+      default: return { bg: 'bg-blue-50', text: 'text-blue-700', border: 'border-blue-200', badge: 'bg-blue-100 text-blue-800', dot: 'bg-blue-500' };
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <MainNav user={user} />
-
-      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">🎯 Priority Signals</h1>
-          <p className="text-gray-600">Real-time market alerts and trading opportunities</p>
+    <DashboardLayout>
+      <div className="px-6 py-8 max-w-[1400px] mx-auto">
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Price Alerts</h1>
+            <p className="text-sm text-gray-500 mt-1">System signals & custom price alerts for your tracked cards</p>
+          </div>
+          <button
+            onClick={() => setShowCreateAlert(!showCreateAlert)}
+            className="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Create Alert
+          </button>
         </div>
-        {error && (
-          <div className="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
-            {error}
+
+        {/* Create Alert Panel */}
+        {showCreateAlert && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <h3 className="text-sm font-semibold text-gray-900 mb-4">Set a Price Alert</h3>
+            <p className="text-xs text-gray-500 mb-4">Get notified when a card reaches your target price</p>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-xs text-gray-500 mb-1.5">Card name</label>
+                <input
+                  type="text"
+                  value={newAlertSearch}
+                  onChange={(e) => setNewAlertSearch(e.target.value)}
+                  placeholder="e.g. Charizard ex"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">Target price (€)</label>
+                <input
+                  type="number"
+                  value={newAlertPrice}
+                  onChange={(e) => setNewAlertPrice(e.target.value)}
+                  placeholder="25.00"
+                  step="0.01"
+                  min="0"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">Direction</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setNewAlertDirection('below')}
+                    className={`flex-1 px-3 py-2 text-sm rounded-lg border transition ${
+                      newAlertDirection === 'below'
+                        ? 'bg-green-50 border-green-300 text-green-700'
+                        : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    ↓ Below
+                  </button>
+                  <button
+                    onClick={() => setNewAlertDirection('above')}
+                    className={`flex-1 px-3 py-2 text-sm rounded-lg border transition ${
+                      newAlertDirection === 'above'
+                        ? 'bg-amber-50 border-amber-300 text-amber-700'
+                        : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    ↑ Above
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 mt-4 pt-4 border-t border-gray-100">
+              <button
+                onClick={() => setShowCreateAlert(false)}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={createAlert}
+                disabled={!newAlertSearch.trim() || !newAlertPrice}
+                className="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Set Alert
+              </button>
+            </div>
           </div>
         )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">High Priority</p>
-                <p className="text-3xl font-bold text-red-600">{highSignals}</p>
-              </div>
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                <span className="text-2xl">⚠️</span>
-              </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-800 rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-sm text-gray-500">Loading alerts...</p>
             </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Medium Priority</p>
-                <p className="text-3xl font-bold text-yellow-600">{mediumSignals}</p>
-              </div>
-              <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                <span className="text-2xl">🔔</span>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Low Priority</p>
-                <p className="text-3xl font-bold text-blue-600">{lowSignals}</p>
-              </div>
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-2xl">ℹ️</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-          <div className="flex flex-wrap items-center gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700 mr-2">Priority Level:</label>
-              <select
-                value={filterLevel}
-                onChange={(e) => setFilterLevel(e.target.value as any)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Levels</option>
-                <option value="high">High Priority</option>
-                <option value="medium">Medium Priority</option>
-                <option value="low">Low Priority</option>
-              </select>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700 mr-2">Signal Type:</label>
-              <select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Types</option>
-                {signalTypes.map(type => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
-              </select>
-            </div>
-            <button
-              onClick={loadSignals}
-              className="ml-auto px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
-            >
-              <span>🔄</span>
-              <span>Refresh</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Signals List */}
-        {filteredSignals.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <div className="text-5xl mb-4">📭</div>
-            <p className="text-lg font-medium text-gray-900 mb-2">No signals found</p>
-            <p className="text-sm text-gray-500">
-              {filterLevel !== 'all' || filterType !== 'all' 
-                ? 'Try adjusting your filters'
-                : 'Check back later for new market opportunities'
-              }
-            </p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {filteredSignals.map((signal) => (
-              <div
-                key={signal.id}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-lg transition"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      {getSignalIcon(signal.signal_level)}
-                      <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${getSignalBadgeColor(signal.signal_level)}`}>
-                        {signal.signal_level.toUpperCase()}
-                      </span>
-                      <span className="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
-                        {signal.signal_type}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(signal.detected_at).toLocaleDateString()} {new Date(signal.detected_at).toLocaleTimeString()}
-                      </span>
-                    </div>
-                    
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">{signal.product_name}</h3>
-                    
-                    {signal.product_set && (
-                      <p className="text-sm text-gray-500 mb-2">{signal.product_set}</p>
-                    )}
-                    
-                    {signal.description && (
-                      <p className="text-sm text-gray-700 mb-3">{signal.description}</p>
-                    )}
-                    
-                    <div className="flex items-center gap-6 text-sm">
-                      {signal.current_price && (
-                        <div>
-                          <span className="text-gray-500">Current Price: </span>
-                          <span className="font-bold text-gray-900">€{signal.current_price.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {signal.deal_score && (
-                        <div>
-                          <span className="text-gray-500">Deal Score: </span>
-                          <span className="font-bold text-blue-600">{signal.deal_score}</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  
-                  {signal.deal_score && (
-                    <div className={`ml-6 w-20 h-20 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      signal.deal_score >= 80 ? 'bg-green-100' :
-                      signal.deal_score >= 70 ? 'bg-yellow-100' : 'bg-blue-100'
-                    }`}>
-                      <span className={`text-2xl font-bold ${
-                        signal.deal_score >= 80 ? 'text-green-700' :
-                        signal.deal_score >= 70 ? 'text-yellow-700' : 'text-blue-700'
-                      }`}>
-                        {signal.deal_score}
-                      </span>
-                    </div>
+          <>
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+              <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <p className="text-xs text-gray-500 mb-1">Total Signals</p>
+                <p className="text-xl font-bold text-gray-900">{stats.total}</p>
+              </div>
+              <div className="bg-white rounded-xl border border-red-100 p-4">
+                <p className="text-xs text-red-600 mb-1">High Priority</p>
+                <p className="text-xl font-bold text-red-700">{stats.high}</p>
+              </div>
+              <div className="bg-white rounded-xl border border-amber-100 p-4">
+                <p className="text-xs text-amber-600 mb-1">Medium</p>
+                <p className="text-xl font-bold text-amber-700">{stats.medium}</p>
+              </div>
+              <div className="bg-white rounded-xl border border-blue-100 p-4">
+                <p className="text-xs text-blue-600 mb-1">Low</p>
+                <p className="text-xl font-bold text-blue-700">{stats.low}</p>
+              </div>
+              <div className="bg-white rounded-xl border border-green-100 p-4">
+                <p className="text-xs text-green-600 mb-1">My Alerts</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-xl font-bold text-green-700">{stats.alertsActive}</p>
+                  {stats.alertsTriggered > 0 && (
+                    <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded font-semibold">
+                      {stats.alertsTriggered} triggered
+                    </span>
                   )}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
 
-        {/* Upgrade CTA for Free Users */}
-        {user?.role === 'free' && (
-          <div className="mt-8 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl shadow-lg p-8 text-white text-center">
-            <h3 className="text-2xl font-bold mb-2">🔔 Get Real-Time Alerts</h3>
-            <p className="mb-4 text-purple-100">
-              Upgrade to Premium to receive instant notifications for high-priority signals via Email and Telegram
-            </p>
-            <button
-              onClick={() => router.push('/pricing')}
-              className="bg-white text-purple-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
-            >
-              Upgrade to Premium
-            </button>
-          </div>
+            {/* Tabs */}
+            <div className="flex items-center border-b border-gray-200 mb-6">
+              <button
+                onClick={() => setActiveTab('signals')}
+                className={`px-5 py-3 text-sm font-medium border-b-2 transition ${
+                  activeTab === 'signals'
+                    ? 'border-gray-900 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                System Signals
+                <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{signals.length}</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('my-alerts')}
+                className={`px-5 py-3 text-sm font-medium border-b-2 transition ${
+                  activeTab === 'my-alerts'
+                    ? 'border-gray-900 text-gray-900'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                My Price Alerts
+                <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{priceAlerts.length}</span>
+                {stats.alertsTriggered > 0 && (
+                  <span className="ml-1 w-2 h-2 bg-green-500 rounded-full inline-block" />
+                )}
+              </button>
+            </div>
+
+            {/* === SYSTEM SIGNALS TAB === */}
+            {activeTab === 'signals' && (
+              <>
+                {/* Filters */}
+                <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex-1 min-w-[200px] relative">
+                      <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search signals..."
+                        className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                      />
+                    </div>
+                    <select
+                      value={filterLevel}
+                      onChange={(e) => setFilterLevel(e.target.value as any)}
+                      className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                    >
+                      <option value="all">All Priorities</option>
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                    <select
+                      value={filterType}
+                      onChange={(e) => setFilterType(e.target.value)}
+                      className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                    >
+                      <option value="all">All Types</option>
+                      {signalTypes.map(type => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={loadData}
+                      className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                    >
+                      Refresh
+                    </button>
+                  </div>
+                </div>
+
+                {/* Signals List */}
+                <div className="space-y-3">
+                  {filteredSignals.length === 0 ? (
+                    <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                      <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                      <p className="text-sm font-medium text-gray-900 mb-1">No signals found</p>
+                      <p className="text-xs text-gray-500">
+                        {filterLevel !== 'all' || filterType !== 'all' || searchQuery
+                          ? 'Try adjusting your filters'
+                          : 'Check back later for new market signals'}
+                      </p>
+                    </div>
+                  ) : (
+                    filteredSignals.slice(0, 50).map((signal) => {
+                      const config = getLevelConfig(signal.signal_level);
+                      return (
+                        <div
+                          key={signal.id}
+                          className={`bg-white rounded-xl border border-gray-200 p-5 hover:border-gray-300 transition`}
+                        >
+                          <div className="flex items-start gap-4">
+                            {/* Priority dot */}
+                            <div className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${config.dot}`} />
+                            
+                            {/* Content */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${config.badge}`}>
+                                  {signal.signal_level.toUpperCase()}
+                                </span>
+                                <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+                                  {signal.signal_type}
+                                </span>
+                                <span className="text-[11px] text-gray-400 ml-auto">
+                                  {new Date(signal.detected_at).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <h4 className="text-sm font-semibold text-gray-900 mb-0.5 truncate">
+                                {signal.product_name}
+                              </h4>
+                              {signal.product_set && (
+                                <p className="text-xs text-gray-400 mb-1">{signal.product_set}</p>
+                              )}
+                              {signal.description && (
+                                <p className="text-xs text-gray-600">{signal.description}</p>
+                              )}
+                            </div>
+
+                            {/* Price & Score */}
+                            <div className="flex items-center gap-4 flex-shrink-0">
+                              {signal.current_price && (
+                                <div className="text-right">
+                                  <p className="text-xs text-gray-400">Price</p>
+                                  <p className="text-sm font-bold text-gray-900">€{signal.current_price.toFixed(2)}</p>
+                                </div>
+                              )}
+                              {signal.deal_score && (
+                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${
+                                  signal.deal_score >= 80 ? 'bg-green-50' :
+                                  signal.deal_score >= 65 ? 'bg-amber-50' : 'bg-gray-50'
+                                }`}>
+                                  <span className={`text-sm font-bold ${
+                                    signal.deal_score >= 80 ? 'text-green-700' :
+                                    signal.deal_score >= 65 ? 'text-amber-700' : 'text-gray-600'
+                                  }`}>
+                                    {signal.deal_score}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {filteredSignals.length > 50 && (
+                  <p className="text-center text-xs text-gray-400 mt-4">
+                    Showing 50 of {filteredSignals.length} signals
+                  </p>
+                )}
+              </>
+            )}
+
+            {/* === MY PRICE ALERTS TAB === */}
+            {activeTab === 'my-alerts' && (
+              <>
+                {checkedAlerts.length === 0 ? (
+                  <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+                    <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    <p className="text-sm font-medium text-gray-900 mb-1">No price alerts yet</p>
+                    <p className="text-xs text-gray-500 mb-4">
+                      Set target prices on cards you're watching to get notified when prices drop
+                    </p>
+                    <button
+                      onClick={() => setShowCreateAlert(true)}
+                      className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition"
+                    >
+                      Create your first alert
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {checkedAlerts.map((alert) => (
+                      <div
+                        key={alert.id}
+                        className={`bg-white rounded-xl border p-5 transition ${
+                          alert.triggered
+                            ? 'border-green-200 bg-green-50/50'
+                            : 'border-gray-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            {alert.triggered ? (
+                              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                                <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-gray-900">{alert.productName}</p>
+                              <p className="text-xs text-gray-500">
+                                Alert when price {alert.direction === 'below' ? 'drops below' : 'goes above'}{' '}
+                                <span className="font-medium">€{alert.targetPrice.toFixed(2)}</span>
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-4">
+                            {alert.currentPrice !== undefined && (
+                              <div className="text-right">
+                                <p className="text-xs text-gray-400">Current</p>
+                                <p className="text-sm font-bold text-gray-900">€{alert.currentPrice.toFixed(2)}</p>
+                              </div>
+                            )}
+                            <span className={`text-xs font-semibold px-2 py-1 rounded ${
+                              alert.triggered
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-gray-100 text-gray-600'
+                            }`}>
+                              {alert.triggered ? 'TRIGGERED' : 'WATCHING'}
+                            </span>
+                            <button
+                              onClick={() => deleteAlert(alert.id)}
+                              className="p-1.5 text-gray-400 hover:text-red-500 transition rounded"
+                              title="Delete alert"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+          </>
         )}
-      </main>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
