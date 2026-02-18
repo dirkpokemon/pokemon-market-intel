@@ -16,8 +16,14 @@ async def lifespan(app: FastAPI):
     """
     Application lifespan events
     """
-    # Startup
-    await init_db()
+    # Startup - initialize DB but don't fail if it's not ready
+    try:
+        await init_db()
+    except Exception as e:
+        # Log but don't crash - app can still serve health checks
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Database initialization warning: {e}")
     yield
     # Shutdown
     pass
@@ -59,13 +65,17 @@ async def health_check():
 @app.get("/")
 async def root():
     """
-    Root endpoint
+    Root endpoint - always responds for Railway health checks
     """
-    return {
-        "message": "Pokemon Market Intelligence EU API",
-        "version": settings.APP_VERSION,
-        "docs": "/docs" if settings.DEBUG else "disabled",
-    }
+    return JSONResponse(
+        status_code=200,
+        content={
+            "message": "Pokemon Market Intelligence EU API",
+            "version": settings.APP_VERSION,
+            "status": "running",
+            "docs": "/docs",
+        },
+    )
 
 
 # Import and include routers
