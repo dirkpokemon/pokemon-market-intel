@@ -34,10 +34,17 @@ async def init_db() -> None:
     """
     Initialize database connection
     """
-    async with engine.begin() as conn:
-        # Create tables if they don't exist
-        # await conn.run_sync(Base.metadata.create_all)
-        pass
+    try:
+        # Test connection
+        from sqlalchemy import text
+        async with engine.begin() as conn:
+            await conn.execute(text("SELECT 1"))
+    except Exception as e:
+        # Log error but don't crash - allows health check to work
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Database connection test failed: {e}")
+        # Don't raise - app can still start and health check will work
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
