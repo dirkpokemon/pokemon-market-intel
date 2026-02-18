@@ -89,7 +89,7 @@ export default function HomePage() {
         {/* Welcome Banner */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {user?.email?.split('@')[0] || 'Trainer'}! 👋
+            Welcome back, {user?.full_name ? user.full_name.split(' ')[0] : user?.email?.split('@')[0] || 'Trainer'}! 👋
           </h1>
           <p className="text-gray-600">Here&apos;s what&apos;s happening in the EU Pokémon market today.</p>
         </div>
@@ -101,14 +101,14 @@ export default function HomePage() {
             value={dealScores.length}
             subtitle="Active opportunities"
             icon="🎴"
-            color="red"
+            color="blue"
           />
           <StatCard
             title="Avg Deal Score"
             value={avgDealScore}
             subtitle="Market average"
             icon="📊"
-            color="yellow"
+            color="purple"
             trend={{
               value: 12,
               label: 'vs last week',
@@ -310,14 +310,14 @@ export default function HomePage() {
 
         {/* Upgrade CTA for Free Users */}
         {user?.role === 'free' && (
-          <div className="mt-8 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl shadow-lg p-8 text-white text-center">
+          <div className="mt-8 bg-gray-900 rounded-xl shadow-lg p-8 text-white text-center">
             <h3 className="text-2xl font-bold mb-3">🚀 Unlock Premium Features</h3>
-            <p className="mb-6 text-purple-100">
+            <p className="mb-6 text-gray-300">
               Get real-time signals, advanced analytics, email & Telegram alerts, and more!
             </p>
             <Link
               href="/pricing"
-              className="inline-block bg-yellow-400 text-gray-900 px-8 py-3 rounded-lg font-bold hover:bg-yellow-300 transition"
+              className="inline-block bg-white text-gray-900 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition"
             >
               Upgrade to Premium
             </Link>

@@ -90,7 +90,7 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
       }`}>
         <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
+          <div className="bg-gray-900 p-6 text-white">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-xl font-bold">{currentStepData.title}</h3>
               <button
@@ -135,7 +135,7 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
                 {currentStep < steps.length - 1 ? (
                   <button
                     onClick={handleNext}
-                    className="px-6 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition"
+                    className="px-6 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition"
                   >
                     Next →
                   </button>
