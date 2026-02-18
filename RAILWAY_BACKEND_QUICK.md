@@ -17,6 +17,8 @@ Click on the service → Click "Settings" tab (gear icon)
 Root Directory: services/backend
 Start Command: uvicorn app.main:app --host 0.0.0.0 --port 8000
 Build Command: (leave empty)
+
+⚠️ IMPORTANT: Use port 8000 directly, NOT $PORT
 ```
 
 ### 4️⃣ Add Variables

@@ -32,10 +32,9 @@ Before starting, make sure you have:
 
 ### Set Start Command:
 - Find **"Start Command"** field
-- Enter: `uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}`
-- **OR** if Railway doesn't support variables, use: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
+- Enter: `uvicorn app.main:app --host 0.0.0.0 --port 8000`
 - This is the command to start your FastAPI server
-- **Note**: Railway automatically sets `$PORT`, but if it doesn't work, use `8000` directly
+- **Note**: Use port `8000` directly (Railway will route traffic to it automatically)
 
 ### Build Command:
 - Leave **"Build Command"** empty (Railway will use the Dockerfile)
