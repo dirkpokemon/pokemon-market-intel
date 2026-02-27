@@ -430,7 +430,7 @@ export default function PriceAlertsPage() {
                     </svg>
                     <p className="text-sm font-medium text-gray-900 mb-1">No price alerts yet</p>
                     <p className="text-xs text-gray-500 mb-4">
-                      Set target prices on cards you're watching to get notified when prices drop
+                      Set target prices on cards you&apos;re watching to get notified when prices drop
                     </p>
                     <button
                       onClick={() => setShowCreateAlert(true)}
