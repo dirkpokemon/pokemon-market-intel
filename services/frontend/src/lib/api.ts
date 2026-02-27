@@ -50,6 +50,28 @@ export interface DealScore {
   calculated_at: string;
 }
 
+export interface CardSearchResult {
+  card_name: string;
+  card_set?: string;
+  min_price: number;
+  avg_price: number;
+  max_price: number;
+  listings: number;
+  condition?: string;
+  source?: string;
+  source_url?: string;
+  last_seen: string;
+  deal_score?: number;
+  market_avg_price?: number;
+}
+
+export interface SearchResponse {
+  query: string;
+  total_results: number;
+  results: CardSearchResult[];
+  has_more: boolean;
+}
+
 /**
  * Get auth token from localStorage
  */
@@ -128,6 +150,18 @@ export const marketApi = {
   }): Promise<DealScore[]> => {
     const query = new URLSearchParams(params as any).toString();
     return apiRequest<DealScore[]>(`/api/v1/deal_scores?${query}`);
+  },
+};
+
+// Full Catalog Search (searches ALL 171K+ scraped cards)
+export const searchApi = {
+  search: async (params: {
+    q: string;
+    limit?: number;
+    sort_by?: 'relevance' | 'price_asc' | 'price_desc' | 'listings';
+  }): Promise<SearchResponse> => {
+    const query = new URLSearchParams(params as any).toString();
+    return apiRequest<SearchResponse>(`/api/v1/search?${query}`);
   },
 };
 

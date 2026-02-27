@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { marketApi, Signal, DealScore } from '@/lib/api';
+import { marketApi, searchApi, Signal, DealScore, CardSearchResult } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import StatCard from '@/components/StatCard';
 import DealModal from '@/components/DealModal';
@@ -17,8 +17,15 @@ export default function HomePage() {
   const [dealScores, setDealScores] = useState<DealScore[]>([]);
   const [selectedDeal, setSelectedDeal] = useState<DealScore | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Full catalog search state
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<CardSearchResult[]>([]);
+  const [searchTotal, setSearchTotal] = useState(0);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [searchActive, setSearchActive] = useState(false);
+  const [sortBy, setSortBy] = useState<'relevance' | 'price_asc' | 'price_desc' | 'listings'>('relevance');
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -69,23 +76,50 @@ export default function HomePage() {
     ? Math.round(dealScores.reduce((sum, d) => sum + d.deal_score, 0) / dealScores.length)
     : 0;
 
-  // Search results — filters deal scores by name or set
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const q = searchQuery.toLowerCase();
-    return dealScores
-      .filter(d =>
-        d.product_name.toLowerCase().includes(q) ||
-        (d.product_set?.toLowerCase().includes(q) ?? false)
-      )
-      .sort((a, b) => b.deal_score - a.deal_score)
-      .slice(0, 8);
-  }, [searchQuery, dealScores]);
+  // Full catalog search via API (171K+ cards)
+  const executeSearch = useCallback(async (query: string, sort: string = 'relevance') => {
+    if (!query.trim() || query.trim().length < 2) {
+      setSearchResults([]);
+      setSearchTotal(0);
+      setSearchActive(false);
+      return;
+    }
+    try {
+      setSearchLoading(true);
+      setSearchActive(true);
+      const response = await searchApi.search({
+        q: query.trim(),
+        limit: 20,
+        sort_by: sort as any,
+      });
+      setSearchResults(response.results);
+      setSearchTotal(response.total_results);
+    } catch (err) {
+      console.error('Search error:', err);
+      setSearchResults([]);
+      setSearchTotal(0);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
+
+  // Debounced auto-search while typing (300ms delay)
+  const handleSearchInput = (value: string) => {
+    setSearchQuery(value);
+    if (!value.trim()) {
+      setSearchActive(false);
+      setSearchResults([]);
+      setSearchTotal(0);
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      executeSearch(value, sortBy);
+    }, 400);
+  };
 
   const handleSearch = () => {
-    if (searchQuery.trim()) {
-      setSearchActive(true);
-    }
+    executeSearch(searchQuery, sortBy);
   };
 
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
@@ -93,8 +127,23 @@ export default function HomePage() {
     if (e.key === 'Escape') {
       setSearchQuery('');
       setSearchActive(false);
+      setSearchResults([]);
+      setSearchTotal(0);
     }
   };
+
+  // Convert a search result to a DealScore-compatible object for the modal
+  const searchResultToDeal = (result: CardSearchResult): DealScore => ({
+    id: 0,
+    product_name: result.card_name,
+    product_set: result.card_set || undefined,
+    category: undefined,
+    current_price: result.min_price,
+    market_avg_price: result.avg_price,
+    deal_score: result.deal_score || 0,
+    confidence: undefined,
+    calculated_at: result.last_seen,
+  });
 
   const displayName = user?.full_name
     ? user.full_name.split(' ')[0]
@@ -155,18 +204,14 @@ export default function HomePage() {
                     <input
                       type="text"
                       value={searchQuery}
-                      onChange={(e) => {
-                        setSearchQuery(e.target.value);
-                        if (e.target.value.trim()) setSearchActive(true);
-                        else setSearchActive(false);
-                      }}
+                      onChange={(e) => handleSearchInput(e.target.value)}
                       onKeyDown={handleSearchKeyDown}
                       placeholder="Search any Pokémon card, set, or product..."
                       className="w-full pl-12 pr-10 py-4 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 text-sm focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition outline-none"
                     />
                     {searchQuery && (
                       <button
-                        onClick={() => { setSearchQuery(''); setSearchActive(false); }}
+                        onClick={() => { setSearchQuery(''); setSearchActive(false); setSearchResults([]); setSearchTotal(0); }}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,29 +234,50 @@ export default function HomePage() {
                 {/* Search Results */}
                 {searchActive && searchQuery.trim() && (
                   <div className="mt-4">
-                    {searchResults.length === 0 ? (
+                    {searchLoading ? (
+                      <div className="flex items-center justify-center py-8 gap-3">
+                        <div className="w-5 h-5 border-2 border-gray-600 border-t-green-400 rounded-full animate-spin" />
+                        <p className="text-gray-400 text-sm">Searching 171,000+ cards...</p>
+                      </div>
+                    ) : searchResults.length === 0 ? (
                       <div className="text-center py-8">
-                        <p className="text-gray-500 text-sm">No results found for &quot;{searchQuery}&quot;</p>
+                        <p className="text-gray-400 text-sm">No results found for &quot;{searchQuery}&quot;</p>
                         <p className="text-gray-600 text-xs mt-1">Try a different card name or set</p>
                       </div>
                     ) : (
                       <>
+                        {/* Results header with count + sort */}
                         <div className="flex items-center justify-between mb-3">
                           <p className="text-xs text-gray-500">
-                            {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
+                            <span className="text-green-400 font-semibold">{searchTotal.toLocaleString()}</span> cards found
+                            {searchTotal > 20 && <span className="text-gray-600"> · showing top 20</span>}
                           </p>
-                          <Link href="/deals" className="text-xs text-green-400 hover:text-green-300 font-medium transition">
-                            Browse all deals →
-                          </Link>
+                          <div className="flex items-center gap-2">
+                            {(['relevance', 'price_asc', 'price_desc', 'listings'] as const).map((s) => (
+                              <button
+                                key={s}
+                                onClick={() => { setSortBy(s); executeSearch(searchQuery, s); }}
+                                className={`px-2 py-1 rounded text-[11px] font-medium transition ${
+                                  sortBy === s
+                                    ? 'bg-green-500/20 text-green-400'
+                                    : 'text-gray-500 hover:text-gray-300'
+                                }`}
+                              >
+                                {s === 'relevance' ? '🔥 Relevant' : s === 'price_asc' ? '↑ Price' : s === 'price_desc' ? '↓ Price' : '📦 Listings'}
+                              </button>
+                            ))}
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          {searchResults.map((deal) => (
+
+                        {/* Results list */}
+                        <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1 scrollbar-thin">
+                          {searchResults.map((result, idx) => (
                             <div
-                              key={deal.id}
-                              onClick={() => setSelectedDeal(deal)}
+                              key={`${result.card_name}-${result.card_set}-${idx}`}
+                              onClick={() => setSelectedDeal(searchResultToDeal(result))}
                               className="flex items-center gap-4 p-3 bg-gray-800/60 hover:bg-gray-800 border border-gray-700/50 hover:border-gray-600 rounded-xl cursor-pointer transition group"
                             >
-                              {/* Card icon placeholder */}
+                              {/* Card icon */}
                               <div className="w-12 h-16 bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden border border-gray-600">
                                 <span className="text-xl">🃏</span>
                               </div>
@@ -219,32 +285,44 @@ export default function HomePage() {
                               {/* Card info */}
                               <div className="flex-1 min-w-0">
                                 <h3 className="text-sm font-semibold text-white truncate group-hover:text-green-300 transition">
-                                  {deal.product_name}
+                                  {result.card_name}
                                 </h3>
-                                {deal.product_set && (
-                                  <p className="text-xs text-gray-500 truncate mt-0.5">{deal.product_set}</p>
-                                )}
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  {result.card_set && (
+                                    <p className="text-xs text-gray-500 truncate">{result.card_set}</p>
+                                  )}
+                                  <span className="text-[10px] text-gray-600">·</span>
+                                  <span className="text-[11px] text-gray-500">
+                                    {result.listings} listing{result.listings !== 1 ? 's' : ''}
+                                  </span>
+                                </div>
                               </div>
 
-                              {/* Price + Score */}
+                              {/* Price range + deal score */}
                               <div className="flex items-center gap-3 flex-shrink-0">
                                 <div className="text-right">
-                                  <p className="text-base font-bold text-white">€{deal.current_price.toFixed(2)}</p>
-                                  {deal.market_avg_price && deal.market_avg_price > deal.current_price && (
-                                    <p className="text-[11px] text-green-400 font-medium">
-                                      {Math.round((1 - deal.current_price / deal.market_avg_price) * 100)}% below avg
+                                  <p className="text-base font-bold text-white">€{result.min_price.toFixed(2)}</p>
+                                  {result.avg_price > result.min_price && (
+                                    <p className="text-[11px] text-gray-500">
+                                      avg €{result.avg_price.toFixed(2)}
                                     </p>
                                   )}
                                 </div>
-                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                                  deal.deal_score >= 80 ? 'bg-green-500/20' : deal.deal_score >= 70 ? 'bg-amber-500/20' : 'bg-gray-700'
-                                }`}>
-                                  <span className={`text-sm font-bold ${
-                                    deal.deal_score >= 80 ? 'text-green-400' : deal.deal_score >= 70 ? 'text-amber-400' : 'text-gray-400'
+                                {result.deal_score ? (
+                                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                    result.deal_score >= 80 ? 'bg-green-500/20' : result.deal_score >= 70 ? 'bg-amber-500/20' : 'bg-gray-700/50'
                                   }`}>
-                                    {deal.deal_score}
-                                  </span>
-                                </div>
+                                    <span className={`text-sm font-bold ${
+                                      result.deal_score >= 80 ? 'text-green-400' : result.deal_score >= 70 ? 'text-amber-400' : 'text-gray-400'
+                                    }`}>
+                                      {result.deal_score}
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-700/30">
+                                    <span className="text-[10px] text-gray-600">—</span>
+                                  </div>
+                                )}
                                 <svg className="w-4 h-4 text-gray-600 group-hover:text-gray-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                 </svg>

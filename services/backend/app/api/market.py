@@ -1,17 +1,20 @@
 """
 Market Data API endpoints
-Provides access to signals, deal scores, and market statistics
+Provides access to signals, deal scores, market statistics, and full catalog search
 """
 
 import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, desc
+from sqlalchemy import select, and_, desc, func, text
 
 from app.database import get_db
 from app.models.user import User
-from app.schemas.market import SignalResponse, DealScoreResponse, MarketStatsResponse
+from app.schemas.market import (
+    SignalResponse, DealScoreResponse, MarketStatsResponse,
+    CardSearchResult, SearchResponse
+)
 from app.core.dependencies import get_current_user, get_current_premium_user
 
 
@@ -162,3 +165,118 @@ async def get_market_stats(
     logger.info(f"Returning {len(stats)} market stats")
     
     return [MarketStatsResponse.from_orm(stat) for stat in stats]
+
+
+# ─── Full Catalog Search ──────────────────────────────────────────
+
+@router.get("/search", response_model=SearchResponse)
+async def search_cards(
+    q: str = Query(..., min_length=2, max_length=200, description="Search query (card name, set, etc.)"),
+    limit: int = Query(default=20, le=50, description="Maximum results to return"),
+    sort_by: str = Query(default="relevance", description="Sort by: relevance, price_asc, price_desc, listings"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Search the FULL card catalog (171K+ listings from raw_prices)
+    
+    Searches across all scraped cards, not just analyzed deals.
+    Results are grouped by card name + set and aggregated.
+    
+    **Available to all logged-in users**
+    
+    - **q**: Search query (min 2 chars)
+    - **limit**: Max results (default: 20, max: 50)
+    - **sort_by**: relevance, price_asc, price_desc, listings
+    """
+    logger.info(f"User {current_user.email} searching: '{q}'")
+    
+    from app.models.raw_price import RawPrice
+    from app.models.deal_score import DealScore
+    
+    search_term = f"%{q.lower()}%"
+    
+    # Aggregate raw_prices by (card_name, card_set) — returns unique products
+    # with min/avg/max prices, listing count, and most recent scrape time
+    search_query = text("""
+        SELECT 
+            card_name,
+            card_set,
+            MIN(price)::float AS min_price,
+            AVG(price)::float AS avg_price,
+            MAX(price)::float AS max_price,
+            COUNT(*)::int AS listings,
+            MAX(condition) AS condition,
+            MAX(source) AS source,
+            MAX(source_url) AS source_url,
+            MAX(scraped_at) AS last_seen
+        FROM raw_prices
+        WHERE LOWER(card_name) LIKE :search_term
+           OR LOWER(card_set) LIKE :search_term
+        GROUP BY card_name, card_set
+        ORDER BY
+            CASE WHEN :sort_by = 'price_asc'  THEN MIN(price) END ASC,
+            CASE WHEN :sort_by = 'price_desc' THEN MIN(price) END DESC,
+            CASE WHEN :sort_by = 'listings'   THEN COUNT(*)   END DESC,
+            COUNT(*) DESC,
+            card_name ASC
+        LIMIT :limit
+    """)
+    
+    result = await db.execute(
+        search_query,
+        {"search_term": search_term, "sort_by": sort_by, "limit": limit}
+    )
+    rows = result.fetchall()
+    
+    # Count total matching unique products (for "has_more")
+    count_query = text("""
+        SELECT COUNT(DISTINCT (card_name, card_set))::int AS total
+        FROM raw_prices
+        WHERE LOWER(card_name) LIKE :search_term
+           OR LOWER(card_set) LIKE :search_term
+    """)
+    count_result = await db.execute(count_query, {"search_term": search_term})
+    total_count = count_result.scalar() or 0
+    
+    # Enrich results with deal scores if available
+    card_names = [row.card_name for row in rows]
+    deal_score_map = {}
+    if card_names:
+        deal_query = select(DealScore).where(
+            and_(
+                DealScore.product_name.in_(card_names),
+                DealScore.is_active == True
+            )
+        )
+        deal_result = await db.execute(deal_query)
+        for ds in deal_result.scalars().all():
+            deal_score_map[ds.product_name] = ds
+    
+    # Build response
+    results = []
+    for row in rows:
+        ds = deal_score_map.get(row.card_name)
+        results.append(CardSearchResult(
+            card_name=row.card_name,
+            card_set=row.card_set,
+            min_price=round(row.min_price, 2),
+            avg_price=round(row.avg_price, 2),
+            max_price=round(row.max_price, 2),
+            listings=row.listings,
+            condition=row.condition,
+            source=row.source,
+            source_url=row.source_url,
+            last_seen=row.last_seen,
+            deal_score=float(ds.deal_score) if ds else None,
+            market_avg_price=float(ds.market_avg_price) if ds and ds.market_avg_price else None,
+        ))
+    
+    logger.info(f"Search '{q}' returned {len(results)} results (total: {total_count})")
+    
+    return SearchResponse(
+        query=q,
+        total_results=total_count,
+        results=results,
+        has_more=total_count > limit,
+    )

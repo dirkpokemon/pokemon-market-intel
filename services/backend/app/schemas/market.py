@@ -1,9 +1,9 @@
 """
-Market data Pydantic schemas for signals and deal scores
+Market data Pydantic schemas for signals, deal scores, and search
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field
 from decimal import Decimal
 
@@ -76,3 +76,36 @@ class MarketStatsResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+# ─── Search Schemas ───────────────────────────────────────────────
+
+class CardSearchResult(BaseModel):
+    """Single card in search results — aggregated from raw_prices"""
+    card_name: str
+    card_set: Optional[str] = None
+    min_price: float
+    avg_price: float
+    max_price: float
+    listings: int
+    condition: Optional[str] = None
+    source: Optional[str] = None
+    source_url: Optional[str] = None
+    last_seen: datetime
+
+    # Optional: deal score if available
+    deal_score: Optional[float] = None
+    market_avg_price: Optional[float] = None
+
+    class Config:
+        json_encoders = {
+            Decimal: lambda v: float(v) if v is not None else None
+        }
+
+
+class SearchResponse(BaseModel):
+    """Full search response with metadata"""
+    query: str
+    total_results: int
+    results: List[CardSearchResult]
+    has_more: bool = False
