@@ -5,9 +5,10 @@ Provides access to signals, deal scores, market statistics, and full catalog sea
 
 import logging
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, desc, func, text
+from pydantic import BaseModel
 
 from app.database import get_db
 from app.models.user import User
@@ -280,3 +281,80 @@ async def search_cards(
         results=results,
         has_more=total_count > limit,
     )
+
+
+# ─── Bulk Data Import (for data migration) ────────────────────────
+
+class RawPriceImport(BaseModel):
+    card_name: str
+    card_set: Optional[str] = None
+    card_number: Optional[str] = None
+    condition: Optional[str] = None
+    language: Optional[str] = "EN"
+    price: float
+    currency: Optional[str] = "EUR"
+    source: str = "cardtrader"
+    source_url: Optional[str] = None
+    seller_name: Optional[str] = None
+    seller_rating: Optional[float] = None
+    stock_quantity: Optional[int] = None
+    scraped_at: Optional[str] = None
+
+
+@router.post("/import/raw_prices")
+async def import_raw_prices(
+    records: List[RawPriceImport],
+    clear_existing: bool = Query(default=False, description="Clear existing records first"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Bulk import raw_prices records (for data migration)
+    """
+    logger.info(f"Importing {len(records)} raw_price records (clear={clear_existing})")
+    
+    if clear_existing:
+        await db.execute(text("DELETE FROM raw_prices"))
+        await db.commit()
+        logger.info("Cleared existing raw_prices")
+    
+    from app.models.raw_price import RawPrice
+    from datetime import datetime
+    
+    # Use ORM bulk insert for safety
+    for i in range(0, len(records), 500):
+        batch = records[i:i+500]
+        for r in batch:
+            scraped = datetime.fromisoformat(r.scraped_at) if r.scraped_at else datetime.utcnow()
+            obj = RawPrice(
+                card_name=r.card_name,
+                card_set=r.card_set,
+                card_number=r.card_number,
+                condition=r.condition,
+                language=r.language or "EN",
+                price=r.price,
+                currency=r.currency or "EUR",
+                source=r.source,
+                source_url=r.source_url,
+                seller_name=r.seller_name,
+                seller_rating=r.seller_rating,
+                stock_quantity=r.stock_quantity,
+                scraped_at=scraped,
+            )
+            db.add(obj)
+        await db.commit()
+        logger.info(f"  Inserted batch {i//500 + 1} ({min(i+500, len(records))}/{len(records)})")
+    
+    result = await db.execute(text("SELECT COUNT(*) FROM raw_prices"))
+    total = result.scalar()
+    
+    return {"imported": len(records), "total_in_db": total}
+
+
+@router.get("/import/status")
+async def import_status(db: AsyncSession = Depends(get_db)):
+    """Check current raw_prices count"""
+    result = await db.execute(text("SELECT COUNT(*) FROM raw_prices"))
+    total = result.scalar()
+    result2 = await db.execute(text("SELECT COUNT(DISTINCT card_name) FROM raw_prices"))
+    unique = result2.scalar()
+    return {"total_records": total, "unique_cards": unique}
