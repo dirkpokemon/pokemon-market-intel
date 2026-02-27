@@ -1,14 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { marketApi, DealScore } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import DealModal from '@/components/DealModal';
 
 export default function WatchlistPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [dealScores, setDealScores] = useState<DealScore[]>([]);
   const [watchlist, setWatchlist] = useState<number[]>([]);

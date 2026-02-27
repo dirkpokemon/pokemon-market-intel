@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import { marketApi, DealScore, Signal } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import dynamic from 'next/dynamic';
@@ -9,11 +8,9 @@ import dynamic from 'next/dynamic';
 const PriceChart = dynamic(() => import('@/components/PriceChart'), { ssr: false });
 
 export default function MarketPulsePage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [dealScores, setDealScores] = useState<DealScore[]>([]);
   const [signals, setSignals] = useState<Signal[]>([]);
-  const [timeRange, setTimeRange] = useState<'7d' | '30d'>('7d');
   const [moversTab, setMoversTab] = useState<'rising' | 'falling'>('rising');
 
   useEffect(() => {

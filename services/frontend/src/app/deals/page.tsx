@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import { marketApi, DealScore } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import DealModal from '@/components/DealModal';
@@ -17,7 +16,6 @@ interface FilterOptions {
 }
 
 export default function DealsPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [dealScores, setDealScores] = useState<DealScore[]>([]);
   const [watchlist, setWatchlist] = useState<number[]>([]);

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import { marketApi, Signal, DealScore } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 
@@ -15,7 +14,6 @@ interface PriceAlert {
 }
 
 export default function PriceAlertsPage() {
-  const router = useRouter();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [deals, setDeals] = useState<DealScore[]>([]);
   const [loading, setLoading] = useState(true);
