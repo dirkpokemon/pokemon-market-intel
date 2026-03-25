@@ -2,19 +2,41 @@
 Database Configuration and Session Management
 """
 
+import logging
+import ssl
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 
 from app.config import settings
 
-# Create async engine
+logger = logging.getLogger(__name__)
+
+# Build connect args for SSL support (Railway PostgreSQL)
+connect_args = {}
+db_url = settings.DATABASE_URL
+
+# If connecting to Railway (proxy URL), configure SSL
+if "proxy.rlwy.net" in db_url or "railway" in db_url:
+    ssl_ctx = ssl.create_default_context()
+    ssl_ctx.check_hostname = False
+    ssl_ctx.verify_mode = ssl.CERT_NONE
+    connect_args["ssl"] = ssl_ctx
+    logger.info("Railway PostgreSQL detected — SSL enabled")
+
+logger.info(f"Connecting to database: {db_url[:50]}...")
+
+# Create async engine with conservative pool settings
 engine = create_async_engine(
-    settings.DATABASE_URL,
-    pool_size=settings.DATABASE_POOL_SIZE,
-    max_overflow=settings.DATABASE_MAX_OVERFLOW,
+    db_url,
+    pool_size=5,  # Conservative for Railway free tier
+    max_overflow=5,
+    pool_timeout=30,
+    pool_recycle=1800,  # Recycle connections every 30 min
+    pool_pre_ping=True,  # Verify connections before using them
     echo=settings.DEBUG,
     future=True,
+    connect_args=connect_args,
 )
 
 # Create async session factory
@@ -35,15 +57,12 @@ async def init_db() -> None:
     Initialize database connection
     """
     try:
-        # Test connection
         from sqlalchemy import text
         async with engine.begin() as conn:
-            await conn.execute(text("SELECT 1"))
+            result = await conn.execute(text("SELECT 1"))
+            logger.info(f"✅ Database connection successful")
     except Exception as e:
-        # Log error but don't crash - allows health check to work
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.warning(f"Database connection test failed: {e}")
+        logger.error(f"❌ Database connection failed: {e}")
         # Don't raise - app can still start and health check will work
 
 
