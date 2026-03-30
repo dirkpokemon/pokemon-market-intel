@@ -13,6 +13,10 @@ export default function Sidebar({ user }: SidebarProps) {
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [feedbackType, setFeedbackType] = useState<'idea' | 'bug' | 'other'>('idea');
+  const [feedbackSent, setFeedbackSent] = useState(false);
 
   const displayName = user?.full_name
     ? user.full_name.split(' ')[0]
@@ -34,11 +38,11 @@ export default function Sidebar({ user }: SidebarProps) {
     { href: '/deals', label: 'Top Deals', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
     )},
-    { href: '/signals', label: 'Price Alerts', icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+    { href: '/signals', label: 'Price Signals', icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
     ), premium: true },
-    { href: '/watchlist', label: 'Watchlist', icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
+    { href: '/portfolio', label: 'Portfolio', icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
     )},
   ];
 
@@ -127,6 +131,22 @@ export default function Sidebar({ user }: SidebarProps) {
 
         {/* Bottom section */}
         <div className="border-t border-gray-100 px-3 py-3 space-y-1">
+          {/* Feedback button */}
+          <button
+            onClick={() => { setShowFeedback(true); setFeedbackSent(false); setFeedbackText(''); }}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all w-full text-gray-600 hover:bg-gray-100 hover:text-gray-900 ${collapsed ? 'justify-center' : ''}`}
+          >
+            <span className="flex-shrink-0">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+            </span>
+            {!collapsed && <span className="truncate">Feedback</span>}
+            {collapsed && (
+              <div className="absolute left-full ml-2 bg-gray-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-50">
+                Feedback
+              </div>
+            )}
+          </button>
+
           {bottomItems.map((item) => (
             <NavLink key={item.href} item={item} compact={collapsed} />
           ))}
@@ -166,6 +186,115 @@ export default function Sidebar({ user }: SidebarProps) {
           </svg>
         </button>
       </aside>
+
+      {/* Feedback Modal */}
+      {showFeedback && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowFeedback(false)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            {feedbackSent ? (
+              /* Success state */
+              <div className="p-8 text-center">
+                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Thanks for your feedback!</h3>
+                <p className="text-sm text-gray-500 mb-6">We appreciate you helping us improve Pokémon Intel.</p>
+                <button
+                  onClick={() => setShowFeedback(false)}
+                  className="px-5 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              /* Feedback form */
+              <>
+                <div className="px-6 pt-6 pb-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="text-lg font-bold text-gray-900">Send Feedback</h3>
+                    <button onClick={() => setShowFeedback(false)} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <p className="text-sm text-gray-500">Help us improve Pokémon Intel EU</p>
+                </div>
+
+                <div className="px-6 pb-6">
+                  {/* Type selector */}
+                  <div className="flex gap-2 mb-4">
+                    {([
+                      { value: 'idea' as const, label: '💡 Idea', color: 'blue' },
+                      { value: 'bug' as const, label: '🐛 Bug', color: 'red' },
+                      { value: 'other' as const, label: '💬 Other', color: 'gray' },
+                    ]).map((t) => (
+                      <button
+                        key={t.value}
+                        onClick={() => setFeedbackType(t.value)}
+                        className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition border ${
+                          feedbackType === t.value
+                            ? 'bg-gray-900 text-white border-gray-900'
+                            : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                        }`}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Message */}
+                  <textarea
+                    value={feedbackText}
+                    onChange={(e) => setFeedbackText(e.target.value)}
+                    placeholder={
+                      feedbackType === 'idea' ? 'I would love it if...' :
+                      feedbackType === 'bug' ? 'I found an issue with...' :
+                      'Tell us what you think...'
+                    }
+                    className="w-full h-32 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 resize-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 outline-none transition"
+                    autoFocus
+                  />
+
+                  {/* Submit */}
+                  <div className="flex items-center justify-between mt-4">
+                    <p className="text-[11px] text-gray-400">
+                      {user?.email && `Sending as ${user.email}`}
+                    </p>
+                    <button
+                      onClick={() => {
+                        if (!feedbackText.trim()) return;
+                        // Store feedback locally (could be sent to API later)
+                        const feedback = {
+                          type: feedbackType,
+                          message: feedbackText,
+                          email: user?.email,
+                          timestamp: new Date().toISOString(),
+                        };
+                        const existing = JSON.parse(localStorage.getItem('feedback_log') || '[]');
+                        existing.push(feedback);
+                        localStorage.setItem('feedback_log', JSON.stringify(existing));
+                        console.log('Feedback submitted:', feedback);
+                        setFeedbackSent(true);
+                      }}
+                      disabled={!feedbackText.trim()}
+                      className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
+                        feedbackText.trim()
+                          ? 'bg-gray-900 text-white hover:bg-gray-800'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      Send Feedback
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

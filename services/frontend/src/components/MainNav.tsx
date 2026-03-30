@@ -28,8 +28,8 @@ export default function MainNav({ user }: MainNavProps) {
     { href: '/home', label: 'Home', icon: '🏠', description: 'Overview' },
     { href: '/insights', label: 'Market Insights', icon: '📊', description: 'Analytics & Trends' },
     { href: '/deals', label: 'Top Deals', icon: '💎', description: 'Best Opportunities' },
-    { href: '/signals', label: 'Signals', icon: '🎯', description: 'Priority Alerts', premium: true },
-    { href: '/watchlist', label: 'Watchlist', icon: '⭐', description: 'Saved Items' },
+    { href: '/signals', label: 'Price Signals', icon: '⚡', description: 'AI Market Intel', premium: true },
+    { href: '/portfolio', label: 'Portfolio', icon: '📦', description: 'Collection & Watchlist' },
   ];
 
   return (

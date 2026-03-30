@@ -22,37 +22,37 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
       position: "top"
     },
     {
-      title: "📊 KPI Cards",
-      description: "Get an instant overview of your market: Total deals available, average deal scores, excellent opportunities, and your watchlist count.",
+      title: "📊 Market at a Glance",
+      description: "Get an instant overview: total deals, average scores, excellent opportunities, and active signals — all in one place.",
       target: "kpis",
       position: "top"
     },
     {
-      title: "🎯 Priority Signals",
-      description: "Premium users get real-time trading signals! See high-priority opportunities, undervalued cards, and arbitrage deals before anyone else.",
+      title: "⚡ Price Signals (PRO)",
+      description: "PRO users get AI-powered market signals! Spot undervalued cards, momentum shifts, and cross-country arbitrage before anyone else.",
       target: "signals",
       position: "top"
     },
     {
-      title: "💰 Top Opportunities",
-      description: "Browse the best deals with our Deal Score system (0-100). Click any card to see detailed information, price history, and direct buy links!",
+      title: "💰 Top Deals",
+      description: "Browse the best deals with our Deal Score system (0-100). Click any card to see detailed info, price history, and direct buy links!",
       target: "deals",
       position: "top"
     },
     {
-      title: "⭐ Watchlist",
-      description: "Click the star on any deal to save it to your watchlist. Access your saved deals anytime by clicking the Watchlist button in the header!",
-      target: "watchlist",
+      title: "📦 Portfolio",
+      description: "Track your collection value and set price targets on cards you want. Your portfolio has two tabs: My Collection and My Watchlist.",
+      target: "portfolio",
       position: "top"
     },
     {
       title: "⌨️ Pro Tips",
-      description: "Keyboard shortcuts: Press 'S' to focus search, 'W' to toggle watchlist, '?' for help. All your preferences are saved automatically!",
+      description: "Use the search bar to find any card from 170,000+ listings. All your collection and watchlist data is saved automatically!",
       position: "center"
     },
     {
       title: "🚀 You're All Set!",
-      description: "Start exploring deals, build your watchlist, and find the best Pokemon card opportunities in the EU market. Happy trading!",
+      description: "Start exploring deals, build your portfolio, and find the best Pokemon card opportunities in the EU market. Happy trading!",
       position: "center"
     }
   ];

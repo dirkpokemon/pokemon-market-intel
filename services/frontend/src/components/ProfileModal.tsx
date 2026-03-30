@@ -220,7 +220,7 @@ export default function ProfileModal({ user, onClose, onSave }: ProfileModalProp
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                   <div>
                     <p className="text-sm font-medium text-gray-900">Price Drop Alerts</p>
-                    <p className="text-xs text-gray-500 mt-1">Get notified when watchlist items drop in price</p>
+                    <p className="text-xs text-gray-500 mt-1">Get notified when portfolio watchlist items hit your target price</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input

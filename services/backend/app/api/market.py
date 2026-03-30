@@ -1,14 +1,17 @@
 """
 Market Data API endpoints
-Provides access to signals, deal scores, market statistics, and full catalog search
+Provides access to signals, deal scores, market statistics, full catalog search, and news
 """
 
 import logging
+import xml.etree.ElementTree as ET
+from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, desc, func, text
 from pydantic import BaseModel
+import httpx
 
 from app.database import get_db
 from app.models.user import User
@@ -358,3 +361,153 @@ async def import_status(db: AsyncSession = Depends(get_db)):
     result2 = await db.execute(text("SELECT COUNT(DISTINCT card_name) FROM raw_prices"))
     unique = result2.scalar()
     return {"total_records": total, "unique_cards": unique}
+
+
+# ═══════════════════════════════════════════════════════════════
+# Pokémon TCG News — fetches from real RSS feeds, cached in memory
+# ═══════════════════════════════════════════════════════════════
+
+# In-memory news cache: { "articles": [...], "fetched_at": datetime }
+_news_cache: dict = {"articles": [], "fetched_at": None}
+NEWS_CACHE_MINUTES = 60  # Refresh every hour
+
+# RSS feed sources (tried in order — only reliable ones that return valid XML)
+NEWS_FEEDS = [
+    ("https://www.dexerto.com/pokemon/feed/", "Dexerto"),
+    ("https://pokemonblog.com/feed/", "PokémonBlog"),
+]
+
+
+class NewsArticle(BaseModel):
+    title: str
+    link: str
+    source: str
+    published: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+def _parse_rss(xml_text: str, source_name: str, limit: int = 20) -> List[dict]:
+    """Parse RSS XML and return list of article dicts"""
+    import re
+    articles = []
+    try:
+        # Clean XML of invalid characters
+        xml_text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', xml_text)
+        root = ET.fromstring(xml_text)
+        # Standard RSS 2.0 structure
+        channel = root.find("channel")
+        if channel is None:
+            return articles
+        for item in channel.findall("item")[:limit]:
+            title = item.findtext("title", "").strip()
+            link = item.findtext("link", "").strip()
+            pub_date = item.findtext("pubDate", "").strip()
+            description = item.findtext("description", "").strip()
+
+            # Try to extract image from multiple sources
+            image_url = None
+            # 1. Check media:content or media:thumbnail (Yahoo Media RSS namespace)
+            media_ns = "{http://search.yahoo.com/mrss/}"
+            for tag in [f"{media_ns}content", f"{media_ns}thumbnail"]:
+                media_el = item.find(tag)
+                if media_el is not None:
+                    image_url = media_el.get("url")
+                    if image_url:
+                        break
+            # 2. Check <enclosure> tag (common for podcast/blog RSS)
+            if not image_url:
+                enclosure = item.find("enclosure")
+                if enclosure is not None and "image" in (enclosure.get("type", "")):
+                    image_url = enclosure.get("url")
+            # 3. Try to find image URL in description HTML
+            if not image_url and description:
+                img_match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', description)
+                if img_match:
+                    image_url = img_match.group(1)
+            # 4. Check content:encoded for image
+            if not image_url:
+                content_ns = "{http://purl.org/rss/1.0/modules/content/}"
+                content = item.findtext(f"{content_ns}encoded", "")
+                if content:
+                    img_match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', content)
+                    if img_match:
+                        image_url = img_match.group(1)
+
+            # Clean description (remove HTML tags)
+            if description:
+                description = re.sub(r'<[^>]+>', '', description).strip()
+                description = re.sub(r'\s+', ' ', description).strip()
+                if len(description) > 200:
+                    description = description[:200].rsplit(' ', 1)[0] + '...'
+
+            if title and link:
+                articles.append({
+                    "title": title,
+                    "link": link,
+                    "source": source_name,
+                    "published": pub_date,
+                    "description": description or None,
+                    "image_url": image_url,
+                })
+    except Exception as e:
+        logger.warning(f"Failed to parse RSS from {source_name}: {e}")
+    return articles
+
+
+async def _fetch_news(limit: int = 15) -> List[dict]:
+    """Fetch news from RSS feeds"""
+    global _news_cache
+
+    # Return cached if fresh
+    if _news_cache["fetched_at"] and (
+        datetime.utcnow() - _news_cache["fetched_at"] < timedelta(minutes=NEWS_CACHE_MINUTES)
+    ):
+        return _news_cache["articles"][:limit]
+
+    all_articles = []
+    async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+        for feed_url, source_name in NEWS_FEEDS:
+            try:
+                resp = await client.get(feed_url, headers={
+                    "User-Agent": "PokemonIntelEU/1.0 (News Aggregator)"
+                })
+                if resp.status_code == 200:
+                    articles = _parse_rss(resp.text, source_name, limit=15)
+                    all_articles.extend(articles)
+                    logger.info(f"Fetched {len(articles)} articles from {source_name}")
+            except Exception as e:
+                logger.warning(f"Failed to fetch {source_name}: {e}")
+
+    # Sort by published date (newest first) if possible
+    # pubDate format: "Thu, 20 Mar 2026 12:00:00 +0000"
+    def parse_pub_date(article):
+        try:
+            from email.utils import parsedate_to_datetime
+            return parsedate_to_datetime(article.get("published", ""))
+        except:
+            return datetime.min
+
+    all_articles.sort(key=parse_pub_date, reverse=True)
+
+    # Update cache
+    _news_cache = {
+        "articles": all_articles,
+        "fetched_at": datetime.utcnow(),
+    }
+
+    return all_articles[:limit]
+
+
+@router.get("/news", response_model=List[NewsArticle])
+async def get_pokemon_news(
+    limit: int = Query(default=10, le=20, description="Number of articles to return"),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get latest Pokémon TCG news from trusted sources.
+    Results are cached for 1 hour.
+    """
+    articles = await _fetch_news(limit=limit)
+    logger.info(f"Returning {len(articles)} news articles for user {current_user.email}")
+    return articles

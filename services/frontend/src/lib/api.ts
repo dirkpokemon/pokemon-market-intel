@@ -105,7 +105,9 @@ async function apiRequest<T>(
   
   if (!response.ok) {
     const error: ApiError = await response.json();
-    throw new Error(error.detail || 'API request failed');
+    const err = new Error(error.detail || 'API request failed');
+    (err as any).status = response.status;
+    throw err;
   }
   
   return response.json();
@@ -162,6 +164,22 @@ export const searchApi = {
   }): Promise<SearchResponse> => {
     const query = new URLSearchParams(params as any).toString();
     return apiRequest<SearchResponse>(`/api/v1/search?${query}`);
+  },
+};
+
+// News
+export interface NewsArticle {
+  title: string;
+  link: string;
+  source: string;
+  published?: string;
+  description?: string;
+  image_url?: string;
+}
+
+export const newsApi = {
+  getNews: async (limit: number = 10): Promise<NewsArticle[]> => {
+    return apiRequest<NewsArticle[]>(`/api/v1/news?limit=${limit}`);
   },
 };
 

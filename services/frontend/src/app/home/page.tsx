@@ -3,10 +3,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { marketApi, searchApi, Signal, DealScore, CardSearchResult } from '@/lib/api';
+import { marketApi, searchApi, newsApi, Signal, DealScore, CardSearchResult, NewsArticle } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import StatCard from '@/components/StatCard';
 import DealModal from '@/components/DealModal';
+import CardImage from '@/components/CardImage';
 import OnboardingTour from '@/components/OnboardingTour';
 
 export default function HomePage() {
@@ -26,6 +27,10 @@ export default function HomePage() {
   const [searchActive, setSearchActive] = useState(false);
   const [sortBy, setSortBy] = useState<'relevance' | 'price_asc' | 'price_desc' | 'listings'>('relevance');
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // News state
+  const [news, setNews] = useState<NewsArticle[]>([]);
+  const [newsLoading, setNewsLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -61,11 +66,22 @@ export default function HomePage() {
       } catch (err) {
         console.log('Signals require premium');
       }
+
+      // Fetch news in background
+      try {
+        const articles = await newsApi.getNews(8);
+        setNews(articles);
+      } catch (err) {
+        console.log('News unavailable');
+      } finally {
+        setNewsLoading(false);
+      }
       
       setLoading(false);
     } catch (err) {
       console.error('Error loading data:', err);
       setLoading(false);
+      setNewsLoading(false);
     }
   };
 
@@ -162,22 +178,14 @@ export default function HomePage() {
         ) : (
           <>
             {/* Welcome Banner */}
-            <div className="mb-8">
+            <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900">
                 Welcome back, {displayName}! 👋
               </h1>
               <p className="text-sm text-gray-500 mt-1">Here&apos;s what&apos;s happening in the EU Pokémon market today.</p>
             </div>
 
-            {/* Key Metrics */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <StatCard title="Total Deals" value={dealScores.length} subtitle="Active opportunities" icon="🎴" color="blue" />
-              <StatCard title="Avg Deal Score" value={avgDealScore} subtitle="Market average" icon="📊" color="purple" trend={{ value: 12, label: 'vs last week', isPositive: true }} />
-              <StatCard title="Excellent Deals" value={excellentDeals} subtitle="Score 80+" icon="⭐" color="green" />
-              <StatCard title="Active Signals" value={signals.length} subtitle="Real-time alerts" icon="🎯" color="blue" />
-            </div>
-
-            {/* ═══ Market Search ═══ */}
+            {/* ═══ Market Search (TOP) ═══ */}
             <div className="bg-gray-900 rounded-2xl p-6 mb-8 relative overflow-hidden">
               {/* Subtle grid pattern overlay */}
               <div className="absolute inset-0 opacity-[0.04]" style={{
@@ -277,10 +285,8 @@ export default function HomePage() {
                               onClick={() => setSelectedDeal(searchResultToDeal(result))}
                               className="flex items-center gap-4 p-3 bg-gray-800/60 hover:bg-gray-800 border border-gray-700/50 hover:border-gray-600 rounded-xl cursor-pointer transition group"
                             >
-                              {/* Card icon */}
-                              <div className="w-12 h-16 bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden border border-gray-600">
-                                <span className="text-xl">🃏</span>
-                              </div>
+                              {/* Card image */}
+                              <CardImage cardName={result.card_name} size="sm" />
 
                               {/* Card info */}
                               <div className="flex-1 min-w-0">
@@ -335,60 +341,18 @@ export default function HomePage() {
                   </div>
                 )}
 
-                {/* What you get — shown when no search is active */}
-                {!searchActive && (
-                  <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {[
-                      { icon: '📊', label: 'Real-time price tracking' },
-                      { icon: '💰', label: 'Deal score analysis' },
-                      { icon: '🔔', label: 'Price alert notifications' },
-                      { icon: '📈', label: 'Market trend insights' },
-                      { icon: '🌍', label: 'EU market coverage' },
-                      { icon: '⚡', label: 'Updated every hour' },
-                    ].map((item) => (
-                      <div key={item.label} className="flex items-center gap-2.5 px-3 py-2.5 bg-gray-800/40 rounded-lg">
-                        <span className="text-base">{item.icon}</span>
-                        <span className="text-xs text-gray-400 font-medium">{item.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Quick Access Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
-              <Link href="/insights" className="block group">
-                <div className="bg-gray-900 rounded-xl p-6 hover:bg-gray-800 transition h-full">
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center text-xl">📈</div>
-                    <div>
-                      <h2 className="text-lg font-bold text-white">Market Pulse</h2>
-                      <p className="text-xs text-gray-400">Daily market overview & top movers</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center text-white/80 text-sm font-medium group-hover:text-white group-hover:gap-3 transition-all gap-2">
-                    <span>Explore</span>
-                    <span className="group-hover:translate-x-1 transition-transform">→</span>
-                  </div>
-                </div>
-              </Link>
-
-              <Link href="/deals" className="block group">
-                <div className="bg-gray-900 rounded-xl p-6 hover:bg-gray-800 transition h-full">
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center text-xl">💎</div>
-                    <div>
-                      <h2 className="text-lg font-bold text-white">Top Deals</h2>
-                      <p className="text-xs text-gray-400">Browse {dealScores.length} verified deals</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center text-white/80 text-sm font-medium group-hover:text-white group-hover:gap-3 transition-all gap-2">
-                    <span>View All</span>
-                    <span className="group-hover:translate-x-1 transition-transform">→</span>
-                  </div>
-                </div>
-              </Link>
+            {/* Key Metrics */}
+            <div className="mb-8">
+              <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Your Market at a Glance</h2>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard title="Total Deals" value={dealScores.length} subtitle="Active opportunities" icon="🎴" color="blue" />
+                <StatCard title="Avg Deal Score" value={avgDealScore} subtitle="Market average" icon="📊" color="purple" trend={{ value: 12, label: 'vs last week', isPositive: true }} />
+                <StatCard title="Excellent Deals" value={excellentDeals} subtitle="Score 80+" icon="⭐" color="green" />
+                <StatCard title="Active Signals" value={signals.length} subtitle="Real-time alerts" icon="🎯" color="blue" />
+              </div>
             </div>
 
             {/* Recent Signals */}
@@ -401,7 +365,7 @@ export default function HomePage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {recentSignals.map((signal) => (
                     <div key={signal.id} className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition">
-                      <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-start justify-between mb-3">
                         <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
                           signal.signal_level === 'high' ? 'bg-red-100 text-red-800' :
                           signal.signal_level === 'medium' ? 'bg-amber-100 text-amber-800' :
@@ -413,13 +377,18 @@ export default function HomePage() {
                           {new Date(signal.detected_at).toLocaleDateString()}
                         </span>
                       </div>
-                      <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-1">{signal.product_name}</h3>
-                      <p className="text-xs text-gray-500 mb-2">{signal.signal_type}</p>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-500">€{signal.current_price?.toFixed(2) || 'N/A'}</span>
-                        {signal.deal_score && (
-                          <span className="font-bold text-green-700">Score: {signal.deal_score}</span>
-                        )}
+                      <div className="flex items-start gap-3">
+                        <CardImage cardName={signal.product_name} size="sm" />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">{signal.product_name}</h3>
+                          <p className="text-xs text-gray-500 mb-2">{signal.signal_type.replace(/_/g, ' ')}</p>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-gray-500">€{signal.current_price?.toFixed(2) || 'N/A'}</span>
+                            {signal.deal_score && (
+                              <span className="font-bold text-green-700">Score: {signal.deal_score}</span>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -438,23 +407,28 @@ export default function HomePage() {
                   <div 
                     key={deal.id} 
                     onClick={() => setSelectedDeal(deal)}
-                    className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition cursor-pointer"
+                    className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 hover:shadow-sm transition cursor-pointer group"
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-sm font-semibold text-gray-900 flex-1 line-clamp-2 pr-2">{deal.product_name}</h3>
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                        deal.deal_score >= 80 ? 'bg-green-50' : deal.deal_score >= 70 ? 'bg-amber-50' : 'bg-gray-50'
-                      }`}>
-                        <span className={`text-sm font-bold ${
-                          deal.deal_score >= 80 ? 'text-green-700' : deal.deal_score >= 70 ? 'text-amber-700' : 'text-gray-600'
-                        }`}>
-                          {deal.deal_score}
-                        </span>
+                    <div className="flex items-start gap-3 mb-3">
+                      <CardImage cardName={deal.product_name} size="md" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start">
+                          <h3 className="text-sm font-semibold text-gray-900 flex-1 line-clamp-2 pr-2 group-hover:text-gray-700 transition">{deal.product_name}</h3>
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                            deal.deal_score >= 80 ? 'bg-green-50' : deal.deal_score >= 70 ? 'bg-amber-50' : 'bg-gray-50'
+                          }`}>
+                            <span className={`text-sm font-bold ${
+                              deal.deal_score >= 80 ? 'text-green-700' : deal.deal_score >= 70 ? 'text-amber-700' : 'text-gray-600'
+                            }`}>
+                              {deal.deal_score}
+                            </span>
+                          </div>
+                        </div>
+                        {deal.product_set && (
+                          <p className="text-xs text-gray-500 mt-1 truncate">{deal.product_set}</p>
+                        )}
                       </div>
                     </div>
-                    {deal.product_set && (
-                      <p className="text-xs text-gray-500 mb-2 truncate">{deal.product_set}</p>
-                    )}
                     <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                       <div>
                         <p className="text-lg font-bold text-gray-900">€{deal.current_price.toFixed(2)}</p>
@@ -470,23 +444,112 @@ export default function HomePage() {
               </div>
             </div>
 
+            {/* ═══ Pokémon TCG News ═══ */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Latest Pokémon News</h2>
+                  <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase">Live</span>
+                </div>
+              </div>
+
+              {newsLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+                      <div className="flex gap-3">
+                        <div className="w-20 h-14 bg-gray-100 rounded-lg flex-shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-3 bg-gray-100 rounded w-3/4" />
+                          <div className="h-3 bg-gray-100 rounded w-1/2" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : news.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {news.map((article, idx) => (
+                    <a
+                      key={idx}
+                      href={article.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 hover:shadow-sm transition group"
+                    >
+                      <div className="flex items-start gap-3">
+                        {article.image_url ? (
+                          <img
+                            src={article.image_url}
+                            alt=""
+                            className="w-20 h-14 object-cover rounded-lg flex-shrink-0 bg-gray-100"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-20 h-14 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <span className="text-lg">📰</span>
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-700 transition">
+                            {article.title}
+                          </h3>
+                          <div className="flex items-center gap-2 mt-1.5">
+                            <span className="text-[11px] text-gray-400 font-medium">{article.source}</span>
+                            {article.published && (
+                              <>
+                                <span className="text-gray-300">·</span>
+                                <span className="text-[11px] text-gray-400">
+                                  {(() => {
+                                    try {
+                                      const d = new Date(article.published);
+                                      const now = new Date();
+                                      const diffH = Math.floor((now.getTime() - d.getTime()) / 3600000);
+                                      if (diffH < 1) return 'Just now';
+                                      if (diffH < 24) return `${diffH}h ago`;
+                                      const diffD = Math.floor(diffH / 24);
+                                      if (diffD === 1) return 'Yesterday';
+                                      if (diffD < 7) return `${diffD}d ago`;
+                                      return d.toLocaleDateString();
+                                    } catch { return ''; }
+                                  })()}
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
+                  <p className="text-sm text-gray-500">No news articles available right now.</p>
+                  <p className="text-xs text-gray-400 mt-1">Check back soon for the latest Pokémon TCG updates.</p>
+                </div>
+              )}
+            </div>
+
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Link href="/watchlist" className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition group">
+              <Link href="/portfolio" className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition group">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-xl">⭐</div>
+                  <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-xl">📦</div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-gray-700 transition">My Watchlist</h3>
-                    <p className="text-xs text-gray-500">Manage saved deals</p>
+                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-gray-700 transition">My Portfolio</h3>
+                    <p className="text-xs text-gray-500">Collection & watchlist</p>
                   </div>
                 </div>
               </Link>
               <Link href="/signals" className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition group">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-xl">🔔</div>
+                  <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-xl">⚡</div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-gray-700 transition">Price Alerts</h3>
-                    <p className="text-xs text-gray-500">Set target prices</p>
+                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-gray-700 transition">Price Signals</h3>
+                    <p className="text-xs text-gray-500">AI-powered market intel</p>
                   </div>
                 </div>
               </Link>
