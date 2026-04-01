@@ -138,13 +138,24 @@ async function apiRequest<T>(
 
 // Authentication
 export const authApi = {
-  register: async (email: string, password: string, full_name?: string): Promise<TokenResponse> => {
-    return apiRequest<TokenResponse>('/api/v1/auth/register', {
+  register: async (email: string, password: string, full_name?: string): Promise<{ message: string; email: string }> => {
+    return apiRequest<{ message: string; email: string }>('/api/v1/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password, full_name }),
     });
   },
-  
+
+  verifyEmail: async (token: string): Promise<{ message: string; verified?: boolean; already_verified?: boolean }> => {
+    return apiRequest<{ message: string; verified?: boolean; already_verified?: boolean }>(`/api/v1/auth/verify?token=${encodeURIComponent(token)}`);
+  },
+
+  resendVerification: async (email: string, password: string): Promise<{ message: string }> => {
+    return apiRequest<{ message: string }>('/api/v1/auth/resend-verification', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  },
+
   login: async (email: string, password: string): Promise<TokenResponse> => {
     return apiRequest<TokenResponse>('/api/v1/auth/login', {
       method: 'POST',

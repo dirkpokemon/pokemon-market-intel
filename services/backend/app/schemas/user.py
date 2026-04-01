@@ -6,9 +6,6 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel, EmailStr, Field
 
-from app.models.user import UserRole
-
-
 class UserBase(BaseModel):
     """Base user schema"""
     email: EmailStr
@@ -29,7 +26,7 @@ class UserLogin(BaseModel):
 class UserResponse(UserBase):
     """Schema for user response (public info)"""
     id: int
-    role: UserRole
+    role: str
     is_active: bool
     is_verified: bool
     created_at: datetime
@@ -49,7 +46,7 @@ class TokenResponse(BaseModel):
 
 class SubscriptionResponse(BaseModel):
     """Schema for subscription status response"""
-    role: UserRole
+    role: str
     subscription_status: Optional[str] = None
     subscription_end_date: Optional[datetime] = None
     is_premium: bool

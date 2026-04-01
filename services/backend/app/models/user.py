@@ -4,7 +4,7 @@ Handles user accounts and authentication
 """
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Boolean
 from sqlalchemy.sql import func
 import enum
 
@@ -18,7 +18,6 @@ class UserRole(str, enum.Enum):
     pro = "pro"
     admin = "admin"
     
-    # Aliases for backwards compatibility
     FREE = "free"
     PAID = "paid"
     PRO = "pro"
@@ -42,7 +41,7 @@ class User(Base):
     full_name = Column(String(255))
     
     # Subscription
-    role = Column(Enum(UserRole), default=UserRole.FREE, nullable=False, index=True)
+    role = Column(String(50), default="free", nullable=False, index=True)
     stripe_customer_id = Column(String(255), unique=True, index=True)
     stripe_subscription_id = Column(String(255), unique=True)
     subscription_status = Column(String(50))  # active, canceled, past_due, etc.
@@ -51,6 +50,10 @@ class User(Base):
     # Status
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
+    
+    # Email verification
+    verification_token = Column(String(255), index=True)
+    verification_token_expires = Column(DateTime(timezone=True))
     
     # Alert preferences
     alerts_enabled = Column(Boolean, default=True)
@@ -67,8 +70,8 @@ class User(Base):
     
     def is_premium(self) -> bool:
         """Check if user has premium access (paid or pro)"""
-        return self.role in [UserRole.PAID, UserRole.PRO, UserRole.ADMIN]
+        return self.role in ["paid", "pro", "admin"]
     
     def is_pro(self) -> bool:
         """Check if user has pro access"""
-        return self.role in [UserRole.PRO, UserRole.ADMIN]
+        return self.role in ["pro", "admin"]

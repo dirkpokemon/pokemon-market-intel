@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.database import get_db
-from app.models.user import User, UserRole
+from app.models.user import User
 from app.config import settings
 
 
@@ -111,7 +111,7 @@ async def handle_subscription_created(subscription: dict, db: AsyncSession):
     
     # Determine role based on subscription metadata or price
     # You can customize this based on your Stripe product setup
-    role = UserRole.PAID  # Default to paid
+    role = "paid"  # Default to paid
     
     # Update user subscription
     user.stripe_subscription_id = subscription_id
@@ -173,7 +173,7 @@ async def handle_subscription_deleted(subscription: dict, db: AsyncSession):
         return
     
     # Downgrade to free tier
-    user.role = UserRole.FREE
+    user.role = "free"
     user.subscription_status = "canceled"
     user.subscription_end_date = datetime.utcnow()
     

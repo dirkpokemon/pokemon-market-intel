@@ -1,60 +1,72 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { authApi } from '@/lib/api';
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [registered, setRegistered] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    if (!firstName.trim()) {
-      setError('First name is required');
-      setLoading(false);
-      return;
-    }
-
-    if (!lastName.trim()) {
-      setError('Last name is required');
-      setLoading(false);
-      return;
-    }
-
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
-      setLoading(false);
-      return;
-    }
+    if (!firstName.trim()) { setError('First name is required'); setLoading(false); return; }
+    if (!lastName.trim()) { setError('Last name is required'); setLoading(false); return; }
+    if (password.length < 8) { setError('Password must be at least 8 characters'); setLoading(false); return; }
 
     try {
-      // Combine first and last name for full_name
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
-      const response = await authApi.register(email, password, fullName);
-      
-      // Store token and user data — display name is first name
-      localStorage.setItem('access_token', response.access_token);
-      const userData = { ...response.user, full_name: fullName };
-      localStorage.setItem('user', JSON.stringify(userData));
-      
-      // Redirect to home
-      router.push('/home');
+      await authApi.register(email, password, fullName);
+      setRegistered(true);
     } catch (err: any) {
       setError(err.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
   };
+
+  if (registered) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+          {/* Envelope icon */}
+          <div className="mx-auto mb-6 w-16 h-16 rounded-full bg-gray-900 flex items-center justify-center">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2" />
+              <path d="M22 4L12 13L2 4" />
+            </svg>
+          </div>
+
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Check your email</h1>
+          <p className="text-gray-500 text-sm mb-6">
+            We&apos;ve sent a verification link to<br />
+            <span className="font-medium text-gray-900">{email}</span>
+          </p>
+
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 text-left">
+            <p className="text-sm text-gray-600 leading-relaxed">
+              Click the link in your email to activate your account. The link expires in 48 hours. Check your spam folder if you don&apos;t see it within a few minutes.
+            </p>
+          </div>
+
+          <div className="text-sm text-gray-500">
+            Already verified?{' '}
+            <Link href="/login" className="text-gray-900 hover:underline font-medium">
+              Sign in
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -72,7 +84,7 @@ export default function RegisterPage() {
 
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-          <p className="text-gray-500 mt-1 text-sm">Join Pokémon Market Intel EU</p>
+          <p className="text-gray-500 mt-1 text-sm">Join Pok&eacute;mon Market Intel EU</p>
         </div>
 
         {error && (
@@ -82,7 +94,6 @@ export default function RegisterPage() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* First Name and Last Name side by side */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -141,7 +152,7 @@ export default function RegisterPage() {
               required
               minLength={8}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
-              placeholder="••••••••"
+              placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
             />
             <p className="mt-1 text-xs text-gray-400">At least 8 characters</p>
           </div>

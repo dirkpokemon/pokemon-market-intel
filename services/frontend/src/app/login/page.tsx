@@ -11,27 +11,43 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [notVerified, setNotVerified] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resent, setResent] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setNotVerified(false);
+    setResent(false);
     setLoading(true);
 
     try {
       const response = await authApi.login(email, password);
-      
-      // Store token
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('user', JSON.stringify(response.user));
-      
-      // Redirect to home
       router.push('/home');
     } catch (err: any) {
-      console.error('Login error:', err);
-      const errorMessage = err?.message || err?.toString() || 'Login failed. Please check your credentials.';
-      setError(errorMessage);
+      const msg = err?.message || '';
+      if (msg === 'EMAIL_NOT_VERIFIED') {
+        setNotVerified(true);
+      } else {
+        setError(msg || 'Login failed. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResending(true);
+    try {
+      await authApi.resendVerification(email, password);
+      setResent(true);
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend verification email.');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -51,12 +67,40 @@ export default function LoginPage() {
 
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
-          <p className="text-gray-500 mt-1 text-sm">Sign in to Pokémon Market Intel EU</p>
+          <p className="text-gray-500 mt-1 text-sm">Sign in to Pok&eacute;mon Market Intel EU</p>
         </div>
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
             {error}
+          </div>
+        )}
+
+        {notVerified && (
+          <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <svg className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="M22 4L12 13L2 4" />
+              </svg>
+              <div>
+                <p className="text-sm font-medium text-amber-800">Email not verified</p>
+                <p className="text-xs text-amber-600 mt-1">
+                  Please check your inbox for the verification link.
+                </p>
+                {resent ? (
+                  <p className="text-xs text-green-600 font-medium mt-2">Verification email resent! Check your inbox.</p>
+                ) : (
+                  <button
+                    onClick={handleResend}
+                    disabled={resending}
+                    className="mt-2 text-xs font-medium text-amber-800 underline hover:text-amber-900 disabled:opacity-50"
+                  >
+                    {resending ? 'Sending...' : 'Resend verification email'}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -87,7 +131,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
-              placeholder="••••••••"
+              placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
             />
           </div>
 

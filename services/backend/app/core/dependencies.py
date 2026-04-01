@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from app.database import get_db
 from app.core.security import decode_access_token
-from app.models.user import User, UserRole
+from app.models.user import User
 
 
 # HTTP Bearer token security scheme
@@ -129,7 +129,7 @@ async def get_current_admin_user(
     Raises:
         HTTPException: If user is not admin
     """
-    if current_user.role != UserRole.ADMIN:
+    if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",

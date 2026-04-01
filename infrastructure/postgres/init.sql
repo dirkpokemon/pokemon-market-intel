@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS users (
     subscription_end_date TIMESTAMP WITH TIME ZONE,
     is_active BOOLEAN DEFAULT TRUE,
     is_verified BOOLEAN DEFAULT FALSE,
+    verification_token VARCHAR(255),
+    verification_token_expires TIMESTAMP WITH TIME ZONE,
     alerts_enabled BOOLEAN DEFAULT TRUE,
     alert_email VARCHAR(255),
     telegram_chat_id VARCHAR(255),
