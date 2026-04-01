@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     STRIPE_PRICE_ID_ENTERPRISE: str = ""
 
     # Email (optional)
+    BREVO_API_KEY: str = ""
     RESEND_API_KEY: str = ""
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587

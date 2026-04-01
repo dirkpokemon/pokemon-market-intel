@@ -126,37 +126,37 @@ def _build_verification_text(first_name: str, verify_url: str) -> str:
     )
 
 
-def _send_via_resend(to_email: str, subject: str, html: str, text: str) -> bool:
-    """Send email via Resend HTTPS API — works on Railway."""
-    api_key = settings.RESEND_API_KEY
+def _send_via_brevo(to_email: str, subject: str, html: str, text: str) -> bool:
+    """Send email via Brevo (Sendinblue) HTTPS API — free, no domain needed."""
+    api_key = settings.BREVO_API_KEY
     if not api_key:
         return False
 
-    from_addr = settings.SMTP_FROM or "Pokemon Market Intel <noreply@pokemonmarketintel.com>"
+    sender_email = settings.SMTP_FROM or settings.SMTP_USER or "pokemonmarketintel@gmail.com"
 
     payload = json.dumps({
-        "from": from_addr,
-        "to": [to_email],
+        "sender": {"name": "Pokemon Market Intel EU", "email": sender_email},
+        "to": [{"email": to_email}],
         "subject": subject,
-        "html": html,
-        "text": text,
+        "htmlContent": html,
+        "textContent": text,
     }).encode()
 
     req = Request(
-        "https://api.resend.com/emails",
+        "https://api.brevo.com/v3/smtp/email",
         data=payload,
         headers={
-            "Authorization": f"Bearer {api_key}",
+            "api-key": api_key,
             "Content-Type": "application/json",
         },
     )
 
     try:
         with urlopen(req, timeout=10) as resp:
-            logger.info("Email sent via Resend to %s (status %d)", to_email, resp.status)
+            logger.info("Email sent via Brevo to %s (status %d)", to_email, resp.status)
             return True
     except URLError as exc:
-        logger.warning("Resend API failed for %s: %s", to_email, exc)
+        logger.warning("Brevo API failed for %s: %s", to_email, exc)
         return False
 
 
@@ -195,8 +195,8 @@ def send_verification_email(to_email: str, first_name: str, token: str) -> bool:
     html = _build_verification_html(first_name, verify_url)
     text = _build_verification_text(first_name, verify_url)
 
-    # 1) Try Resend API (HTTPS — always works on cloud)
-    if _send_via_resend(to_email, subject, html, text):
+    # 1) Try Brevo API (HTTPS — free, no domain needed, works on cloud)
+    if _send_via_brevo(to_email, subject, html, text):
         return True
 
     # 2) Try SMTP (works locally)
