@@ -252,7 +252,7 @@ export default function PortfolioPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Portfolio</h1>
-            <p className="text-sm text-gray-500 mt-1">Track your collection value and set price alerts on cards you want.</p>
+            <p className="text-sm text-gray-500 mt-1">Track your collection value and monitor price targets for cards you want.</p>
           </div>
         </div>
 

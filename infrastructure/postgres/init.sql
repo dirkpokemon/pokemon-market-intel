@@ -13,11 +13,20 @@ CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     hashed_password VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255),
+    role VARCHAR(50) DEFAULT 'free',
+    stripe_customer_id VARCHAR(255),
+    stripe_subscription_id VARCHAR(255),
+    subscription_status VARCHAR(50),
+    subscription_end_date TIMESTAMP WITH TIME ZONE,
     is_active BOOLEAN DEFAULT TRUE,
     is_verified BOOLEAN DEFAULT FALSE,
-    subscription_tier VARCHAR(50) DEFAULT 'free',
+    alerts_enabled BOOLEAN DEFAULT TRUE,
+    alert_email VARCHAR(255),
+    telegram_chat_id VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_login TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX idx_users_email ON users(email);

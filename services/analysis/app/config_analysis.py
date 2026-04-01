@@ -57,18 +57,18 @@ class AnalysisConfig(BaseSettings):
     WEIGHT_LIQUIDITY: float = 0.2
     WEIGHT_POPULARITY: float = 0.1
     
-    # Signal thresholds
-    DEAL_SCORE_HIGH: float = 80.0
-    DEAL_SCORE_MEDIUM: float = 60.0
+    # Signal thresholds (tuned to avoid noise with limited history)
+    MOMENTUM_PRICE_CHANGE: float = 15.0   # % increase
+    MOMENTUM_VOLUME_CHANGE: float = 30.0  # % increase
     
-    PRICE_DEVIATION_UNDERVALUED: float = 20.0  # % below market avg
-    PRICE_ARBITRAGE_THRESHOLD: float = 15.0    # % difference between countries
+    RISK_VOLUME_DROP: float = -40.0  # % decrease
+    RISK_PRICE_RISE: float = 25.0    # % increase
     
-    MOMENTUM_PRICE_CHANGE: float = 10.0   # % increase
-    MOMENTUM_VOLUME_CHANGE: float = 20.0  # % increase
-    
-    RISK_VOLUME_DROP: float = -30.0  # % decrease
-    RISK_PRICE_RISE: float = 20.0    # % increase
+    PRICE_DROP_THRESHOLD: float = -20.0        # % decrease in 7d
+    SUPPLY_INCREASE_THRESHOLD: float = 80.0    # % more listings vs 30d avg
+    SUPPLY_DECREASE_THRESHOLD: float = -50.0   # % fewer listings vs 30d avg
+    VOLATILITY_SPIKE_THRESHOLD: float = 100.0  # coefficient of variation %
+    SET_TREND_THRESHOLD: float = 12.0          # % set-wide avg price change
     
     # Liquidity scoring
     HIGH_LIQUIDITY_VOLUME: int = 100   # listings

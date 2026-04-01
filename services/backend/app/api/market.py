@@ -17,7 +17,8 @@ from app.database import get_db
 from app.models.user import User
 from app.schemas.market import (
     SignalResponse, DealScoreResponse, MarketStatsResponse,
-    CardSearchResult, SearchResponse
+    CardSearchResult, SearchResponse,
+    MarketDigestResponse, SetTrend, SignalSummary,
 )
 from app.core.dependencies import get_current_user, get_current_premium_user
 
@@ -169,6 +170,95 @@ async def get_market_stats(
     logger.info(f"Returning {len(stats)} market stats")
     
     return [MarketStatsResponse.from_orm(stat) for stat in stats]
+
+
+# ─── Market Digest (Price Signals command center) ─────────────────
+
+@router.get("/market_digest", response_model=MarketDigestResponse)
+async def get_market_digest(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Aggregated market overview: signal counts, set trends, highlights.
+    Powers the Price Signals page.
+    """
+    from app.models.signal import Signal
+    from app.models.market_stats import MarketStats
+
+    # Overview counts from raw_prices
+    raw_count = await db.execute(text("SELECT COUNT(*) FROM raw_prices"))
+    total_listings = raw_count.scalar() or 0
+
+    card_count = await db.execute(text("SELECT COUNT(DISTINCT card_name) FROM raw_prices"))
+    total_cards = card_count.scalar() or 0
+
+    set_count = await db.execute(text("SELECT COUNT(DISTINCT card_set) FROM raw_prices WHERE card_set IS NOT NULL"))
+    total_sets = set_count.scalar() or 0
+
+    last_analysis = await db.execute(
+        select(func.max(MarketStats.calculated_at))
+    )
+    last_at = last_analysis.scalar()
+
+    # Signal counts by type
+    sig_counts_q = await db.execute(
+        select(Signal.signal_type, func.count(Signal.id))
+        .where(Signal.is_active == True)
+        .group_by(Signal.signal_type)
+    )
+    signal_counts = {row[0]: row[1] for row in sig_counts_q.all()}
+
+    # Top 5 highest-priority active signals as highlights
+    highlights_q = await db.execute(
+        select(Signal)
+        .where(Signal.is_active == True)
+        .order_by(desc(Signal.priority), desc(Signal.detected_at))
+        .limit(5)
+    )
+    highlights = [SignalResponse.from_orm(s) for s in highlights_q.scalars().all()]
+
+    # Set trends (aggregated from market_statistics)
+    cutoff = datetime.utcnow() - timedelta(hours=48)
+    set_trends_q = await db.execute(
+        select(
+            MarketStats.product_set,
+            func.avg(MarketStats.price_trend_7d).label("avg_trend"),
+            func.avg(MarketStats.volume_trend_7d).label("avg_vol_trend"),
+            func.count(MarketStats.id).label("card_count"),
+            func.avg(MarketStats.avg_price_7d).label("avg_price"),
+        )
+        .where(and_(
+            MarketStats.calculated_at >= cutoff,
+            MarketStats.product_set.isnot(None),
+        ))
+        .group_by(MarketStats.product_set)
+        .having(func.count(MarketStats.id) >= 3)
+    )
+    all_set_trends = set_trends_q.all()
+
+    rising = sorted(all_set_trends, key=lambda r: float(r.avg_trend or 0), reverse=True)[:5]
+    declining = sorted(all_set_trends, key=lambda r: float(r.avg_trend or 0))[:5]
+
+    def to_set_trend(row) -> SetTrend:
+        return SetTrend(
+            product_set=row.product_set,
+            avg_trend=round(float(row.avg_trend or 0), 2),
+            avg_volume_trend=round(float(row.avg_vol_trend or 0), 2),
+            card_count=row.card_count,
+            avg_price=round(float(row.avg_price or 0), 2),
+        )
+
+    return MarketDigestResponse(
+        total_cards_tracked=total_cards,
+        total_sets=total_sets,
+        total_listings=total_listings,
+        last_analysis_at=last_at,
+        signal_counts=signal_counts,
+        signal_highlights=highlights,
+        top_rising_sets=[to_set_trend(r) for r in rising],
+        top_declining_sets=[to_set_trend(r) for r in declining if float(r.avg_trend or 0) < 0],
+    )
 
 
 # ─── Full Catalog Search ──────────────────────────────────────────

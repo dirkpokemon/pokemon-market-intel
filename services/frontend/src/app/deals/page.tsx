@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { marketApi, DealScore } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import DealModal from '@/components/DealModal';
+import CardImage from '@/components/CardImage';
 
 type ViewMode = 'all' | 'watchlist';
 
@@ -210,38 +211,63 @@ export default function DealsPage() {
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-8">
-                  {paginatedDeals.map((deal) => (
-                    <div 
-                      key={deal.id}
-                      onClick={() => setSelectedDeal(deal)}
-                      className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition cursor-pointer group relative"
-                    >
-                      <button
-                        onClick={(e) => { e.stopPropagation(); toggleWatchlist(deal.id); }}
-                        className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full bg-gray-50 hover:bg-gray-100 transition text-sm"
+                  {paginatedDeals.map((deal) => {
+                    const savingsPercent = deal.market_avg_price
+                      ? Math.round((1 - deal.current_price / deal.market_avg_price) * 100)
+                      : 0;
+                    return (
+                      <div 
+                        key={deal.id}
+                        onClick={() => setSelectedDeal(deal)}
+                        className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition cursor-pointer group relative overflow-hidden"
                       >
-                        {watchlist.includes(deal.id) ? '⭐' : '☆'}
-                      </button>
+                        {/* Savings badge */}
+                        {savingsPercent > 5 && (
+                          <div className="absolute top-3 left-3 z-10 px-2 py-0.5 bg-green-600 text-white text-[11px] font-bold rounded-md shadow-sm">
+                            -{savingsPercent}%
+                          </div>
+                        )}
 
-                      <div className="flex justify-between items-start mb-2 pr-8">
-                        <h3 className="text-sm font-semibold text-gray-900 line-clamp-2">{deal.product_name}</h3>
-                        <div className={`ml-2 w-10 h-10 rounded-lg ${getScoreBg(deal.deal_score)} flex items-center justify-center flex-shrink-0`}>
-                          <span className={`text-sm font-bold ${getScoreColor(deal.deal_score)}`}>{deal.deal_score}</span>
+                        {/* Watchlist button */}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); toggleWatchlist(deal.id); }}
+                          className="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm hover:bg-white transition text-sm shadow-sm"
+                        >
+                          {watchlist.includes(deal.id) ? '⭐' : '☆'}
+                        </button>
+
+                        {/* Card image */}
+                        <div className="px-4 pt-4 flex justify-center">
+                          <CardImage cardName={deal.product_name} size="md" />
+                        </div>
+
+                        <div className="p-4">
+                          <div className="flex justify-between items-start mb-1">
+                            <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 flex-1 pr-2">{deal.product_name}</h3>
+                            <div className={`w-10 h-10 rounded-lg ${getScoreBg(deal.deal_score)} flex items-center justify-center flex-shrink-0`}>
+                              <span className={`text-sm font-bold ${getScoreColor(deal.deal_score)}`}>{deal.deal_score}</span>
+                            </div>
+                          </div>
+                          
+                          {deal.product_set && (
+                            <p className="text-xs text-gray-500 mb-3 truncate">{deal.product_set}</p>
+                          )}
+                          
+                          <div className="flex items-end justify-between pt-2 border-t border-gray-100">
+                            <div>
+                              <p className="text-lg font-bold text-gray-900">&euro;{deal.current_price.toFixed(2)}</p>
+                              {deal.market_avg_price && (
+                                <p className="text-[11px] text-gray-400 line-through">&euro;{deal.market_avg_price.toFixed(2)} avg</p>
+                              )}
+                            </div>
+                            {savingsPercent > 0 && (
+                              <p className="text-xs font-medium text-green-600">Save &euro;{((deal.market_avg_price || 0) - deal.current_price).toFixed(2)}</p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                      
-                      {deal.product_set && (
-                        <p className="text-xs text-gray-500 mb-2 truncate">{deal.product_set}</p>
-                      )}
-                      
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                        <p className="text-lg font-bold text-gray-900">€{deal.current_price.toFixed(2)}</p>
-                        {deal.market_avg_price && (
-                          <p className="text-xs text-gray-400">Avg €{deal.market_avg_price.toFixed(2)}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Pagination */}

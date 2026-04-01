@@ -3,6 +3,7 @@ Analysis Service Entry Point
 """
 
 import asyncio
+import logging
 import signal
 import sys
 from typing import Any
@@ -12,6 +13,12 @@ from apscheduler.triggers.cron import CronTrigger
 
 from app.config import settings
 from app.database import init_db
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 class AnalysisService:
@@ -27,40 +34,34 @@ class AnalysisService:
         """
         Start the analysis service
         """
-        print(f"Starting Pokemon Intel EU Analysis Service v{settings.APP_VERSION}")
-        print(f"Analysis schedule: {settings.ANALYSIS_SCHEDULE}")
+        logger.info(f"Starting Pokemon Intel EU Analysis Service v{settings.APP_VERSION}")
+        logger.info(f"Analysis schedule: {settings.ANALYSIS_SCHEDULE}")
         
-        # Initialize database
+        # Initialize database (creates tables if they don't exist)
         await init_db()
         
         # Schedule analysis jobs
-        # Market statistics - run every hour
-        # self.scheduler.add_job(
-        #     self.calculate_market_stats,
-        #     CronTrigger.from_crontab('0 * * * *'),
-        #     id='market_stats',
-        # )
+        self.scheduler.add_job(
+            self.run_full_analysis,
+            CronTrigger.from_crontab('0 * * * *'),
+            id='full_analysis',
+            name='Full Analysis Pipeline',
+            max_instances=1,
+        )
         
-        # Deal scores - run every 30 minutes
-        # self.scheduler.add_job(
-        #     self.calculate_deal_scores,
-        #     CronTrigger.from_crontab('*/30 * * * *'),
-        #     id='deal_scores',
-        # )
-        
-        # Signals detection - run every 15 minutes
-        # self.scheduler.add_job(
-        #     self.detect_signals,
-        #     CronTrigger.from_crontab('*/15 * * * *'),
-        #     id='signals',
-        # )
+        # Run immediately on startup
+        logger.info("Running initial analysis...")
+        try:
+            await self.run_full_analysis()
+        except Exception as e:
+            logger.error(f"Initial analysis failed: {e}", exc_info=True)
         
         self.scheduler.start()
         self.running = True
         
-        print("Analysis service started successfully")
+        logger.info("Analysis service started successfully")
+        logger.info("Next analysis scheduled at the top of the next hour")
         
-        # Keep running
         try:
             while self.running:
                 await asyncio.sleep(1)
@@ -71,47 +72,80 @@ class AnalysisService:
         """
         Stop the analysis service
         """
-        print("Stopping analysis service...")
+        logger.info("Stopping analysis service...")
         self.running = False
         self.scheduler.shutdown()
-        print("Analysis service stopped")
+        logger.info("Analysis service stopped")
 
-    async def calculate_market_stats(self):
+    async def run_full_analysis(self):
+        """
+        Run the complete analysis pipeline: stats -> deal scores -> signals
+        """
+        logger.info("=" * 60)
+        logger.info("Starting full analysis pipeline")
+        logger.info("=" * 60)
+        
+        # Step 1: Market statistics
+        stats_count = await self.calculate_market_stats()
+        
+        # Step 2: Deal scores (depends on market stats)
+        deal_count = 0
+        if stats_count > 0:
+            deal_count = await self.calculate_deal_scores()
+        
+        # Step 3: Signals (depends on deal scores + market stats)
+        signal_count = 0
+        if deal_count > 0:
+            signal_count = await self.detect_signals()
+        
+        logger.info("=" * 60)
+        logger.info(f"Analysis complete: {stats_count} stats, {deal_count} deals, {signal_count} signals")
+        logger.info("=" * 60)
+
+    async def calculate_market_stats(self) -> int:
         """
         Calculate market-wide statistics
         """
-        print("Calculating market statistics...")
-        
-        # Import and run calculators
-        # from app.calculators.market_stats import MarketStatsCalculator
-        # calculator = MarketStatsCalculator()
-        # await calculator.calculate()
-        
-        print("Market statistics calculated")
+        logger.info("Calculating market statistics...")
+        try:
+            from app.calculators.market_stats_calculator import MarketStatsCalculator
+            calculator = MarketStatsCalculator()
+            count = await calculator.calculate_all()
+            logger.info(f"Market statistics calculated: {count} products")
+            return count
+        except Exception as e:
+            logger.error(f"Market stats calculation failed: {e}", exc_info=True)
+            return 0
 
-    async def calculate_deal_scores(self):
+    async def calculate_deal_scores(self) -> int:
         """
         Calculate deal scores for all products
         """
-        print("Calculating deal scores...")
-        
-        # from app.calculators.deal_scores import DealScoreCalculator
-        # calculator = DealScoreCalculator()
-        # await calculator.calculate()
-        
-        print("Deal scores calculated")
+        logger.info("Calculating deal scores...")
+        try:
+            from app.calculators.deal_score_calculator import DealScoreCalculator
+            calculator = DealScoreCalculator()
+            count = await calculator.calculate_all()
+            logger.info(f"Deal scores calculated: {count} products")
+            return count
+        except Exception as e:
+            logger.error(f"Deal score calculation failed: {e}", exc_info=True)
+            return 0
 
-    async def detect_signals(self):
+    async def detect_signals(self) -> int:
         """
         Detect price signals and alerts
         """
-        print("Detecting signals...")
-        
-        # from app.calculators.signals import SignalDetector
-        # detector = SignalDetector()
-        # await detector.detect()
-        
-        print("Signals detected")
+        logger.info("Detecting signals...")
+        try:
+            from app.generators.signal_generator import SignalGenerator
+            generator = SignalGenerator()
+            count = await generator.generate_all()
+            logger.info(f"Signals detected: {count}")
+            return count
+        except Exception as e:
+            logger.error(f"Signal detection failed: {e}", exc_info=True)
+            return 0
 
 
 async def main():

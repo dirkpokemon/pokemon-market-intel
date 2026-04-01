@@ -30,12 +30,35 @@ export interface Signal {
   signal_level: string;
   product_name: string;
   product_set?: string;
+  category?: string;
   current_price?: number;
   market_avg_price?: number;
   deal_score?: number;
   description?: string;
+  signal_metadata?: string;
+  confidence?: number;
   priority: number;
   detected_at: string;
+  expires_at?: string;
+}
+
+export interface SetTrend {
+  product_set: string;
+  avg_trend: number;
+  avg_volume_trend: number;
+  card_count: number;
+  avg_price: number;
+}
+
+export interface MarketDigest {
+  total_cards_tracked: number;
+  total_sets: number;
+  total_listings: number;
+  last_analysis_at?: string;
+  signal_counts: Record<string, number>;
+  signal_highlights: Signal[];
+  top_rising_sets: SetTrend[];
+  top_declining_sets: SetTrend[];
 }
 
 export interface DealScore {
@@ -153,6 +176,10 @@ export const marketApi = {
     const query = new URLSearchParams(params as any).toString();
     return apiRequest<DealScore[]>(`/api/v1/deal_scores?${query}`);
   },
+
+  getMarketDigest: async (): Promise<MarketDigest> => {
+    return apiRequest<MarketDigest>('/api/v1/market_digest');
+  },
 };
 
 // Full Catalog Search (searches ALL 171K+ scraped cards)
@@ -180,6 +207,25 @@ export interface NewsArticle {
 export const newsApi = {
   getNews: async (limit: number = 10): Promise<NewsArticle[]> => {
     return apiRequest<NewsArticle[]>(`/api/v1/news?limit=${limit}`);
+  },
+};
+
+// Notification Preferences
+export interface NotificationPrefs {
+  alerts_enabled: boolean;
+  alert_email?: string;
+  telegram_chat_id?: string;
+}
+
+export const notificationApi = {
+  getPrefs: async (): Promise<NotificationPrefs> => {
+    return apiRequest<NotificationPrefs>('/api/v1/auth/notifications/preferences');
+  },
+  updatePrefs: async (prefs: Partial<NotificationPrefs>): Promise<NotificationPrefs> => {
+    return apiRequest<NotificationPrefs>('/api/v1/auth/notifications/preferences', {
+      method: 'PUT',
+      body: JSON.stringify(prefs),
+    });
   },
 };
 

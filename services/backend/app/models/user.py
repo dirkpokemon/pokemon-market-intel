@@ -52,6 +52,11 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
     
+    # Alert preferences
+    alerts_enabled = Column(Boolean, default=True)
+    alert_email = Column(String(255))
+    telegram_chat_id = Column(String(255))
+    
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)

@@ -11,7 +11,7 @@ from sqlalchemy import select
 
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse
+from app.schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse, NotificationPrefsUpdate, NotificationPrefsResponse
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.dependencies import get_current_user
 from app.config import settings
@@ -151,3 +151,41 @@ async def logout():
     by removing the token from storage
     """
     return {"message": "Successfully logged out"}
+
+
+@router.get("/notifications/preferences", response_model=NotificationPrefsResponse)
+async def get_notification_prefs(
+    current_user: User = Depends(get_current_user),
+):
+    """Get the current user's notification preferences."""
+    return NotificationPrefsResponse(
+        alerts_enabled=current_user.alerts_enabled if current_user.alerts_enabled is not None else True,
+        alert_email=current_user.alert_email,
+        telegram_chat_id=current_user.telegram_chat_id,
+    )
+
+
+@router.put("/notifications/preferences", response_model=NotificationPrefsResponse)
+async def update_notification_prefs(
+    prefs: NotificationPrefsUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update the current user's notification preferences."""
+    if prefs.alerts_enabled is not None:
+        current_user.alerts_enabled = prefs.alerts_enabled
+    if prefs.alert_email is not None:
+        current_user.alert_email = prefs.alert_email
+    if prefs.telegram_chat_id is not None:
+        current_user.telegram_chat_id = prefs.telegram_chat_id
+
+    await db.commit()
+    await db.refresh(current_user)
+
+    logger.info(f"User {current_user.email} updated notification preferences")
+
+    return NotificationPrefsResponse(
+        alerts_enabled=current_user.alerts_enabled if current_user.alerts_enabled is not None else True,
+        alert_email=current_user.alert_email,
+        telegram_chat_id=current_user.telegram_chat_id,
+    )
