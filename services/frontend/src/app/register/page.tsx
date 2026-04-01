@@ -12,6 +12,7 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [registered, setRegistered] = useState(false);
+  const [verifyUrl, setVerifyUrl] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +25,8 @@ export default function RegisterPage() {
 
     try {
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
-      await authApi.register(email, password, fullName);
+      const res = await authApi.register(email, password, fullName);
+      if (res.verify_url) setVerifyUrl(res.verify_url);
       setRegistered(true);
     } catch (err: any) {
       setError(err.message || 'Registration failed');
@@ -51,11 +53,24 @@ export default function RegisterPage() {
             <span className="font-medium text-gray-900">{email}</span>
           </p>
 
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 text-left">
-            <p className="text-sm text-gray-600 leading-relaxed">
-              Click the link in your email to activate your account. The link expires in 48 hours. Check your spam folder if you don&apos;t see it within a few minutes.
-            </p>
-          </div>
+          {verifyUrl ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left">
+              <p className="text-sm text-amber-800 font-medium mb-2">Email could not be sent</p>
+              <p className="text-sm text-amber-700 mb-3">Click the button below to verify your account directly:</p>
+              <a
+                href={verifyUrl}
+                className="inline-block bg-gray-900 text-white py-2 px-6 rounded-lg hover:bg-gray-800 transition text-sm font-medium"
+              >
+                Verify My Account
+              </a>
+            </div>
+          ) : (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 text-left">
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Click the link in your email to activate your account. The link expires in 48 hours. Check your spam folder if you don&apos;t see it within a few minutes.
+              </p>
+            </div>
+          )}
 
           <div className="text-sm text-gray-500">
             Already verified?{' '}

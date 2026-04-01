@@ -61,12 +61,20 @@ async def register(
     logger.info("New user registered: %s", new_user.email)
 
     first_name = (user_data.full_name or user_data.email).split()[0]
-    send_verification_email(new_user.email, first_name, token)
+    email_sent = send_verification_email(new_user.email, first_name, token)
 
-    return {
+    frontend_url = settings.FRONTEND_URL.rstrip("/")
+    verify_url = f"{frontend_url}/verify?token={token}"
+
+    result: dict = {
         "message": "Account created. Please check your email to verify your account.",
         "email": new_user.email,
+        "email_sent": email_sent,
     }
+    if not email_sent:
+        result["verify_url"] = verify_url
+
+    return result
 
 
 @router.post("/resend-verification")

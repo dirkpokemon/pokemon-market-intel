@@ -138,8 +138,8 @@ async function apiRequest<T>(
 
 // Authentication
 export const authApi = {
-  register: async (email: string, password: string, full_name?: string): Promise<{ message: string; email: string }> => {
-    return apiRequest<{ message: string; email: string }>('/api/v1/auth/register', {
+  register: async (email: string, password: string, full_name?: string): Promise<{ message: string; email: string; email_sent?: boolean; verify_url?: string }> => {
+    return apiRequest<{ message: string; email: string; email_sent?: boolean; verify_url?: string }>('/api/v1/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password, full_name }),
     });
