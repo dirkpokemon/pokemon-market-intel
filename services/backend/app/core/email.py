@@ -1,14 +1,17 @@
 """
 Email service for sending verification and notification emails.
-Uses aiosmtplib for async SMTP delivery with a beautiful HTML template.
+Supports Resend (HTTPS API) with SMTP fallback.
 """
 
 import logging
 import secrets
 import smtplib
+import json
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, timezone
+from urllib.request import Request, urlopen
+from urllib.error import URLError
 
 from app.config import settings
 
@@ -34,7 +37,7 @@ def _build_verification_html(first_name: str, verify_url: str) -> str:
 
         <!-- Header -->
         <tr><td style="background:linear-gradient(135deg,#111827 0%,#1f2937 100%);padding:36px 40px;text-align:center;">
-          <!-- Pokéball icon -->
+          <!-- Pokeball icon -->
           <div style="margin:0 auto 16px;width:56px;height:56px;border-radius:50%;border:3px solid #fff;position:relative;overflow:hidden;display:inline-block;">
             <div style="position:absolute;top:0;left:0;right:0;height:50%;background:#ef4444;border-radius:28px 28px 0 0;"></div>
             <div style="position:absolute;top:50%;left:0;right:0;height:3px;background:#fff;transform:translateY(-50%);z-index:2;"></div>
@@ -101,7 +104,7 @@ def _build_verification_html(first_name: str, verify_url: str) -> str:
             This link expires in {VERIFICATION_TOKEN_HOURS} hours. If you didn&rsquo;t create an account, you can safely ignore this email.
           </p>
           <p style="color:#d1d5db;font-size:11px;margin:12px 0 0;">
-            &copy; {datetime.utcnow().year} Pok&eacute;mon Market Intel EU
+            &copy; {datetime.now(timezone.utc).year} Pok&eacute;mon Market Intel EU
           </p>
         </td></tr>
 
@@ -115,7 +118,7 @@ def _build_verification_html(first_name: str, verify_url: str) -> str:
 def _build_verification_text(first_name: str, verify_url: str) -> str:
     return (
         f"Welcome, {first_name}!\n\n"
-        f"Thanks for signing up to Pokémon Market Intel EU.\n"
+        f"Thanks for signing up to Pokemon Market Intel EU.\n"
         f"Please verify your email address by clicking the link below:\n\n"
         f"{verify_url}\n\n"
         f"This link expires in {VERIFICATION_TOKEN_HOURS} hours.\n"
@@ -123,24 +126,44 @@ def _build_verification_text(first_name: str, verify_url: str) -> str:
     )
 
 
-def send_verification_email(to_email: str, first_name: str, token: str) -> bool:
-    frontend_url = settings.FRONTEND_URL.rstrip("/")
-    verify_url = f"{frontend_url}/verify?token={token}"
+def _send_via_resend(to_email: str, subject: str, html: str, text: str) -> bool:
+    """Send email via Resend HTTPS API — works on Railway."""
+    api_key = settings.RESEND_API_KEY
+    if not api_key:
+        return False
 
+    from_addr = settings.SMTP_FROM or "Pokemon Market Intel <noreply@pokemonmarketintel.com>"
+
+    payload = json.dumps({
+        "from": from_addr,
+        "to": [to_email],
+        "subject": subject,
+        "html": html,
+        "text": text,
+    }).encode()
+
+    req = Request(
+        "https://api.resend.com/emails",
+        data=payload,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+    )
+
+    try:
+        with urlopen(req, timeout=10) as resp:
+            logger.info("Email sent via Resend to %s (status %d)", to_email, resp.status)
+            return True
+    except URLError as exc:
+        logger.warning("Resend API failed for %s: %s", to_email, exc)
+        return False
+
+
+def _send_via_smtp(to_email: str, msg: MIMEMultipart) -> bool:
+    """Send email via SMTP — works locally, often blocked on cloud."""
     if not settings.SMTP_HOST or not settings.SMTP_USER:
-        logger.warning(
-            "SMTP not configured — printing verification link to console.\n"
-            "  ➜  %s", verify_url,
-        )
-        return True
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Verify your email — Pokémon Market Intel EU"
-    msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
-    msg["To"] = to_email
-
-    msg.attach(MIMEText(_build_verification_text(first_name, verify_url), "plain"))
-    msg.attach(MIMEText(_build_verification_html(first_name, verify_url), "html"))
+        return False
 
     for port, use_ssl in [(465, True), (587, False)]:
         try:
@@ -155,11 +178,40 @@ def send_verification_email(to_email: str, first_name: str, token: str) -> bool:
                     server.ehlo()
                     server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
                     server.send_message(msg)
-            logger.info("Verification email sent to %s via port %d", to_email, port)
+            logger.info("Email sent via SMTP to %s (port %d)", to_email, port)
             return True
         except Exception as exc:
             logger.warning("SMTP port %d failed for %s: %s", port, to_email, exc)
             continue
 
-    logger.error("All SMTP ports failed for %s", to_email)
+    return False
+
+
+def send_verification_email(to_email: str, first_name: str, token: str) -> bool:
+    frontend_url = settings.FRONTEND_URL.rstrip("/")
+    verify_url = f"{frontend_url}/verify?token={token}"
+
+    subject = "Verify your email — Pokemon Market Intel EU"
+    html = _build_verification_html(first_name, verify_url)
+    text = _build_verification_text(first_name, verify_url)
+
+    # 1) Try Resend API (HTTPS — always works on cloud)
+    if _send_via_resend(to_email, subject, html, text):
+        return True
+
+    # 2) Try SMTP (works locally)
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
+    msg["To"] = to_email
+    msg.attach(MIMEText(text, "plain"))
+    msg.attach(MIMEText(html, "html"))
+
+    if _send_via_smtp(to_email, msg):
+        return True
+
+    # 3) Fallback: print link to console
+    logger.warning(
+        "No email transport available — verification link:\n  ➜  %s", verify_url,
+    )
     return False
