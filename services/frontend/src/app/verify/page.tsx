@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { authApi } from '@/lib/api';
 
 type VerifyState = 'loading' | 'success' | 'already' | 'error';
 
-export default function VerifyPage() {
+function VerifyContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const [state, setState] = useState<VerifyState>('loading');
@@ -84,6 +84,40 @@ export default function VerifyPage() {
   };
 
   return (
+    <>
+      {icon[state]}
+
+      <h1 className="text-2xl font-bold text-gray-900 mb-2">{titles[state]}</h1>
+      <p className="text-gray-500 text-sm mb-8">{state === 'error' ? errorMsg || descriptions.error : descriptions[state]}</p>
+
+      {(state === 'success' || state === 'already') && (
+        <Link
+          href="/login"
+          className="inline-block bg-gray-900 text-white py-2.5 px-8 rounded-lg hover:bg-gray-800 transition text-sm font-medium"
+        >
+          Sign In
+        </Link>
+      )}
+
+      {state === 'error' && (
+        <div className="space-y-3">
+          <Link
+            href="/register"
+            className="inline-block bg-gray-900 text-white py-2.5 px-8 rounded-lg hover:bg-gray-800 transition text-sm font-medium"
+          >
+            Try Again
+          </Link>
+          <p className="text-xs text-gray-400">
+            Or <Link href="/login" className="underline">sign in</Link> if you already have an account
+          </p>
+        </div>
+      )}
+    </>
+  );
+}
+
+export default function VerifyPage() {
+  return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
         {/* Logo */}
@@ -97,33 +131,20 @@ export default function VerifyPage() {
           </div>
         </div>
 
-        {icon[state]}
-
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">{titles[state]}</h1>
-        <p className="text-gray-500 text-sm mb-8">{state === 'error' ? errorMsg || descriptions.error : descriptions[state]}</p>
-
-        {(state === 'success' || state === 'already') && (
-          <Link
-            href="/login"
-            className="inline-block bg-gray-900 text-white py-2.5 px-8 rounded-lg hover:bg-gray-800 transition text-sm font-medium"
-          >
-            Sign In
-          </Link>
-        )}
-
-        {state === 'error' && (
-          <div className="space-y-3">
-            <Link
-              href="/register"
-              className="inline-block bg-gray-900 text-white py-2.5 px-8 rounded-lg hover:bg-gray-800 transition text-sm font-medium"
-            >
-              Try Again
-            </Link>
-            <p className="text-xs text-gray-400">
-              Or <Link href="/login" className="underline">sign in</Link> if you already have an account
-            </p>
-          </div>
-        )}
+        <Suspense fallback={
+          <>
+            <div className="mx-auto mb-6 w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center animate-pulse">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Verifying your email...</h1>
+            <p className="text-gray-500 text-sm mb-8">Please wait while we activate your account.</p>
+          </>
+        }>
+          <VerifyContent />
+        </Suspense>
       </div>
     </div>
   );
