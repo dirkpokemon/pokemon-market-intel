@@ -197,7 +197,7 @@ export default function LandingPage() {
                 <span className="px-1 py-0 bg-indigo-100 rounded text-[9px]">PRO</span>
               </div>
               <h3 className="text-3xl font-bold text-gray-900 mb-4">
-                See what's changing — before prices move
+                See what&apos;s changing — before prices move
               </h3>
               <p className="text-gray-500 mb-6 leading-relaxed">
                 Your market command center. Every hour we analyze 170K+ listings and detect momentum shifts, supply changes, volatility spikes, and set-level trends. No more scrolling through marketplaces.
@@ -367,7 +367,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h3 className="text-3xl font-bold text-gray-900 mb-3">Simple Pricing</h3>
-            <p className="text-gray-500">Start free. Upgrade when you're ready.</p>
+            <p className="text-gray-500">Start free. Upgrade when you&apos;re ready.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
