@@ -142,16 +142,24 @@ def send_verification_email(to_email: str, first_name: str, token: str) -> bool:
     msg.attach(MIMEText(_build_verification_text(first_name, verify_url), "plain"))
     msg.attach(MIMEText(_build_verification_html(first_name, verify_url), "html"))
 
-    try:
-        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
-            server.ehlo()
-            if settings.SMTP_PORT != 25:
-                server.starttls()
-                server.ehlo()
-            server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
-            server.send_message(msg)
-        logger.info("Verification email sent to %s", to_email)
-        return True
-    except Exception:
-        logger.exception("Failed to send verification email to %s", to_email)
-        return False
+    for port, use_ssl in [(465, True), (587, False)]:
+        try:
+            if use_ssl:
+                with smtplib.SMTP_SSL(settings.SMTP_HOST, port, timeout=10) as server:
+                    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                    server.send_message(msg)
+            else:
+                with smtplib.SMTP(settings.SMTP_HOST, port, timeout=10) as server:
+                    server.ehlo()
+                    server.starttls()
+                    server.ehlo()
+                    server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                    server.send_message(msg)
+            logger.info("Verification email sent to %s via port %d", to_email, port)
+            return True
+        except Exception as exc:
+            logger.warning("SMTP port %d failed for %s: %s", port, to_email, exc)
+            continue
+
+    logger.error("All SMTP ports failed for %s", to_email)
+    return False
