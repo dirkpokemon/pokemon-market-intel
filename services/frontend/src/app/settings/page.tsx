@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import ProfileModal from '@/components/ProfileModal';
 import OnboardingTour from '@/components/OnboardingTour';
-import { notificationApi } from '@/lib/api';
+import { notificationApi, subscriptionApi } from '@/lib/api';
 
 const NOTIF_PREFS_KEY = 'notification_preferences';
 
@@ -68,6 +68,8 @@ export default function SettingsPage() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
   const [saved, setSaved] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [billingError, setBillingError] = useState('');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -116,6 +118,20 @@ export default function SettingsPage() {
   };
 
   const isPaid = user?.role === 'paid' || user?.role === 'pro' || user?.role === 'admin';
+  const canManageStripeBilling = user?.role === 'paid' || user?.role === 'pro';
+
+  const openBillingPortal = async () => {
+    setBillingError('');
+    setPortalLoading(true);
+    try {
+      const { portal_url } = await subscriptionApi.createPortalSession();
+      window.location.href = portal_url;
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Could not open billing portal';
+      setBillingError(msg);
+      setPortalLoading(false);
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -146,7 +162,7 @@ export default function SettingsPage() {
                 </button>
               )}
             </div>
-            <div className="flex items-center justify-between py-3">
+            <div className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
               <div>
                 <p className="text-sm font-medium text-gray-900">Profile Settings</p>
                 <p className="text-xs text-gray-500">Update your profile information</p>
@@ -157,6 +173,35 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+
+        {canManageStripeBilling && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-2">Subscription &amp; billing</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Cancel your subscription, update your payment method, or download invoices through Stripe&apos;s secure portal.
+              If you cancel, you keep access until the end of your current billing period; then your account returns to the free tier.
+            </p>
+            {billingError && (
+              <div className="mb-3 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                {billingError}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={openBillingPortal}
+              disabled={portalLoading}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {portalLoading && (
+                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" aria-hidden />
+              )}
+              {portalLoading ? 'Opening…' : 'Manage subscription'}
+            </button>
+            <p className="text-xs text-gray-400 mt-3">
+              After changes in Stripe, refresh this page or sign out and back in so your plan updates here.
+            </p>
+          </div>
+        )}
 
         {/* Notifications */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
