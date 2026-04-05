@@ -4,7 +4,7 @@ Processes Stripe events for subscription management
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from fastapi import APIRouter, Request, HTTPException, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -17,6 +17,17 @@ from app.models.user import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/stripe", tags=["Stripe"])
+
+
+def _stripe_ref_id(value) -> str | None:
+    """Stripe JSON sometimes has 'cus_xxx' string, sometimes {'id': 'cus_xxx'}."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict) and value.get("id"):
+        return value["id"]
+    return None
 
 
 @router.post("/webhook")
@@ -66,10 +77,12 @@ async def stripe_webhook(
                 detail="Invalid signature"
             )
         
-        logger.info(f"Received Stripe event: {event['type']}")
-        
-        # Handle different event types
-        if event["type"] == "customer.subscription.created":
+        logger.info("Received Stripe event: %s", event["type"])
+
+        if event["type"] == "checkout.session.completed":
+            await handle_checkout_session_completed(event["data"]["object"], db)
+
+        elif event["type"] == "customer.subscription.created":
             await handle_subscription_created(event["data"]["object"], db)
         
         elif event["type"] == "customer.subscription.updated":
@@ -94,22 +107,79 @@ async def stripe_webhook(
         )
 
 
+async def handle_checkout_session_completed(session: dict, db: AsyncSession):
+    """
+    Reliable upgrade path: Checkout Session includes our metadata (user_id, app_tier).
+    Add event 'checkout.session.completed' in Stripe Dashboard for this webhook.
+    """
+    if session.get("mode") != "subscription":
+        return
+    if session.get("payment_status") not in ("paid", "no_payment_required"):
+        return
+
+    md = session.get("metadata") or {}
+    user_id_str = md.get("user_id")
+    if not user_id_str:
+        logger.error("checkout.session.completed: missing metadata user_id")
+        return
+    try:
+        user_id = int(user_id_str)
+    except ValueError:
+        logger.error("checkout.session.completed: invalid user_id %s", user_id_str)
+        return
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        logger.error("checkout.session.completed: no user with id %s", user_id)
+        return
+
+    customer_id = _stripe_ref_id(session.get("customer"))
+    subscription_id = _stripe_ref_id(session.get("subscription"))
+
+    if customer_id:
+        user.stripe_customer_id = customer_id
+    if subscription_id:
+        user.stripe_subscription_id = subscription_id
+
+    user.subscription_status = "active"
+
+    if user.role != "admin":
+        tier = md.get("app_tier")
+        if tier in ("paid", "pro"):
+            user.role = tier
+        else:
+            user.role = "paid"
+
+    await db.commit()
+    logger.info("checkout.session.completed: user %s role=%s", user.email, user.role)
+
+
 async def handle_subscription_created(subscription: dict, db: AsyncSession):
     """Handle new subscription creation"""
-    customer_id = subscription["customer"]
+    customer_id = _stripe_ref_id(subscription.get("customer"))
     subscription_id = subscription["id"]
     status_value = subscription["status"]
-    
-    # Find user by Stripe customer ID
-    result = await db.execute(
-        select(User).where(User.stripe_customer_id == customer_id)
-    )
-    user = result.scalar_one_or_none()
-    
-    if not user:
-        logger.error(f"User not found for customer {customer_id}")
+
+    if not customer_id:
+        logger.error("subscription.created: missing customer id")
         return
-    
+
+    result = await db.execute(select(User).where(User.stripe_customer_id == customer_id))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        uid = (subscription.get("metadata") or {}).get("user_id")
+        if uid:
+            try:
+                result = await db.execute(select(User).where(User.id == int(uid)))
+                user = result.scalar_one_or_none()
+            except ValueError:
+                user = None
+        if not user:
+            logger.error("User not found for customer %s (metadata user_id=%s)", customer_id, uid)
+            return
+
     user.stripe_subscription_id = subscription_id
     user.subscription_status = status_value
     if user.role != "admin":
@@ -181,7 +251,9 @@ async def handle_subscription_deleted(subscription: dict, db: AsyncSession):
 
 async def handle_payment_succeeded(invoice: dict, db: AsyncSession):
     """Handle successful payment"""
-    customer_id = invoice["customer"]
+    customer_id = _stripe_ref_id(invoice.get("customer"))
+    if not customer_id:
+        return
     subscription_id = invoice.get("subscription")
     
     if not subscription_id:
@@ -206,7 +278,9 @@ async def handle_payment_succeeded(invoice: dict, db: AsyncSession):
 
 async def handle_payment_failed(invoice: dict, db: AsyncSession):
     """Handle failed payment"""
-    customer_id = invoice["customer"]
+    customer_id = _stripe_ref_id(invoice.get("customer"))
+    if not customer_id:
+        return
     
     # Find user
     result = await db.execute(
