@@ -88,7 +88,7 @@ async def get_deal_scores(
     """
     Get deal scores for products
     
-    **Free tier:** Limited to top 10 deals (score ≥ 70)
+    **Free tier:** Limited to top 20 deals (score ≥ 65)
     **Premium tier:** Full access to all deals
     
     Returns active deal scores sorted by score (highest first)
@@ -103,10 +103,10 @@ async def get_deal_scores(
     # Import DealScore model
     from app.models.deal_score import DealScore
     
-    # Apply free tier limits
+    # Apply free tier limits (generous sample; premium gets full catalog)
     if not current_user.is_premium():
-        min_score = max(min_score, 70)  # Free users only see deals ≥ 70
-        limit = min(limit, 10)  # Free users limited to 10 results
+        min_score = max(min_score, 65)
+        limit = min(limit, 20)
     
     # Build query
     query = select(DealScore).where(

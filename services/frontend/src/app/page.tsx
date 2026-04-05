@@ -379,7 +379,7 @@ export default function LandingPage() {
                 <span className="text-gray-400 text-sm">/month</span>
               </div>
               <ul className="space-y-2.5 mb-6">
-                {['Top 10 deals (score 70+)', 'Basic market stats', 'Portfolio tracking', 'Card search (170K+ cards)'].map(f => (
+                {['Top 20 deals (score 65+)', 'Basic market stats', 'Portfolio tracking', 'Card search (170K+ cards)'].map(f => (
                   <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

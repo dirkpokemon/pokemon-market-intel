@@ -12,7 +12,7 @@ const plans = [
     period: '/month',
     description: 'Get started with the basics',
     features: [
-      'Top 10 deal scores (≥70)',
+      'Top 20 deal scores (≥65)',
       'Basic market statistics',
       'Portfolio tracking',
       'Card search (170K+ cards)',

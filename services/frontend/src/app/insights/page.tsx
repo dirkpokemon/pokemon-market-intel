@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import Link from 'next/link';
 import { marketApi, DealScore, Signal } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import dynamic from 'next/dynamic';
@@ -12,10 +13,22 @@ export default function MarketPulsePage() {
   const [dealScores, setDealScores] = useState<DealScore[]>([]);
   const [signals, setSignals] = useState<Signal[]>([]);
   const [moversTab, setMoversTab] = useState<'rising' | 'falling'>('rising');
+  const [user, setUser] = useState<{ role?: string } | null>(null);
 
   useEffect(() => {
+    const raw = localStorage.getItem('user');
+    if (raw) {
+      try {
+        setUser(JSON.parse(raw));
+      } catch {
+        setUser(null);
+      }
+    }
     loadData();
   }, []);
+
+  const isPremium =
+    user?.role === 'paid' || user?.role === 'pro' || user?.role === 'admin';
 
   const loadData = async () => {
     try {
@@ -116,7 +129,7 @@ export default function MarketPulsePage() {
   const getSentimentConfig = (bias: string) => {
     switch (bias) {
       case 'bullish':
-        return { label: 'Buyer\'s Market', desc: 'Many cards priced below market average', color: 'text-green-700', bg: 'bg-green-50 border-green-200', icon: '📈' };
+        return { label: "Buyer's Market", desc: 'Many cards priced below market average', color: 'text-green-700', bg: 'bg-green-50 border-green-200', icon: '📈' };
       case 'bearish':
         return { label: 'Seller\'s Market', desc: 'Prices trending above market averages', color: 'text-amber-700', bg: 'bg-amber-50 border-amber-200', icon: '📉' };
       default:
@@ -132,6 +145,19 @@ export default function MarketPulsePage() {
           <h1 className="text-2xl font-bold text-gray-900">Market Pulse</h1>
           <p className="text-sm text-gray-500 mt-1">Real-time overview of the EU Pokémon TCG market</p>
         </div>
+
+        {!loading && !isPremium && (
+          <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <p className="font-medium text-amber-950">Free plan — sample view</p>
+            <p className="mt-1 text-amber-800">
+              Charts and stats below are based on a sample of the strongest deals (same limits as Top Deals).{' '}
+              <Link href="/pricing" className="font-semibold underline hover:text-amber-950">
+                Upgrade
+              </Link>{' '}
+              for the full deal catalog and live market signals.
+            </p>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -180,7 +206,16 @@ export default function MarketPulsePage() {
               </div>
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <p className="text-xs text-gray-500 font-medium mb-1">Active Signals</p>
-                <p className="text-2xl font-bold text-gray-900">{signals.length}</p>
+                {isPremium || signals.length > 0 ? (
+                  <p className="text-2xl font-bold text-gray-900">{signals.length}</p>
+                ) : (
+                  <div>
+                    <p className="text-lg font-bold text-indigo-600">Premium</p>
+                    <Link href="/pricing" className="text-xs text-indigo-600 hover:underline font-medium">
+                      View Market Intelligence →
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -332,12 +367,14 @@ export default function MarketPulsePage() {
               </div>
             </div>
 
-            {/* Signal Summary */}
-            {signals.length > 0 && (
+            {/* Signal Summary — premium only, or CTA for free users */}
+            {signals.length > 0 ? (
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-gray-900">Active Signals Summary</h3>
-                  <a href="/signals" className="text-xs text-gray-500 hover:text-gray-700 font-medium">View all →</a>
+                  <Link href="/signals" className="text-xs text-gray-500 hover:text-gray-700 font-medium">
+                    View all →
+                  </Link>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center p-4 rounded-lg bg-red-50">
@@ -354,6 +391,22 @@ export default function MarketPulsePage() {
                   </div>
                 </div>
               </div>
+            ) : (
+              !isPremium && (
+                <div className="rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 p-6">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Market Intelligence</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Momentum, supply shifts, set trends, and risk signals are not included on the Free plan. Upgrade to
+                    see the full signal feed on the Market Intel page.
+                  </p>
+                  <Link
+                    href="/pricing"
+                    className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition"
+                  >
+                    Upgrade to Premium
+                  </Link>
+                </div>
+              )
             )}
           </>
         ) : (
