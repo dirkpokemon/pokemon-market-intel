@@ -1,61 +1,154 @@
 'use client';
 
-import { useState } from 'react';
+import Link from 'next/link';
+import { useMemo, useState } from 'react';
+
+export type TourUser = { role?: string } | null | undefined;
+
+function isPremiumUser(user: TourUser): boolean {
+  const r = user?.role || 'free';
+  return ['paid', 'pro', 'admin'].includes(r);
+}
+
+type TourStep = {
+  title: string;
+  description: string;
+  position: 'center' | 'top';
+  target?: string;
+  actionLink?: { href: string; label: string };
+};
+
+function freeTourSteps(): TourStep[] {
+  return [
+    {
+      title: 'Welcome to Pokémon Market Intel',
+      description:
+        'We help you spot strong Pokémon card deals across the EU: search the catalogue, compare deal scores, and track what you own or want.',
+      position: 'center',
+    },
+    {
+      title: 'Search the full catalogue',
+      description:
+        'On Home, use the search bar to find cards across a large EU listing index. Choose how results are sorted (relevance, price, or number of listings).',
+      position: 'top',
+      target: 'search',
+    },
+    {
+      title: 'Your dashboard at a glance',
+      description:
+        'Stat cards and deal highlights summarise what the market looks like right now. Use them as a quick pulse before you open individual cards.',
+      position: 'top',
+      target: 'kpis',
+    },
+    {
+      title: 'Market Intel (subscribers)',
+      description:
+        'Richer market signals and intel live under Market Intel in the sidebar. That area is included with a subscription—useful if you want ideas beyond deal scores alone.',
+      position: 'top',
+      target: 'signals',
+      actionLink: { href: '/pricing', label: 'View plans' },
+    },
+    {
+      title: 'Top deals & Deal Score',
+      description:
+        'Deal Scores from 0–100 rank how attractive a price looks versus the broader market. Open a card for more context and buy links when we have them.',
+      position: 'top',
+      target: 'deals',
+    },
+    {
+      title: 'Portfolio & watchlist',
+      description:
+        'Track collection value and watch cards you care about under Portfolio—My Collection and My Watchlist keep everything in one place.',
+      position: 'top',
+      target: 'portfolio',
+    },
+    {
+      title: 'Tips',
+      description:
+        'Portfolio and watchlist data is stored in this browser. You can replay this tour anytime from Settings if you want a refresher.',
+      position: 'center',
+    },
+    {
+      title: "You're ready",
+      description:
+        'Explore Home and Top Deals, build your portfolio, and subscribe when you want Market Intel. Good luck trading.',
+      position: 'center',
+    },
+  ];
+}
+
+function premiumTourSteps(): TourStep[] {
+  return [
+    {
+      title: 'Welcome — full access',
+      description:
+        'Your plan includes Market Intel and the rest of the toolkit. Here is how everything fits together in a short walkthrough.',
+      position: 'center',
+    },
+    {
+      title: 'Search the catalogue',
+      description:
+        'From Home, search across a large EU index. Switch sorting to focus on relevance, price, or how many listings support each card.',
+      position: 'top',
+      target: 'search',
+    },
+    {
+      title: 'Dashboard overview',
+      description:
+        'KPIs and previews summarise deals and, when available, recent signal activity. It is a good starting point every time you log in.',
+      position: 'top',
+      target: 'kpis',
+    },
+    {
+      title: 'Market Intel',
+      description:
+        'Use Market Intel in the sidebar for signals and deeper reads. That space is built for subscribers—open it when you want narrative and ideas next to raw scores.',
+      position: 'top',
+      target: 'signals',
+      actionLink: { href: '/signals', label: 'Open Market Intel' },
+    },
+    {
+      title: 'Top deals',
+      description:
+        'Deal Score highlights strong prices versus the market average. Click through for detail and purchase links where available.',
+      position: 'top',
+      target: 'deals',
+    },
+    {
+      title: 'Portfolio',
+      description:
+        'My Collection and My Watchlist help you track value and price targets over time.',
+      position: 'top',
+      target: 'portfolio',
+    },
+    {
+      title: 'Alerts & settings',
+      description:
+        'Tune email or Telegram alerts and other preferences under Settings so notifications match how you like to trade.',
+      position: 'center',
+      actionLink: { href: '/settings', label: 'Go to Settings' },
+    },
+    {
+      title: "You're set",
+      description:
+        'Dive into signals, deals, and your portfolio whenever you like. Use Feedback in the sidebar if something is unclear—we read it.',
+      position: 'center',
+    },
+  ];
+}
 
 interface OnboardingTourProps {
   onComplete: () => void;
+  user?: TourUser;
 }
 
-export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
-  const [currentStep, setCurrentStep] = useState(0);
+export default function OnboardingTour({ onComplete, user }: OnboardingTourProps) {
+  const steps = useMemo(
+    () => (isPremiumUser(user) ? premiumTourSteps() : freeTourSteps()),
+    [user?.role]
+  );
 
-  const steps = [
-    {
-      title: "👋 Welcome to Pokemon Market Intel!",
-      description: "Your AI-powered platform for finding the best Pokemon card deals in the EU market. Let me show you around!",
-      position: "center"
-    },
-    {
-      title: "🔍 Search & Filter",
-      description: "Use the search bar to find specific cards, and advanced filters to narrow down by price, score, or category. Try quick chips like 'Excellent Only' or 'Under €50' for instant filtering.",
-      target: "search",
-      position: "top"
-    },
-    {
-      title: "📊 Market at a Glance",
-      description: "Get an instant overview: total deals, average scores, excellent opportunities, and active signals — all in one place.",
-      target: "kpis",
-      position: "top"
-    },
-    {
-      title: "⚡ Price Signals (PRO)",
-      description: "PRO users get AI-powered market signals! Spot undervalued cards, momentum shifts, and cross-country arbitrage before anyone else.",
-      target: "signals",
-      position: "top"
-    },
-    {
-      title: "💰 Top Deals",
-      description: "Browse the best deals with our Deal Score system (0-100). Click any card to see detailed info, price history, and direct buy links!",
-      target: "deals",
-      position: "top"
-    },
-    {
-      title: "📦 Portfolio",
-      description: "Track your collection value and set price targets on cards you want. Your portfolio has two tabs: My Collection and My Watchlist.",
-      target: "portfolio",
-      position: "top"
-    },
-    {
-      title: "⌨️ Pro Tips",
-      description: "Use the search bar to find any card from 170,000+ listings. All your collection and watchlist data is saved automatically!",
-      position: "center"
-    },
-    {
-      title: "🚀 You're All Set!",
-      description: "Start exploring deals, build your portfolio, and find the best Pokemon card opportunities in the EU market. Happy trading!",
-      position: "center"
-    }
-  ];
+  const [currentStep, setCurrentStep] = useState(0);
 
   const currentStepData = steps[currentStep];
 
@@ -79,23 +172,23 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
 
   return (
     <>
-      {/* Backdrop */}
       <div className="fixed inset-0 bg-black bg-opacity-60 z-50 transition-opacity" />
 
-      {/* Tour Modal */}
-      <div className={`fixed z-50 ${
-        currentStepData.position === 'center' 
-          ? 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2'
-          : 'top-24 left-1/2 transform -translate-x-1/2'
-      }`}>
+      <div
+        className={`fixed z-50 ${
+          currentStepData.position === 'center'
+            ? 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2'
+            : 'top-24 left-1/2 transform -translate-x-1/2'
+        }`}
+      >
         <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
-          {/* Header */}
           <div className="bg-gray-900 p-6 text-white">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xl font-bold">{currentStepData.title}</h3>
+            <div className="flex items-center justify-between mb-2 gap-3">
+              <h3 className="text-xl font-bold leading-snug">{currentStepData.title}</h3>
               <button
+                type="button"
                 onClick={handleSkip}
-                className="text-white/80 hover:text-white text-sm"
+                className="text-white/80 hover:text-white text-sm shrink-0"
               >
                 ✕
               </button>
@@ -112,20 +205,28 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
             </div>
           </div>
 
-          {/* Content */}
           <div className="p-6">
-            <p className="text-gray-700 leading-relaxed mb-6">
-              {currentStepData.description}
-            </p>
+            <p className="text-gray-700 leading-relaxed mb-4">{currentStepData.description}</p>
 
-            {/* Navigation */}
-            <div className="flex items-center justify-between">
+            {currentStepData.actionLink && (
+              <div className="mb-6">
+                <Link
+                  href={currentStepData.actionLink.href}
+                  className="inline-flex text-sm font-semibold text-gray-900 underline underline-offset-2 hover:text-gray-600"
+                >
+                  {currentStepData.actionLink.label} →
+                </Link>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between flex-wrap gap-3">
               <div className="text-sm text-gray-500">
                 Step {currentStep + 1} of {steps.length}
               </div>
               <div className="flex gap-2">
                 {currentStep > 0 && (
                   <button
+                    type="button"
                     onClick={handlePrevious}
                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
                   >
@@ -134,6 +235,7 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
                 )}
                 {currentStep < steps.length - 1 ? (
                   <button
+                    type="button"
                     onClick={handleNext}
                     className="px-6 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition"
                   >
@@ -141,18 +243,19 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
                   </button>
                 ) : (
                   <button
+                    type="button"
                     onClick={handleNext}
                     className="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition"
                   >
-                    Get Started! 🚀
+                    Get started
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Skip */}
             {currentStep < steps.length - 1 && (
               <button
+                type="button"
                 onClick={handleSkip}
                 className="w-full mt-3 text-sm text-gray-500 hover:text-gray-700"
               >

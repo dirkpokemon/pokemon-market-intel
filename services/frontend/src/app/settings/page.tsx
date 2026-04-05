@@ -322,7 +322,7 @@ export default function SettingsPage() {
         <ProfileModal user={user} onClose={() => setShowProfile(false)} onSave={(data) => { console.log('Profile updated:', data); setShowProfile(false); }} />
       )}
       {showOnboarding && (
-        <OnboardingTour onComplete={() => setShowOnboarding(false)} />
+        <OnboardingTour user={user} onComplete={() => setShowOnboarding(false)} />
       )}
     </DashboardLayout>
   );

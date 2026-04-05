@@ -590,10 +590,13 @@ export default function HomePage() {
 
       {/* Onboarding Tour */}
       {showOnboarding && (
-        <OnboardingTour onComplete={() => {
-          setShowOnboarding(false);
-          localStorage.setItem('onboarding_completed', 'true');
-        }} />
+        <OnboardingTour
+          user={user}
+          onComplete={() => {
+            setShowOnboarding(false);
+            localStorage.setItem('onboarding_completed', 'true');
+          }}
+        />
       )}
     </DashboardLayout>
   );
