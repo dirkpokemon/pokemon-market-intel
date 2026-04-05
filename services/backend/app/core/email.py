@@ -187,6 +187,81 @@ def _send_via_smtp(to_email: str, msg: MIMEMultipart) -> bool:
     return False
 
 
+def _build_subscription_success_html(first_name: str, plan_label: str, app_url: str) -> str:
+    year = datetime.now(timezone.utc).year
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:40px 0;">
+    <tr><td align="center">
+      <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <tr><td style="background:linear-gradient(135deg,#111827 0%,#1f2937 100%);padding:36px 40px;text-align:center;">
+          <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;">Pok&eacute;mon Market Intel EU</h1>
+          <p style="color:#9ca3af;font-size:13px;margin:8px 0 0;">Subscription active</p>
+        </td></tr>
+        <tr><td style="padding:36px 40px;">
+          <h2 style="color:#111827;font-size:20px;font-weight:700;margin:0 0 12px;">You&rsquo;re in, {first_name}!</h2>
+          <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
+            Your <strong style="color:#111827;">{plan_label}</strong> subscription is active. You now have full access to Market Intel, deal scores, and the rest of your plan.
+          </p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr><td align="center" style="padding:0 0 24px;">
+              <a href="{app_url}" target="_blank" style="display:inline-block;background:#111827;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:10px;">
+                Open your dashboard
+              </a>
+            </td></tr>
+          </table>
+          <p style="color:#9ca3af;font-size:13px;line-height:1.5;margin:0;">
+            Manage billing anytime from your account settings (Stripe customer portal).
+          </p>
+        </td></tr>
+        <tr><td style="padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
+          <p style="color:#d1d5db;font-size:11px;margin:0;">&copy; {year} Pok&eacute;mon Market Intel EU</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+
+def _build_subscription_success_text(first_name: str, plan_label: str, app_url: str) -> str:
+    return (
+        f"Hi {first_name},\n\n"
+        f"Your {plan_label} subscription for Pokemon Market Intel EU is now active.\n"
+        f"Open your dashboard: {app_url}\n\n"
+        f"You can manage billing from your account settings.\n"
+    )
+
+
+def send_subscription_success_email(to_email: str, first_name: str, plan_label: str) -> bool:
+    """Send confirmation after a successful subscription checkout."""
+    app_url = settings.FRONTEND_URL.rstrip("/") + "/home"
+    subject = f"You are subscribed - {plan_label} | Pokemon Market Intel EU"
+    html = _build_subscription_success_html(first_name, plan_label, app_url)
+    text = _build_subscription_success_text(first_name, plan_label, app_url)
+
+    if _send_via_brevo(to_email, subject, html, text):
+        return True
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
+    if not msg["From"]:
+        logger.warning("No SMTP_FROM/SMTP_USER for subscription success email")
+        return False
+    msg["To"] = to_email
+    msg.attach(MIMEText(text, "plain"))
+    msg.attach(MIMEText(html, "html"))
+
+    if _send_via_smtp(to_email, msg):
+        return True
+
+    logger.warning("Could not send subscription success email to %s (no Brevo/SMTP)", to_email)
+    return False
+
+
 def send_verification_email(to_email: str, first_name: str, token: str) -> bool:
     frontend_url = settings.FRONTEND_URL.rstrip("/")
     verify_url = f"{frontend_url}/verify?token={token}"

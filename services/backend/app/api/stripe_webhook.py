@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.config import settings
+from app.core.email import send_subscription_success_email
 from app.core.stripe_prices import role_from_subscription
 from app.database import get_db
 from app.models.user import User
@@ -153,6 +154,15 @@ async def handle_checkout_session_completed(session: dict, db: AsyncSession):
 
     await db.commit()
     logger.info("checkout.session.completed: user %s role=%s", user.email, user.role)
+
+    if user.role in ("paid", "pro"):
+        try:
+            first_name = (user.full_name or user.email or "there").split()[0]
+            plan_label = "Pro" if user.role == "pro" else "Paid"
+            if send_subscription_success_email(user.email, first_name, plan_label):
+                logger.info("Subscription success email sent to %s", user.email)
+        except Exception as exc:
+            logger.warning("Subscription success email failed for %s: %s", user.email, exc)
 
 
 async def handle_subscription_created(subscription: dict, db: AsyncSession):
