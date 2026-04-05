@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { subscriptionApi } from '@/lib/api';
+import SiteFooter from '@/components/SiteFooter';
 
 const plans = [
   {
@@ -84,7 +85,7 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white flex flex-col">
       {/* Header */}
       <header className="border-b border-gray-100 sticky top-0 z-50 bg-white/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
@@ -103,7 +104,7 @@ export default function PricingPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
+      <main className="flex-1 max-w-5xl mx-auto px-4 py-20 sm:px-6 lg:px-8 w-full">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-gray-900 mb-3">Simple, Transparent Pricing</h2>
           <p className="text-gray-500">Start free. Upgrade when you need full market intelligence.</p>
@@ -166,6 +167,8 @@ export default function PricingPage() {
 
         <p className="text-center text-xs text-gray-400 mt-8">30-day money-back guarantee. Cancel anytime. No questions asked.</p>
       </main>
+
+      <SiteFooter />
     </div>
   );
 }

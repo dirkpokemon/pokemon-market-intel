@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { authApi } from '@/lib/api';
+import SiteFooter from '@/components/SiteFooter';
 
 type VerifyState = 'loading' | 'success' | 'already' | 'error';
 
@@ -118,7 +119,8 @@ function VerifyContent() {
 
 export default function VerifyPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="flex-1 flex items-center justify-center px-4 py-10">
       <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
         {/* Logo */}
         <div className="flex justify-center mb-6">
@@ -146,6 +148,8 @@ export default function VerifyPage() {
           <VerifyContent />
         </Suspense>
       </div>
+      </div>
+      <SiteFooter />
     </div>
   );
 }

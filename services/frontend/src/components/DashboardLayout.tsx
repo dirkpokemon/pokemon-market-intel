@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from './Sidebar';
+import SiteFooter from './SiteFooter';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -40,12 +41,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Sidebar user={user} />
       {/* Main content — offset by sidebar width */}
-      <main className="lg:ml-[240px] min-h-screen transition-all duration-200">
-        {children}
-      </main>
+      <div className="lg:ml-[240px] flex flex-col flex-1 min-h-0 transition-all duration-200">
+        <main className="flex-1">{children}</main>
+        <SiteFooter />
+      </div>
     </div>
   );
 }

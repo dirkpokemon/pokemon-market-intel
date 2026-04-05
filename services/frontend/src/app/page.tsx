@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import SiteFooter from '@/components/SiteFooter';
 
 // ─── Poké Ball Logo ───────────────────────────────────────────────
 function PokeBall({ size = 40 }: { size?: number }) {
@@ -473,20 +474,7 @@ export default function LandingPage() {
         </button>
       </section>
 
-      {/* ═══ Footer ═══ */}
-      <footer className="border-t border-gray-100 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <PokeBall size={24} />
-            <span className="text-sm font-medium text-gray-500">Pokemon Market Intel EU</span>
-          </div>
-          <div className="flex gap-6 text-sm text-gray-400">
-            <Link href="/pricing" className="hover:text-gray-600">Pricing</Link>
-            <Link href="/login" className="hover:text-gray-600">Login</Link>
-            <span>&copy; 2026</span>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter showMarketingLinks />
     </div>
   );
 }

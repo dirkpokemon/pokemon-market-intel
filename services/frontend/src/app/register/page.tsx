@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { authApi } from '@/lib/api';
+import SiteFooter from '@/components/SiteFooter';
 
 export default function RegisterPage() {
   const [firstName, setFirstName] = useState('');
@@ -37,7 +38,8 @@ export default function RegisterPage() {
 
   if (registered) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <div className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
           {/* Envelope icon */}
           <div className="mx-auto mb-6 w-16 h-16 rounded-full bg-gray-900 flex items-center justify-center">
@@ -79,12 +81,15 @@ export default function RegisterPage() {
             </Link>
           </div>
         </div>
+        </div>
+        <SiteFooter />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="flex-1 flex items-center justify-center px-4 py-10">
       <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-8">
         {/* Logo */}
         <div className="flex justify-center mb-6">
@@ -188,6 +193,8 @@ export default function RegisterPage() {
           </Link>
         </div>
       </div>
+      </div>
+      <SiteFooter />
     </div>
   );
 }
