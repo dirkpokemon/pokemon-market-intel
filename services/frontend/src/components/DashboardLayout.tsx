@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { authApi } from '@/lib/api';
 import Sidebar from './Sidebar';
 import SiteFooter from './SiteFooter';
 
@@ -17,16 +18,44 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     const userData = localStorage.getItem('user');
-    
+
     if (!token) {
       router.push('/login');
       return;
     }
-    
+
     if (userData) {
-      setUser(JSON.parse(userData));
+      try {
+        setUser(JSON.parse(userData));
+      } catch {
+        /* ignore */
+      }
     }
-    setAuthChecked(true);
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const me = await authApi.getMe();
+        if (cancelled) return;
+        setUser(me);
+        localStorage.setItem('user', JSON.stringify(me));
+      } catch (e: unknown) {
+        if (cancelled) return;
+        const status = (e as { status?: number })?.status;
+        if (status === 401) {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('user');
+          router.push('/login');
+          return;
+        }
+      } finally {
+        if (!cancelled) setAuthChecked(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   if (!authChecked) {

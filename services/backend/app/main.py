@@ -80,9 +80,10 @@ async def root():
 
 
 # Import and include routers
-from app.api import auth, market, subscriptions, stripe_webhook
+from app.api import auth, market, subscriptions, stripe_webhook, admin
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(market.router, prefix="/api/v1")
 app.include_router(subscriptions.router, prefix="/api/v1")
 app.include_router(stripe_webhook.router, prefix="/api/v1")
+app.include_router(admin.router, prefix="/api/v1")

@@ -241,6 +241,42 @@ export const notificationApi = {
 };
 
 // Subscriptions
+export interface AdminScrapeLogRow {
+  source?: string | null;
+  status?: string | null;
+  items_scraped?: number | null;
+  errors_count?: number | null;
+  started_at?: string | null;
+  completed_at?: string | null;
+  error_message?: string | null;
+}
+
+export interface AdminUserSummary {
+  id: number;
+  email: string;
+  role: string;
+  is_verified: boolean;
+  created_at?: string | null;
+}
+
+export interface AdminStatsResponse {
+  users_total: number;
+  users_verified: number;
+  users_by_role: Record<string, number>;
+  raw_prices_count: number;
+  raw_distinct_cards: number;
+  signals_active: number;
+  deal_scores_active: number;
+  last_scrapes: AdminScrapeLogRow[];
+  recent_users: AdminUserSummary[];
+}
+
+export const adminApi = {
+  getStats: async (): Promise<AdminStatsResponse> => {
+    return apiRequest<AdminStatsResponse>('/api/v1/admin/stats');
+  },
+};
+
 export const subscriptionApi = {
   getStatus: async () => {
     return apiRequest('/api/v1/subscriptions/status');
