@@ -125,7 +125,8 @@ export default function RegisterPage() {
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
+                disabled={loading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm disabled:bg-gray-50 disabled:text-gray-500"
                 placeholder="John"
               />
             </div>
@@ -139,7 +140,8 @@ export default function RegisterPage() {
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
+                disabled={loading}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm disabled:bg-gray-50 disabled:text-gray-500"
                 placeholder="Doe"
               />
             </div>
@@ -155,7 +157,8 @@ export default function RegisterPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
+              disabled={loading}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm disabled:bg-gray-50 disabled:text-gray-500"
               placeholder="you@example.com"
             />
           </div>
@@ -171,7 +174,8 @@ export default function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm"
+              disabled={loading}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm disabled:bg-gray-50 disabled:text-gray-500"
               placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
             />
             <p className="mt-1 text-xs text-gray-400">At least 8 characters</p>
@@ -180,9 +184,16 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gray-900 text-white py-2.5 px-4 rounded-lg hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition text-sm font-medium"
+            aria-busy={loading}
+            className="w-full bg-gray-900 text-white py-2.5 px-4 rounded-lg hover:bg-gray-800 transition text-sm font-medium flex items-center justify-center gap-2 min-h-[42px] disabled:opacity-90 disabled:cursor-wait disabled:hover:bg-gray-900"
           >
-            {loading ? 'Creating account...' : 'Create Account'}
+            {loading && (
+              <span
+                className="h-4 w-4 shrink-0 rounded-full border-2 border-white/25 border-t-white animate-spin"
+                aria-hidden
+              />
+            )}
+            <span>{loading ? 'Creating account…' : 'Create Account'}</span>
           </button>
         </form>
 
