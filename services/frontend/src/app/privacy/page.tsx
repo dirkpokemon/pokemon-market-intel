@@ -88,8 +88,10 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-sm font-semibold text-gray-900 mt-6 mb-2">Cookies</h2>
             <p>
-              We use cookies or similar technologies where needed for login sessions and core functionality. Any
-              non-essential tracking will be described here if we add it.
+              We use cookies or similar technologies where needed for login sessions and core functionality. We do not
+              use third-party marketing cookies at this time. When you first visit, you may see a short notice at the
+              bottom of the screen; if you click OK, we store that you have seen it locally in your browser so we
+              don&apos;t show it again. Any non-essential tracking will be described here if we add it.
             </p>
           </section>
 
