@@ -277,7 +277,17 @@ export const adminApi = {
   },
 };
 
+export interface PlanPricesResponse {
+  stripe_price_paid?: string | null;
+  stripe_price_pro?: string | null;
+}
+
 export const subscriptionApi = {
+  /** Public: Stripe price IDs from backend (works when NEXT_PUBLIC_STRIPE_* missing at build). */
+  getPlanPrices: async (): Promise<PlanPricesResponse> => {
+    return apiRequest<PlanPricesResponse>('/api/v1/subscriptions/plan-prices');
+  },
+
   getStatus: async () => {
     return apiRequest('/api/v1/subscriptions/status');
   },

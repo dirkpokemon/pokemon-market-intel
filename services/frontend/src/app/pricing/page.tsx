@@ -1,68 +1,49 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { subscriptionApi } from '@/lib/api';
 import SiteFooter from '@/components/SiteFooter';
 
-const plans = [
-  {
-    name: 'Free',
-    price: '€0',
-    period: '/month',
-    description: 'Get started with the basics',
-    features: [
-      'Top 20 deal scores (≥65)',
-      'Basic market statistics',
-      'Portfolio tracking',
-      'Card search (170K+ cards)',
-      'Community support',
-    ],
-    cta: 'Current Plan',
-    disabled: true,
-    priceId: null,
-  },
-  {
-    name: 'Paid',
-    price: '€19',
-    period: '/month',
-    description: 'Full market intelligence access',
-    features: [
-      'All deal scores (no limits)',
-      'Market Intelligence signals',
-      'Set trends & supply monitoring',
-      'Email & Telegram alerts',
-      'Real-time data (no lag)',
-      'Priority support',
-    ],
-    cta: 'Start Free Trial',
-    highlighted: true,
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PAID,
-  },
-  {
-    name: 'Pro',
-    price: '€49',
-    period: '/month',
-    description: 'For serious traders & shops',
-    features: [
-      'Everything in Paid',
-      'API access',
-      'Historical data export',
-      'Custom alert rules',
-      'White-label reports',
-      'Dedicated support',
-    ],
-    cta: 'Go Pro',
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO,
-  },
-];
+const PLAN_FEATURES = {
+  free: [
+    'Top 20 deal scores (≥65)',
+    'Basic market statistics',
+    'Portfolio tracking',
+    'Card search (170K+ cards)',
+    'Community support',
+  ],
+  paid: [
+    'All deal scores (no limits)',
+    'Market Intelligence signals',
+    'Set trends & supply monitoring',
+    'Email & Telegram alerts',
+    'Real-time data (no lag)',
+    'Priority support',
+  ],
+  pro: [
+    'Everything in Paid',
+    'API access',
+    'Historical data export',
+    'Custom alert rules',
+    'White-label reports',
+    'Dedicated support',
+  ],
+} as const;
 
 export default function PricingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [canceledNotice, setCanceledNotice] = useState(false);
+  const [stripePrices, setStripePrices] = useState<{
+    paid?: string;
+    pro?: string;
+  }>(() => ({
+    paid: process.env.NEXT_PUBLIC_STRIPE_PRICE_PAID || undefined,
+    pro: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO || undefined,
+  }));
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -73,9 +54,69 @@ export default function PricingPage() {
     }
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const p = await subscriptionApi.getPlanPrices();
+        if (cancelled) return;
+        setStripePrices({
+          paid: p.stripe_price_paid?.trim() || undefined,
+          pro: p.stripe_price_pro?.trim() || undefined,
+        });
+      } catch {
+        /* keep build-time env fallback */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const plans = useMemo(
+    () => [
+      {
+        name: 'Free',
+        price: '€0',
+        period: '/month',
+        description: 'Get started with the basics',
+        features: [...PLAN_FEATURES.free],
+        cta: 'Current Plan',
+        disabled: true,
+        priceId: null as string | null,
+        highlighted: false,
+      },
+      {
+        name: 'Paid',
+        price: '€19',
+        period: '/month',
+        description: 'Full market intelligence access',
+        features: [...PLAN_FEATURES.paid],
+        cta: 'Start Free Trial',
+        disabled: false,
+        priceId: stripePrices.paid || null,
+        highlighted: true,
+      },
+      {
+        name: 'Pro',
+        price: '€49',
+        period: '/month',
+        description: 'For serious traders & shops',
+        features: [...PLAN_FEATURES.pro],
+        cta: 'Go Pro',
+        disabled: false,
+        priceId: stripePrices.pro || null,
+        highlighted: false,
+      },
+    ],
+    [stripePrices.paid, stripePrices.pro]
+  );
+
   const handleSubscribe = async (priceId: string | null | undefined, planName: string) => {
     if (!priceId) {
-      setError('This plan is not configured yet. Set NEXT_PUBLIC_STRIPE_PRICE_PAID / NEXT_PUBLIC_STRIPE_PRICE_PRO in the frontend environment.');
+      setError(
+        'This plan has no Stripe price on the server. Set STRIPE_PRICE_PAID and STRIPE_PRICE_PRO on the backend (Railway), redeploy the API, then refresh this page.'
+      );
       return;
     }
 

@@ -4,7 +4,7 @@ Handles user subscription management and Stripe integration
 """
 
 import logging
-from typing import Dict
+from typing import Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
@@ -24,6 +24,26 @@ router = APIRouter(prefix="/subscriptions", tags=["Subscriptions"])
 
 class CheckoutRequest(BaseModel):
     price_id: str = Field(..., min_length=1, description="Stripe Price ID for the subscription plan")
+
+
+class PlanPricesResponse(BaseModel):
+    """Public Stripe Price IDs for the pricing page (not secret)."""
+
+    stripe_price_paid: Optional[str] = None
+    stripe_price_pro: Optional[str] = None
+
+
+@router.get("/plan-prices", response_model=PlanPricesResponse)
+async def get_plan_prices():
+    """
+    Price IDs for Paid / Pro tiers. Used by the frontend when Docker build
+    did not receive NEXT_PUBLIC_STRIPE_* (e.g. Railway without build-args).
+    Configure STRIPE_PRICE_PAID and STRIPE_PRICE_PRO on the backend.
+    """
+    return PlanPricesResponse(
+        stripe_price_paid=settings.stripe_paid_price_id or None,
+        stripe_price_pro=settings.stripe_pro_price_id or None,
+    )
 
 
 @router.get("/status", response_model=SubscriptionResponse)

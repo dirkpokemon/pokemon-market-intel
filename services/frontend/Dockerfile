@@ -18,9 +18,13 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Build arguments
+# Build arguments (Railway: set as service variables so they are passed as build args)
 ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_STRIPE_PRICE_PAID
+ARG NEXT_PUBLIC_STRIPE_PRICE_PRO
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_STRIPE_PRICE_PAID=${NEXT_PUBLIC_STRIPE_PRICE_PAID}
+ENV NEXT_PUBLIC_STRIPE_PRICE_PRO=${NEXT_PUBLIC_STRIPE_PRICE_PRO}
 
 # Build Next.js application
 RUN npm run build
