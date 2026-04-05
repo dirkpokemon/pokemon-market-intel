@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { subscriptionApi } from '@/lib/api';
@@ -62,9 +62,22 @@ export default function PricingPage() {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [canceledNotice, setCanceledNotice] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('canceled') === '1') {
+      setCanceledNotice(true);
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   const handleSubscribe = async (priceId: string | null | undefined, planName: string) => {
-    if (!priceId) return;
+    if (!priceId) {
+      setError('This plan is not configured yet. Set NEXT_PUBLIC_STRIPE_PRICE_PAID / NEXT_PUBLIC_STRIPE_PRICE_PRO in the frontend environment.');
+      return;
+    }
 
     const token = localStorage.getItem('access_token');
     if (!token) {
@@ -110,6 +123,19 @@ export default function PricingPage() {
           <p className="text-gray-500">Start free. Upgrade when you need full market intelligence.</p>
         </div>
 
+        {canceledNotice && (
+          <div className="mb-6 p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg text-sm max-w-2xl mx-auto flex justify-between gap-3 items-start">
+            <span>No worries — checkout was canceled. You can choose a plan again whenever you&apos;re ready.</span>
+            <button
+              type="button"
+              onClick={() => setCanceledNotice(false)}
+              className="shrink-0 text-amber-800 text-xs font-semibold underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
         {error && (
           <div className="mb-8 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm max-w-2xl mx-auto">
             {error}
@@ -151,15 +177,26 @@ export default function PricingPage() {
               </ul>
 
               <button
+                type="button"
                 onClick={() => handleSubscribe(plan.priceId, plan.name)}
                 disabled={plan.disabled || loading === plan.name}
-                className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium transition ${
+                className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 min-h-[42px] ${
                   plan.highlighted
                     ? 'bg-gray-900 text-white hover:bg-gray-800'
                     : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
-                {loading === plan.name ? 'Processing...' : plan.cta}
+                {loading === plan.name && (
+                  <span
+                    className={`h-4 w-4 shrink-0 rounded-full border-2 animate-spin ${
+                      plan.highlighted
+                        ? 'border-white/25 border-t-white'
+                        : 'border-gray-300 border-t-gray-800'
+                    }`}
+                    aria-hidden
+                  />
+                )}
+                <span>{loading === plan.name ? 'Redirecting to checkout…' : plan.cta}</span>
               </button>
             </div>
           ))}

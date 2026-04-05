@@ -53,13 +53,20 @@ JWT_ALGORITHM=HS256
 JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
 JWT_REFRESH_TOKEN_EXPIRE_DAYS=7
 
-# Stripe - Get from https://dashboard.stripe.com
+# Frontend URL (Stripe success/cancel redirects & billing portal return)
+FRONTEND_URL=https://your-frontend.up.railway.app
+
+# Stripe — https://dashboard.stripe.com
 STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
 STRIPE_PUBLISHABLE_KEY=pk_test_your_stripe_publishable_key
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
-STRIPE_PRICE_ID_FREE=price_free_tier
-STRIPE_PRICE_ID_PRO=price_pro_tier
-STRIPE_PRICE_ID_ENTERPRISE=price_enterprise_tier
+# Price IDs from Products → your subscription prices (must match frontend NEXT_PUBLIC_STRIPE_PRICE_*)
+STRIPE_PRICE_PAID=price_paid_monthly
+STRIPE_PRICE_PRO=price_pro_monthly
+# Legacy: if STRIPE_PRICE_PRO is empty, STRIPE_PRICE_ID_PRO is used for the Pro tier
+STRIPE_PRICE_ID_PRO=
+STRIPE_PRICE_ID_FREE=
+STRIPE_PRICE_ID_ENTERPRISE=
 
 # Email (optional)
 SMTP_HOST=smtp.gmail.com

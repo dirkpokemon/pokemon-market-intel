@@ -49,6 +49,10 @@ class Settings(BaseSettings):
     STRIPE_SECRET_KEY: str = ""
     STRIPE_PUBLISHABLE_KEY: str = ""
     STRIPE_WEBHOOK_SECRET: str = ""
+    # Subscription Price IDs — must match Stripe Dashboard & frontend NEXT_PUBLIC_STRIPE_PRICE_*
+    STRIPE_PRICE_PAID: str = ""
+    STRIPE_PRICE_PRO: str = ""
+    # Legacy: if STRIPE_PRICE_PRO is empty, STRIPE_PRICE_ID_PRO is used for the Pro tier
     STRIPE_PRICE_ID_FREE: str = ""
     STRIPE_PRICE_ID_PRO: str = ""
     STRIPE_PRICE_ID_ENTERPRISE: str = ""
@@ -72,6 +76,14 @@ class Settings(BaseSettings):
     # EU Compliance
     DATA_RETENTION_DAYS: int = 730
     ENABLE_GDPR_FEATURES: bool = True
+
+    @property
+    def stripe_paid_price_id(self) -> str:
+        return (self.STRIPE_PRICE_PAID or "").strip()
+
+    @property
+    def stripe_pro_price_id(self) -> str:
+        return (self.STRIPE_PRICE_PRO or self.STRIPE_PRICE_ID_PRO or "").strip()
 
 
 settings = Settings()

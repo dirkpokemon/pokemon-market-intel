@@ -9,9 +9,10 @@ from fastapi import APIRouter, Request, HTTPException, status, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+from app.config import settings
+from app.core.stripe_prices import role_from_subscription
 from app.database import get_db
 from app.models.user import User
-from app.config import settings
 
 
 logger = logging.getLogger(__name__)
@@ -109,14 +110,10 @@ async def handle_subscription_created(subscription: dict, db: AsyncSession):
         logger.error(f"User not found for customer {customer_id}")
         return
     
-    # Determine role based on subscription metadata or price
-    # You can customize this based on your Stripe product setup
-    role = "paid"  # Default to paid
-    
-    # Update user subscription
     user.stripe_subscription_id = subscription_id
     user.subscription_status = status_value
-    user.role = role
+    if user.role != "admin":
+        user.role = role_from_subscription(subscription)
     
     # Set subscription end date
     current_period_end = subscription["current_period_end"]
@@ -142,17 +139,17 @@ async def handle_subscription_updated(subscription: dict, db: AsyncSession):
         logger.error(f"User not found for subscription {subscription_id}")
         return
     
-    # Update subscription status
     user.subscription_status = status_value
-    
-    # Update end date
+
     current_period_end = subscription["current_period_end"]
     user.subscription_end_date = datetime.fromtimestamp(current_period_end)
-    
-    # Handle cancellation
+
+    if status_value in ("active", "trialing", "past_due") and user.role != "admin":
+        user.role = role_from_subscription(subscription)
+
     if subscription.get("cancel_at_period_end"):
-        logger.info(f"Subscription will cancel at period end for {user.email}")
-    
+        logger.info("Subscription will cancel at period end for %s", user.email)
+
     await db.commit()
     
     logger.info(f"Subscription updated for user {user.email}: {status_value}")
@@ -172,8 +169,8 @@ async def handle_subscription_deleted(subscription: dict, db: AsyncSession):
         logger.error(f"User not found for subscription {subscription_id}")
         return
     
-    # Downgrade to free tier
-    user.role = "free"
+    if user.role != "admin":
+        user.role = "free"
     user.subscription_status = "canceled"
     user.subscription_end_date = datetime.utcnow()
     

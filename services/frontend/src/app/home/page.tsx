@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { marketApi, searchApi, newsApi, Signal, DealScore, CardSearchResult, NewsArticle } from '@/lib/api';
+import { authApi, marketApi, searchApi, newsApi, Signal, DealScore, CardSearchResult, NewsArticle } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import StatCard from '@/components/StatCard';
 import DealModal from '@/components/DealModal';
@@ -31,18 +31,34 @@ export default function HomePage() {
   // News state
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
+  const [showSubSuccess, setShowSubSuccess] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     const userData = localStorage.getItem('user');
-    
+
     if (!token) {
       router.push('/login');
       return;
     }
-    
+
     if (userData) {
       setUser(JSON.parse(userData));
+    }
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('subscription') === 'success') {
+        window.history.replaceState({}, '', window.location.pathname);
+        setShowSubSuccess(true);
+        authApi
+          .getMe()
+          .then((me) => {
+            setUser(me);
+            localStorage.setItem('user', JSON.stringify(me));
+          })
+          .catch(() => {});
+      }
     }
 
     // Show onboarding for first-time users
@@ -168,6 +184,21 @@ export default function HomePage() {
   return (
     <DashboardLayout>
       <div className="px-6 py-8 max-w-[1400px] mx-auto">
+        {showSubSuccess && (
+          <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p className="text-sm text-green-900">
+              <span className="font-semibold">Subscription active.</span>{' '}
+              Your plan should appear in a few seconds once Stripe has finished syncing. If Market Intel still shows as locked, refresh the page or sign out and back in.
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowSubSuccess(false)}
+              className="shrink-0 text-sm font-medium text-green-800 hover:text-green-950 underline underline-offset-2"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
