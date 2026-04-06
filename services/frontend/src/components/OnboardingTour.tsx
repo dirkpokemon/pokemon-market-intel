@@ -102,7 +102,7 @@ function premiumTourSteps(): TourStep[] {
     {
       title: 'Signals',
       description:
-        'Use Signals in the sidebar for premium feeds and deeper reads. That space is built for subscribers—open it when you want narrative and ideas next to raw scores.',
+        'Use Signals in the sidebar for the full feed and deeper reads. That space is for Plus and Business—open it when you want narrative and ideas next to raw scores.',
       position: 'top',
       target: 'signals',
       actionLink: { href: '/signals', label: 'Open Signals' },

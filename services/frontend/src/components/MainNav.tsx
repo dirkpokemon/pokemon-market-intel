@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { SUBSCRIBER_BADGE, tierLabel, UPSELL_SUBSCRIBE } from '@/lib/plans';
 
 interface MainNavProps {
   user: any;
@@ -67,7 +68,7 @@ export default function MainNav({ user }: MainNavProps) {
                 <span className="text-base">{item.icon}</span>
                 <span>{item.label}</span>
                 {item.premium && (
-                  <span className="px-1.5 py-0.5 bg-indigo-500 text-white text-[10px] rounded font-semibold">PRO</span>
+                  <span className="px-1.5 py-0.5 bg-indigo-500 text-white text-[10px] rounded font-semibold">{SUBSCRIBER_BADGE}</span>
                 )}
                 {/* Tooltip */}
                 <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap">
@@ -88,7 +89,7 @@ export default function MainNav({ user }: MainNavProps) {
               </div>
               <div className="text-left hidden sm:block">
                 <p className="text-sm font-medium text-gray-900 leading-tight">{displayName}</p>
-                <p className="text-xs text-gray-500 leading-tight capitalize">{user?.role || 'free'}</p>
+                <p className="text-xs text-gray-500 leading-tight">{tierLabel(user?.role)}</p>
               </div>
               <span className="text-gray-400 text-xs">▼</span>
             </button>
@@ -121,7 +122,7 @@ export default function MainNav({ user }: MainNavProps) {
                         onClick={() => setShowSettings(false)}
                       >
                         <span>⭐</span>
-                        <span>Upgrade to Premium</span>
+                        <span>{UPSELL_SUBSCRIBE}</span>
                       </Link>
                     )}
                   </div>

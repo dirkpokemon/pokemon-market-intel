@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import SiteFooter from '@/components/SiteFooter';
+import { CTA_GET_BUSINESS, CTA_SUBSCRIBE_PLUS, PLAN_FEATURES, SUBSCRIBER_BADGE } from '@/lib/plans';
 
 // ─── Brand mark (header) ────────────────────────────────────────
 function BrandMark({ size = 40 }: { size?: number }) {
@@ -102,7 +103,7 @@ export default function LandingPage() {
             onClick={() => router.push('/register')}
             className="bg-gray-900 text-white px-8 py-3.5 rounded-lg font-medium hover:bg-gray-800 transition text-sm"
           >
-            Start Free Trial
+            Start free
           </button>
           <button
             onClick={() => {
@@ -158,7 +159,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Feature 2: Signals (PRO) ─── */}
+      {/* ─── Feature 2: Signals (Plus+) ─── */}
       <section className="bg-gray-50 border-y border-gray-100">
         <div className="max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -194,7 +195,7 @@ export default function LandingPage() {
             <div className="order-1 lg:order-2">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[11px] font-semibold rounded-md uppercase tracking-wide mb-4">
                 Signals
-                <span className="px-1 py-0 bg-indigo-100 rounded text-[9px]">PRO</span>
+                <span className="px-1 py-0 bg-indigo-100 rounded text-[9px]">{SUBSCRIBER_BADGE}</span>
               </div>
               <h3 className="text-3xl font-bold text-gray-900 mb-4">
                 See what&apos;s changing — before prices move
@@ -393,24 +394,18 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* Paid */}
+            {/* Plus */}
             <div className="bg-white rounded-xl border-2 border-gray-900 p-6 relative shadow-lg">
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-gray-900 text-white text-[11px] font-bold rounded-full uppercase tracking-wide">
                 Most Popular
               </div>
-              <h4 className="text-lg font-bold text-gray-900 mb-1">Paid</h4>
+              <h4 className="text-lg font-bold text-gray-900 mb-1">Plus</h4>
               <div className="mb-5">
                 <span className="text-3xl font-bold text-gray-900">&euro;19</span>
                 <span className="text-gray-400 text-sm">/month</span>
               </div>
               <ul className="space-y-2.5 mb-6">
-                {[
-                  'All deal scores (no limits)',
-                  'Premium signal feed',
-                  'Set trends & supply monitoring',
-                  'Email & Telegram alerts',
-                  'Real-time data (no lag)',
-                ].map(f => (
+                {PLAN_FEATURES.paid.slice(0, 5).map((f) => (
                   <li key={f} className="flex items-center gap-2 text-sm text-gray-700">
                     <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -419,26 +414,20 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <Link href="/register" className="block w-full text-center py-2.5 px-4 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition">
-                Start Free Trial
+              <Link href="/pricing" className="block w-full text-center py-2.5 px-4 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 transition">
+                {CTA_SUBSCRIBE_PLUS}
               </Link>
             </div>
 
-            {/* Pro */}
+            {/* Business */}
             <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h4 className="text-lg font-bold text-gray-900 mb-1">Pro</h4>
+              <h4 className="text-lg font-bold text-gray-900 mb-1">Business</h4>
               <div className="mb-5">
                 <span className="text-3xl font-bold text-gray-900">&euro;49</span>
                 <span className="text-gray-400 text-sm">/month</span>
               </div>
               <ul className="space-y-2.5 mb-6">
-                {[
-                  'Everything in Paid',
-                  'API access',
-                  'Historical data export',
-                  'Custom alert rules',
-                  'Dedicated support',
-                ].map(f => (
+                {PLAN_FEATURES.pro.slice(0, 5).map((f) => (
                   <li key={f} className="flex items-center gap-2 text-sm text-gray-600">
                     <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -447,8 +436,8 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <Link href="/register" className="block w-full text-center py-2.5 px-4 rounded-lg border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition">
-                Go Pro
+              <Link href="/pricing" className="block w-full text-center py-2.5 px-4 rounded-lg border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition">
+                {CTA_GET_BUSINESS}
               </Link>
             </div>
           </div>

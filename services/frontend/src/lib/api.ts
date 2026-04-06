@@ -304,4 +304,11 @@ export const subscriptionApi = {
       method: 'POST',
     });
   },
+
+  /** Plus → Business: swap Stripe subscription price (proration). */
+  upgradeToBusiness: async () => {
+    return apiRequest<{ status: string; role: string }>('/api/v1/subscriptions/upgrade-to-business', {
+      method: 'POST',
+    });
+  },
 };

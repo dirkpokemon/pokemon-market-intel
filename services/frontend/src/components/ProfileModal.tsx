@@ -146,7 +146,7 @@ export default function ProfileModal({ user, onClose, onSave }: ProfileModalProp
                     </span>
                     {user?.role === 'free' && (
                       <button className="text-sm text-blue-600 hover:text-blue-700 underline">
-                        Upgrade to Premium
+                        Upgrade to Plus
                       </button>
                     )}
                   </div>
@@ -262,9 +262,9 @@ export default function ProfileModal({ user, onClose, onSave }: ProfileModalProp
                   <div className="flex items-start gap-3">
                     <span className="text-2xl">💡</span>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-blue-900 mb-1">Premium Feature</p>
+                      <p className="text-sm font-semibold text-blue-900 mb-1">Plus &amp; Business</p>
                       <p className="text-sm text-blue-800">
-                        Real-time alerts are available for Premium users. Upgrade to receive instant notifications for high-value deals!
+                        Real-time alerts are included with Plus and Business. Upgrade to receive notifications for high-value deals.
                       </p>
                     </div>
                   </div>

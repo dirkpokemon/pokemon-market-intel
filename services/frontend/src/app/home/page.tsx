@@ -598,7 +598,7 @@ export default function HomePage() {
             {/* Upgrade CTA for Free Users */}
             {user?.role === 'free' && (
               <div className="mt-8 bg-gray-900 rounded-xl p-8 text-center">
-                <h3 className="text-xl font-bold text-white mb-2">Unlock Premium Features</h3>
+                <h3 className="text-xl font-bold text-white mb-2">Unlock Plus</h3>
                 <p className="text-sm text-gray-400 mb-6">
                   Get real-time signals, advanced analytics, email & Telegram alerts, and more!
                 </p>
@@ -606,7 +606,7 @@ export default function HomePage() {
                   href="/pricing"
                   className="inline-block bg-white text-gray-900 px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-100 transition"
                 >
-                  Upgrade to Premium
+                  Upgrade to Plus
                 </Link>
               </div>
             )}

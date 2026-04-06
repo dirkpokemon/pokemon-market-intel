@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { SUBSCRIBER_BADGE, tierLabel } from '@/lib/plans';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -85,7 +86,7 @@ export default function Sidebar({ user }: SidebarProps) {
           <>
             <span className="truncate">{item.label}</span>
             {item.premium && (
-              <span className="ml-auto px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[10px] rounded font-semibold">PRO</span>
+              <span className="ml-auto px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[10px] rounded font-semibold">{SUBSCRIBER_BADGE}</span>
             )}
           </>
         )}
@@ -173,7 +174,7 @@ export default function Sidebar({ user }: SidebarProps) {
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
-                <p className="text-[11px] text-gray-400 capitalize">{user?.role || 'free'}</p>
+                <p className="text-[11px] text-gray-400">{tierLabel(user?.role)}</p>
               </div>
             )}
             {!collapsed && (

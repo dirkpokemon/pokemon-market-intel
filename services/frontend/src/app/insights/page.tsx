@@ -210,7 +210,7 @@ export default function MarketPulsePage() {
                   <p className="text-2xl font-bold text-gray-900">{signals.length}</p>
                 ) : (
                   <div>
-                    <p className="text-lg font-bold text-indigo-600">Premium</p>
+                    <p className="text-lg font-bold text-indigo-600">Plus+</p>
                     <Link href="/pricing" className="text-xs text-indigo-600 hover:underline font-medium">
                       View Signals →
                     </Link>
@@ -403,7 +403,7 @@ export default function MarketPulsePage() {
                     href="/pricing"
                     className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition"
                   >
-                    Upgrade to Premium
+                    Upgrade to Plus
                   </Link>
                 </div>
               )

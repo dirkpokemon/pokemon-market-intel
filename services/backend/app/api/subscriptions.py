@@ -141,6 +141,79 @@ async def create_checkout_session(
         )
 
 
+@router.post("/upgrade-to-business")
+async def upgrade_to_business(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Plus (paid) → Business (pro): swap subscription price in Stripe (proration).
+    Requires existing stripe_subscription_id. customer.subscription.updated webhook
+    also syncs role; we update the DB immediately for snappy UI.
+    """
+    if current_user.role != "paid":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only Plus subscribers can upgrade to Business here.",
+        )
+    if not current_user.stripe_subscription_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No active subscription on file. Use checkout or billing portal.",
+        )
+    pro_price = settings.stripe_pro_price_id
+    if not settings.STRIPE_SECRET_KEY or not pro_price:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Business plan price is not configured (STRIPE_PRICE_PRO).",
+        )
+
+    try:
+        import stripe
+
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+        sub = stripe.Subscription.retrieve(current_user.stripe_subscription_id)
+        items = sub.get("items", {}).get("data") or []
+        if not items:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Subscription has no line items.",
+            )
+        item = items[0]
+        price_obj = item.get("price")
+        current_pid = price_obj.get("id") if isinstance(price_obj, dict) else None
+        if current_pid == pro_price:
+            current_user.role = "pro"
+            await db.commit()
+            return {"status": "already_business", "role": current_user.role}
+
+        md = dict(sub.get("metadata") or {})
+        md["user_id"] = str(current_user.id)
+        md["app_tier"] = "pro"
+
+        updated = stripe.Subscription.modify(
+            sub.id,
+            items=[{"id": item["id"], "price": pro_price}],
+            proration_behavior="create_prorations",
+            metadata=md,
+        )
+        from app.core.stripe_prices import role_from_subscription
+
+        if current_user.role != "admin":
+            current_user.role = role_from_subscription(updated)
+        await db.commit()
+        logger.info("Upgraded %s to Business via subscription modify", current_user.email)
+        return {"status": "ok", "role": current_user.role}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("upgrade_to_business failed: %s", e, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not upgrade subscription. Try the billing portal or contact support.",
+        ) from e
+
+
 @router.post("/portal")
 async def create_portal_session(
     current_user: User = Depends(get_current_user)

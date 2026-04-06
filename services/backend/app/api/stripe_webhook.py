@@ -158,7 +158,7 @@ async def handle_checkout_session_completed(session: dict, db: AsyncSession):
     if user.role in ("paid", "pro"):
         try:
             first_name = (user.full_name or user.email or "there").split()[0]
-            plan_label = "Pro" if user.role == "pro" else "Paid"
+            plan_label = "Business" if user.role == "pro" else "Plus"
             if send_subscription_success_email(user.email, first_name, plan_label):
                 logger.info("Subscription success email sent to %s", user.email)
         except Exception as exc:

@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import ProfileModal from '@/components/ProfileModal';
 import OnboardingTour from '@/components/OnboardingTour';
-import { notificationApi, subscriptionApi } from '@/lib/api';
+import { authApi, notificationApi, subscriptionApi } from '@/lib/api';
+import { CTA_UPGRADE_BUSINESS, tierLabel, UPSELL_SUBSCRIBE } from '@/lib/plans';
 
 const NOTIF_PREFS_KEY = 'notification_preferences';
 
@@ -70,6 +71,8 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [billingError, setBillingError] = useState('');
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [upgradeError, setUpgradeError] = useState('');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -133,6 +136,22 @@ export default function SettingsPage() {
     }
   };
 
+  const handleUpgradeToBusiness = async () => {
+    setUpgradeError('');
+    setUpgradeLoading(true);
+    try {
+      await subscriptionApi.upgradeToBusiness();
+      const u = await authApi.getMe();
+      localStorage.setItem('user', JSON.stringify(u));
+      setUser(u);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Upgrade failed';
+      setUpgradeError(msg);
+    } finally {
+      setUpgradeLoading(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="px-6 py-8 max-w-3xl mx-auto">
@@ -154,11 +173,11 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between py-3 border-b border-gray-100">
               <div>
                 <p className="text-sm font-medium text-gray-900">Account Type</p>
-                <p className="text-xs text-gray-500 capitalize">{isPaid ? 'Premium' : 'Free'}</p>
+                <p className="text-xs text-gray-500">{tierLabel(user?.role)}</p>
               </div>
               {!isPaid && (
                 <button onClick={() => router.push('/pricing')} className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg hover:bg-gray-800 transition font-medium">
-                  Upgrade
+                  {UPSELL_SUBSCRIBE}
                 </button>
               )}
             </div>
@@ -173,6 +192,33 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+
+        {user?.role === 'paid' && (
+          <div className="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-xl border border-indigo-100 p-6 mb-6">
+            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-2">Upgrade to Business</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Move from Plus to Business on the same subscription (Stripe prorates the difference). You get the same
+              product access today; Business-only tools (API, exports, advanced rules) roll out here first.
+            </p>
+            {upgradeError && (
+              <div className="mb-3 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{upgradeError}</div>
+            )}
+            <button
+              type="button"
+              onClick={handleUpgradeToBusiness}
+              disabled={upgradeLoading}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-60"
+            >
+              {upgradeLoading && (
+                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" aria-hidden />
+              )}
+              {upgradeLoading ? 'Upgrading…' : CTA_UPGRADE_BUSINESS}
+            </button>
+            <p className="text-xs text-gray-500 mt-3">
+              You can also open <span className="font-medium">Pricing</span> and use the Business column — same upgrade path.
+            </p>
+          </div>
+        )}
 
         {canManageStripeBilling && (
           <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
@@ -208,15 +254,17 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Notifications</h2>
             {isPaid && (
-              <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded uppercase tracking-wide">PRO</span>
+              <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded uppercase tracking-wide">
+                {tierLabel(user?.role)}
+              </span>
             )}
           </div>
 
           {!isPaid ? (
             <div className="text-center py-6">
-              <p className="text-sm text-gray-600 mb-2">Notifications are available for PRO users.</p>
+              <p className="text-sm text-gray-600 mb-2">Notifications are included with Plus and Business.</p>
               <button onClick={() => router.push('/pricing')} className="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition font-medium">
-                Upgrade to PRO
+                {UPSELL_SUBSCRIBE}
               </button>
             </div>
           ) : (
