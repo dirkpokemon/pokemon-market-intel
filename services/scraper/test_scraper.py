@@ -67,7 +67,7 @@ async def test_cardtrader():
 
 async def main():
     """Run all tests"""
-    logger.info("\n🎮 Pokemon Market Intelligence EU - Scraper Tests\n")
+    logger.info("\n🎮 TCG Pulse - Scraper Tests\n")
     
     try:
         await test_cardmarket()

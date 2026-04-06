@@ -28,7 +28,7 @@ export default function MainNav({ user }: MainNavProps) {
     { href: '/home', label: 'Home', icon: '🏠', description: 'Overview' },
     { href: '/insights', label: 'Market Insights', icon: '📊', description: 'Analytics & Trends' },
     { href: '/deals', label: 'Top Deals', icon: '💎', description: 'Best Opportunities' },
-    { href: '/signals', label: 'Price Signals', icon: '⚡', description: 'AI Market Intel', premium: true },
+    { href: '/signals', label: 'Price Signals', icon: '⚡', description: 'AI signals', premium: true },
     { href: '/portfolio', label: 'Portfolio', icon: '📦', description: 'Collection & Watchlist' },
   ];
 
@@ -47,7 +47,7 @@ export default function MainNav({ user }: MainNavProps) {
               </div>
             </div>
             <div>
-              <h1 className="text-lg font-bold text-gray-900">Pokémon Market Intel</h1>
+              <h1 className="text-lg font-bold text-gray-900">TCG Pulse</h1>
               <p className="text-xs text-gray-500">EU Price Intelligence</p>
             </div>
           </Link>

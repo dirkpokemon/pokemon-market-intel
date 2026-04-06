@@ -38,7 +38,7 @@ export default function Sidebar({ user }: SidebarProps) {
     { href: '/deals', label: 'Top Deals', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
     )},
-    { href: '/signals', label: 'Market Intel', icon: (
+    { href: '/signals', label: 'Signals', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
     ), premium: true },
     { href: '/portfolio', label: 'Portfolio', icon: (
@@ -124,16 +124,14 @@ export default function Sidebar({ user }: SidebarProps) {
       `}>
         {/* Logo area */}
         <div className={`flex items-center h-16 border-b border-gray-100 px-4 ${collapsed ? 'justify-center' : 'gap-3'}`}>
-          {/* Poké Ball Logo */}
-          <div className="relative w-8 h-8 bg-white rounded-full border-[2.5px] border-gray-800 flex items-center justify-center overflow-hidden flex-shrink-0">
-            <div className="absolute top-0 left-0 right-0 h-1/2 bg-red-500 rounded-t-full" />
-            <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-gray-800 transform -translate-y-1/2 z-10" />
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full border-[1.5px] border-gray-800 z-20" />
+          {/* Brand mark */}
+          <div className="relative w-8 h-8 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
+            <span className="text-white text-xs font-black tracking-tight">TCG</span>
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-sm font-bold text-gray-900 truncate">Pokémon Intel</p>
-              <p className="text-[10px] text-gray-400 font-medium">EU Market</p>
+              <p className="text-sm font-bold text-gray-900 truncate">TCG Pulse</p>
+              <p className="text-[9px] text-gray-400 font-medium leading-tight">EU market intelligence for trading card singles</p>
             </div>
           )}
         </div>
@@ -216,7 +214,7 @@ export default function Sidebar({ user }: SidebarProps) {
                   </svg>
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 mb-1">Thanks for your feedback!</h3>
-                <p className="text-sm text-gray-500 mb-6">We appreciate you helping us improve Pokémon Intel.</p>
+                <p className="text-sm text-gray-500 mb-6">We appreciate you helping us improve TCG Pulse.</p>
                 <button
                   onClick={() => setShowFeedback(false)}
                   className="px-5 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition"
@@ -236,7 +234,7 @@ export default function Sidebar({ user }: SidebarProps) {
                       </svg>
                     </button>
                   </div>
-                  <p className="text-sm text-gray-500">Help us improve Pokémon Intel EU</p>
+                  <p className="text-sm text-gray-500">Help us improve TCG Pulse</p>
                 </div>
 
                 <div className="px-6 pb-6">

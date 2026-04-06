@@ -143,7 +143,7 @@ export default function MarketPulsePage() {
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Market Pulse</h1>
-          <p className="text-sm text-gray-500 mt-1">Real-time overview of the EU Pokémon TCG market</p>
+          <p className="text-sm text-gray-500 mt-1">Real-time overview of the EU trading card singles market</p>
         </div>
 
         {!loading && !isPremium && (
@@ -212,7 +212,7 @@ export default function MarketPulsePage() {
                   <div>
                     <p className="text-lg font-bold text-indigo-600">Premium</p>
                     <Link href="/pricing" className="text-xs text-indigo-600 hover:underline font-medium">
-                      View Market Intelligence →
+                      View Signals →
                     </Link>
                   </div>
                 )}
@@ -394,10 +394,10 @@ export default function MarketPulsePage() {
             ) : (
               !isPremium && (
                 <div className="rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 p-6">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Market Intelligence</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Signals</h3>
                   <p className="text-sm text-gray-600 mb-4">
                     Momentum, supply shifts, set trends, and risk signals are not included on the Free plan. Upgrade to
-                    see the full signal feed on the Market Intel page.
+                    see the full signal feed on the Signals page.
                   </p>
                   <Link
                     href="/pricing"

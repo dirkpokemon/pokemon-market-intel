@@ -7,9 +7,9 @@ import CookieBanner from '@/components/CookieBanner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Pokemon Market Intelligence EU',
-  description: 'EU Pokémon price data, analytics and market insights',
-  keywords: ['pokemon', 'cards', 'market', 'prices', 'EU', 'trading'],
+  title: 'TCG Pulse',
+  description: 'EU market intelligence for trading card singles',
+  keywords: ['TCG', 'trading cards', 'singles', 'market', 'prices', 'EU', 'CardMarket', 'CardTrader'],
 };
 
 export default function RootLayout({

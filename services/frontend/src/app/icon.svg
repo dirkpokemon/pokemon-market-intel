@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Pokemon Market Intel">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="TCG Pulse">
   <defs>
-    <clipPath id="half">
-      <rect x="0" y="0" width="32" height="16"/>
-    </clipPath>
+    <linearGradient id="tp" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4f46e5"/>
+      <stop offset="100%" style="stop-color:#6d28d9"/>
+    </linearGradient>
   </defs>
-  <circle cx="16" cy="16" r="14" fill="#ffffff" stroke="#111827" stroke-width="2"/>
-  <circle cx="16" cy="16" r="14" fill="#ef4444" clip-path="url(#half)"/>
-  <line x1="2" y1="16" x2="30" y2="16" stroke="#111827" stroke-width="2" stroke-linecap="round"/>
-  <circle cx="16" cy="16" r="4.5" fill="#ffffff" stroke="#111827" stroke-width="1.5"/>
-  <circle cx="16" cy="16" r="2" fill="#d1d5db"/>
+  <rect width="32" height="32" rx="8" fill="url(#tp)"/>
+  <rect x="7" y="18" width="4" height="8" rx="1" fill="#ffffff" opacity="0.85"/>
+  <rect x="14" y="11" width="4" height="15" rx="1" fill="#ffffff"/>
+  <rect x="21" y="14" width="4" height="12" rx="1" fill="#ffffff" opacity="0.9"/>
 </svg>

@@ -4,23 +4,17 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import SiteFooter from '@/components/SiteFooter';
 
-// ─── Poké Ball Logo ───────────────────────────────────────────────
-function PokeBall({ size = 40 }: { size?: number }) {
-  const border = size > 30 ? 3 : 2.5;
-  const inner = size > 30 ? 3.5 : 3;
+// ─── Brand mark (header) ────────────────────────────────────────
+function BrandMark({ size = 40 }: { size?: number }) {
+  const rounded = size >= 36 ? 'rounded-xl' : 'rounded-lg';
   return (
     <div
-      className="relative bg-white rounded-full shadow-sm flex items-center justify-center overflow-hidden flex-shrink-0"
-      style={{ width: size, height: size, borderWidth: border, borderColor: '#1f2937', borderStyle: 'solid' }}
+      className={`bg-gradient-to-br from-indigo-600 to-violet-700 flex items-center justify-center flex-shrink-0 shadow-sm ${rounded}`}
+      style={{ width: size, height: size }}
     >
-      <div className="absolute top-0 left-0 right-0 h-1/2 bg-red-500 rounded-t-full" />
-      <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-gray-800 -translate-y-1/2 z-10" />
-      <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-full border-2 border-gray-800 z-20"
-        style={{ width: inner * 2 + 4, height: inner * 2 + 4 }}
-      >
-        <div className="absolute inset-0.5 bg-gray-100 rounded-full" />
-      </div>
+      <span className="text-white font-black tracking-tight" style={{ fontSize: size * 0.28 }}>
+        TCG
+      </span>
     </div>
   );
 }
@@ -72,8 +66,13 @@ export default function LandingPage() {
       <header className="border-b border-gray-100 sticky top-0 z-50 bg-white/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <PokeBall size={40} />
-            <h1 className="text-lg font-bold text-gray-900">Pokemon Market Intel</h1>
+            <BrandMark size={40} />
+            <div>
+              <h1 className="text-lg font-bold text-gray-900 leading-tight">TCG Pulse</h1>
+              <p className="text-[10px] text-gray-400 font-medium leading-tight max-w-[200px] sm:max-w-none hidden sm:block">
+                EU market intelligence for trading card singles
+              </p>
+            </div>
           </div>
           <div className="flex gap-3 items-center">
             <Link href="/login" className="text-gray-600 hover:text-gray-900 px-4 py-2 text-sm font-medium">
@@ -96,7 +95,7 @@ export default function LandingPage() {
           Start buying <span className="text-green-600">below market price.</span>
         </h2>
         <p className="text-lg text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">
-          AI-powered deal scoring, real-time market signals, and portfolio tracking for the European Pokemon TCG market. See what others miss.
+          AI-powered deal scoring, real-time market signals, and portfolio tracking for European trading card singles. See what others miss.
         </p>
         <div className="flex gap-4 justify-center">
           <button
@@ -159,7 +158,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Feature 2: Market Intelligence ─── */}
+      {/* ─── Feature 2: Signals (PRO) ─── */}
       <section className="bg-gray-50 border-y border-gray-100">
         <div className="max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -194,7 +193,7 @@ export default function LandingPage() {
             {/* Text */}
             <div className="order-1 lg:order-2">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[11px] font-semibold rounded-md uppercase tracking-wide mb-4">
-                Market Intel
+                Signals
                 <span className="px-1 py-0 bg-indigo-100 rounded text-[9px]">PRO</span>
               </div>
               <h3 className="text-3xl font-bold text-gray-900 mb-4">
@@ -351,7 +350,7 @@ export default function LandingPage() {
           {[
             { step: '1', title: 'We scrape', desc: 'Every hour we collect 170K+ listings from EU marketplaces' },
             { step: '2', title: 'AI analyzes', desc: 'Deal scores, trend detection, and signal generation run automatically' },
-            { step: '3', title: 'You act', desc: 'Browse Top Deals, check Market Intel, or get notified via email/Telegram' },
+            { step: '3', title: 'You act', desc: 'Browse Top Deals, open Signals, or get notified via email/Telegram' },
             { step: '4', title: 'You profit', desc: 'Buy below market, sell high. Track it all in your Portfolio' },
           ].map(s => (
             <div key={s.step}>
@@ -407,7 +406,7 @@ export default function LandingPage() {
               <ul className="space-y-2.5 mb-6">
                 {[
                   'All deal scores (no limits)',
-                  'Market Intelligence signals',
+                  'Premium signal feed',
                   'Set trends & supply monitoring',
                   'Email & Telegram alerts',
                   'Real-time data (no lag)',
@@ -464,7 +463,7 @@ export default function LandingPage() {
           Ready to buy smarter?
         </h3>
         <p className="text-lg text-gray-500 mb-8">
-          Join traders across Europe who use Pokemon Market Intel to find undervalued cards, track market trends, and grow their collections.
+          Join traders across Europe who use TCG Pulse to find undervalued singles, track market trends, and grow their collections.
         </p>
         <button
           onClick={() => router.push('/register')}

@@ -1,5 +1,5 @@
 """
-Pokemon Market Intelligence EU - Backend API
+TCG Pulse - Backend API
 """
 
 __version__ = "1.0.0"

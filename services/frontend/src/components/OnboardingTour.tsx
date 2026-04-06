@@ -21,9 +21,9 @@ type TourStep = {
 function freeTourSteps(): TourStep[] {
   return [
     {
-      title: 'Welcome to Pokémon Market Intel',
+      title: 'Welcome to TCG Pulse',
       description:
-        'We help you spot strong Pokémon card deals across the EU: search the catalogue, compare deal scores, and track what you own or want.',
+        'We help you spot strong singles deals across the EU: search the catalogue, compare deal scores, and track what you own or want.',
       position: 'center',
     },
     {
@@ -41,9 +41,9 @@ function freeTourSteps(): TourStep[] {
       target: 'kpis',
     },
     {
-      title: 'Market Intel (subscribers)',
+      title: 'Signals (subscribers)',
       description:
-        'Richer market signals and intel live under Market Intel in the sidebar. That area is included with a subscription—useful if you want ideas beyond deal scores alone.',
+        'Richer market signals live under Signals in the sidebar. That area is included with a subscription—useful if you want ideas beyond deal scores alone.',
       position: 'top',
       target: 'signals',
       actionLink: { href: '/pricing', label: 'View plans' },
@@ -71,7 +71,7 @@ function freeTourSteps(): TourStep[] {
     {
       title: "You're ready",
       description:
-        'Explore Home and Top Deals, build your portfolio, and subscribe when you want Market Intel. Good luck trading.',
+        'Explore Home and Top Deals, build your portfolio, and subscribe when you want full Signals access. Good luck trading.',
       position: 'center',
     },
   ];
@@ -82,7 +82,7 @@ function premiumTourSteps(): TourStep[] {
     {
       title: 'Welcome — full access',
       description:
-        'Your plan includes Market Intel and the rest of the toolkit. Here is how everything fits together in a short walkthrough.',
+        'Your plan includes Signals and the rest of the toolkit. Here is how everything fits together in a short walkthrough.',
       position: 'center',
     },
     {
@@ -100,12 +100,12 @@ function premiumTourSteps(): TourStep[] {
       target: 'kpis',
     },
     {
-      title: 'Market Intel',
+      title: 'Signals',
       description:
-        'Use Market Intel in the sidebar for signals and deeper reads. That space is built for subscribers—open it when you want narrative and ideas next to raw scores.',
+        'Use Signals in the sidebar for premium feeds and deeper reads. That space is built for subscribers—open it when you want narrative and ideas next to raw scores.',
       position: 'top',
       target: 'signals',
-      actionLink: { href: '/signals', label: 'Open Market Intel' },
+      actionLink: { href: '/signals', label: 'Open Signals' },
     },
     {
       title: 'Top deals',

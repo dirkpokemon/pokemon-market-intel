@@ -357,7 +357,7 @@ export default function SettingsPage() {
           <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">About</h2>
           <div className="space-y-2 text-xs text-gray-500">
             <p><strong className="text-gray-700">Version:</strong> 1.0.0</p>
-            <p><strong className="text-gray-700">Platform:</strong> Pokémon Market Intelligence EU</p>
+            <p><strong className="text-gray-700">Platform:</strong> TCG Pulse — EU market intelligence for trading card singles</p>
             <p><strong className="text-gray-700">Support:</strong> support@pokemontel.eu</p>
           </div>
         </div>

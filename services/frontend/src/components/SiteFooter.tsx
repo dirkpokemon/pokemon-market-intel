@@ -20,14 +20,14 @@ export default function SiteFooter({ showMarketingLinks, className = '' }: SiteF
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-center sm:text-left">
           <p className="text-[11px] text-gray-400 order-2 sm:order-1">
-            &copy; {year} Pok&eacute;mon Market Intel EU
+            &copy; {year} TCG Pulse
           </p>
           <nav
             className="order-1 sm:order-2 flex flex-wrap items-center justify-center sm:justify-end gap-x-5 gap-y-1 text-[11px] text-gray-400"
             aria-label="Legal and contact"
           >
             <a
-              href={`mailto:${SITE_CONTACT_EMAIL}?subject=Pokemon%20Market%20Intel%20%E2%80%94%20Contact`}
+              href={`mailto:${SITE_CONTACT_EMAIL}?subject=TCG%20Pulse%20%E2%80%94%20Contact`}
               className="hover:text-gray-600 transition-colors"
             >
               Contact

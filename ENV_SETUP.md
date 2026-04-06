@@ -36,7 +36,7 @@ Create `services/backend/.env`:
 
 ```env
 # Application
-APP_NAME=Pokemon Intel EU API
+APP_NAME=TCG Pulse API
 APP_VERSION=1.0.0
 DEBUG=true
 LOG_LEVEL=INFO

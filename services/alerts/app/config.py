@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     # SendGrid Configuration
     SENDGRID_API_KEY: Optional[str] = None
     SENDGRID_FROM_EMAIL: str = "alerts@pokemonintel.eu"
-    SENDGRID_FROM_NAME: str = "Pokemon Intel EU"
+    SENDGRID_FROM_NAME: str = "TCG Pulse"
     
     # SMTP Configuration
     SMTP_HOST: str = "smtp.gmail.com"
@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     SMTP_USERNAME: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
     SMTP_FROM_EMAIL: str = "alerts@pokemonintel.eu"
-    SMTP_FROM_NAME: str = "Pokemon Intel EU"
+    SMTP_FROM_NAME: str = "TCG Pulse"
     SMTP_USE_TLS: bool = True
     
     # Telegram Configuration

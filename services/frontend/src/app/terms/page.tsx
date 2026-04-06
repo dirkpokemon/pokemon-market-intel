@@ -2,8 +2,8 @@ import Link from 'next/link';
 import SiteFooter from '@/components/SiteFooter';
 
 export const metadata = {
-  title: 'Terms of Service — Pokemon Market Intel EU',
-  description: 'Terms of service for Pokemon Market Intel EU',
+  title: 'Terms of Service — TCG Pulse',
+  description: 'Terms of service for TCG Pulse',
 };
 
 export default function TermsPage() {
@@ -26,7 +26,7 @@ export default function TermsPage() {
 
         <div className="prose prose-sm prose-gray max-w-none space-y-6 text-gray-600">
           <p>
-            By using Pok&eacute;mon Market Intel EU (&quot;the Service&quot;), you agree to these terms. If you do not
+            By using TCG Pulse (&quot;the Service&quot;), you agree to these terms. If you do not
             agree, please do not use the Service.
           </p>
 

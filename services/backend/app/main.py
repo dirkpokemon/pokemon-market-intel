@@ -71,7 +71,7 @@ async def root():
     return JSONResponse(
         status_code=200,
         content={
-            "message": "Pokemon Market Intelligence EU API",
+            "message": "TCG Pulse API",
             "version": settings.APP_VERSION,
             "status": "running",
             "docs": "/docs",

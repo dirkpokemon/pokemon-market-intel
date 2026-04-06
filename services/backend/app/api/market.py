@@ -46,7 +46,7 @@ async def get_signals(
     - **limit**: Maximum number of signals (default: 50, max: 100)
     - **signal_type**: Filter by type (high_deal, medium_deal, undervalued, momentum, risk, arbitrage)
     - **signal_level**: Filter by level (high, medium, low)
-    - **product_set**: Filter by Pokémon set name
+    - **product_set**: Filter by card set name
     """
     logger.info(f"User {current_user.email} fetching signals")
     
@@ -96,7 +96,7 @@ async def get_deal_scores(
     - **limit**: Maximum number of scores (default: 50, max: 100)
     - **min_score**: Minimum deal score filter (0-100)
     - **category**: Filter by category (single or sealed)
-    - **product_set**: Filter by Pokémon set name
+    - **product_set**: Filter by card set name
     """
     logger.info(f"User {current_user.email} fetching deal scores")
     
@@ -148,7 +148,7 @@ async def get_market_stats(
     Returns market statistics sorted by calculation time (most recent first)
     
     - **limit**: Maximum number of stats (default: 50, max: 100)
-    - **product_set**: Filter by Pokémon set name
+    - **product_set**: Filter by card set name
     """
     logger.info(f"User {current_user.email} fetching market stats")
     
@@ -454,7 +454,7 @@ async def import_status(db: AsyncSession = Depends(get_db)):
 
 
 # ═══════════════════════════════════════════════════════════════
-# Pokémon TCG News — fetches from real RSS feeds, cached in memory
+# TCG news — fetches from real RSS feeds, cached in memory
 # ═══════════════════════════════════════════════════════════════
 
 # In-memory news cache: { "articles": [...], "fetched_at": datetime }
@@ -560,7 +560,7 @@ async def _fetch_news(limit: int = 15) -> List[dict]:
         for feed_url, source_name in NEWS_FEEDS:
             try:
                 resp = await client.get(feed_url, headers={
-                    "User-Agent": "PokemonIntelEU/1.0 (News Aggregator)"
+                    "User-Agent": "TCGPulse/1.0 (News Aggregator)"
                 })
                 if resp.status_code == 200:
                     articles = _parse_rss(resp.text, source_name, limit=15)
@@ -595,7 +595,7 @@ async def get_pokemon_news(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Get latest Pokémon TCG news from trusted sources.
+    Get latest TCG news from trusted sources.
     Results are cached for 1 hour.
     """
     articles = await _fetch_news(limit=limit)

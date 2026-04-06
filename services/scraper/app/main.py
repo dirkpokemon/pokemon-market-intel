@@ -40,7 +40,7 @@ class ScraperService:
         """
         Start the scraper service
         """
-        logger.info(f"Starting Pokemon Intel EU Scraper v{settings.APP_VERSION}")
+        logger.info(f"Starting TCG Pulse Scraper v{settings.APP_VERSION}")
         logger.info(f"Scrape interval: {settings.SCRAPE_INTERVAL} minutes")
         
         # Initialize database
@@ -51,7 +51,7 @@ class ScraperService:
             self.run_scrape_cycle,
             IntervalTrigger(minutes=settings.SCRAPE_INTERVAL),
             id='scrape_cycle',
-            name='Pokemon Card Price Scraping',
+            name='TCG singles price scraping',
             max_instances=1,
         )
         

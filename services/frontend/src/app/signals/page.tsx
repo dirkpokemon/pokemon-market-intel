@@ -191,7 +191,7 @@ export default function PriceSignalsPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">Market Intelligence</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Signals</h1>
               <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[11px] font-bold rounded-md uppercase tracking-wide">PRO</span>
             </div>
             <p className="text-sm text-gray-500 mt-1">
@@ -219,7 +219,7 @@ export default function PriceSignalsPage() {
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-1">Unlock Market Intelligence</h3>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">Unlock Signals</h3>
                 <p className="text-sm text-gray-600 mb-4">
                   Track momentum shifts, supply changes, volatility spikes, and set-level trends — updated every hour.
                 </p>
@@ -262,7 +262,7 @@ export default function PriceSignalsPage() {
             <svg className="w-16 h-16 text-indigo-200 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Market Intelligence is a PRO feature</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Signals is a PRO feature</h3>
             <p className="text-sm text-gray-500 mb-5">Upgrade your account to access real-time market signals.</p>
             <Link href="/pricing" className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition">
               Upgrade to PRO

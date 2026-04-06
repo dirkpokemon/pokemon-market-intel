@@ -104,7 +104,7 @@ export default function RegisterPage() {
 
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-          <p className="text-gray-500 mt-1 text-sm">Join Pok&eacute;mon Market Intel EU</p>
+          <p className="text-gray-500 mt-1 text-sm">Join TCG Pulse</p>
         </div>
 
         {error && (

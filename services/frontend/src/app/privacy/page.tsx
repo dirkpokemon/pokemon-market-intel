@@ -3,8 +3,8 @@ import SiteFooter from '@/components/SiteFooter';
 import { SITE_CONTACT_EMAIL } from '@/lib/site';
 
 export const metadata = {
-  title: 'Privacy — Pokemon Market Intel EU',
-  description: 'Privacy policy for Pokemon Market Intel EU',
+  title: 'Privacy — TCG Pulse',
+  description: 'Privacy policy for TCG Pulse',
 };
 
 export default function PrivacyPage() {
@@ -27,7 +27,7 @@ export default function PrivacyPage() {
 
         <div className="prose prose-sm prose-gray max-w-none space-y-6 text-gray-600">
           <p>
-            Pok&eacute;mon Market Intel EU (&quot;we&quot;) respects your privacy. This page explains what we collect
+            TCG Pulse (&quot;we&quot;) respects your privacy. This page explains what we collect
             and why, in line with common EU practice (including GDPR where it applies).
           </p>
 

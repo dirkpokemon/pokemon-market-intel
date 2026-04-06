@@ -41,7 +41,7 @@ async def main():
     """
     start_time = datetime.now()
     logger.info("=" * 80)
-    logger.info("Pokemon Market Intelligence - Analysis Engine")
+    logger.info("TCG Pulse - Analysis Engine")
     logger.info(f"Start time: {start_time}")
     logger.info("=" * 80)
     

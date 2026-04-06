@@ -188,7 +188,7 @@ export default function HomePage() {
           <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <p className="text-sm text-green-900">
               <span className="font-semibold">Subscription active.</span>{' '}
-              Your plan should appear in a few seconds once Stripe has finished syncing. If Market Intel still shows as locked, refresh the page or sign out and back in.
+              Your plan should appear in a few seconds once Stripe has finished syncing. If Signals still shows as locked, refresh the page or sign out and back in.
             </p>
             <button
               type="button"
@@ -213,7 +213,7 @@ export default function HomePage() {
               <h1 className="text-2xl font-bold text-gray-900">
                 Welcome back, {displayName}! 👋
               </h1>
-              <p className="text-sm text-gray-500 mt-1">Here&apos;s what&apos;s happening in the EU Pokémon market today.</p>
+              <p className="text-sm text-gray-500 mt-1">Here&apos;s what&apos;s happening in the EU singles market today.</p>
             </div>
 
             {/* ═══ Market Search (TOP) ═══ */}
@@ -245,7 +245,7 @@ export default function HomePage() {
                       value={searchQuery}
                       onChange={(e) => handleSearchInput(e.target.value)}
                       onKeyDown={handleSearchKeyDown}
-                      placeholder="Search any Pokémon card, set, or product..."
+                      placeholder="Search any card, set, or product..."
                       className="w-full pl-12 pr-10 py-4 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 text-sm focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition outline-none"
                     />
                     {searchQuery && (
@@ -475,11 +475,11 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* ═══ Pokémon TCG News ═══ */}
+            {/* ═══ TCG news ═══ */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Latest Pokémon News</h2>
+                  <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Latest TCG news</h2>
                   <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase">Live</span>
                 </div>
               </div>
@@ -559,7 +559,7 @@ export default function HomePage() {
               ) : (
                 <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
                   <p className="text-sm text-gray-500">No news articles available right now.</p>
-                  <p className="text-xs text-gray-400 mt-1">Check back soon for the latest Pokémon TCG updates.</p>
+                  <p className="text-xs text-gray-400 mt-1">Check back soon for the latest TCG updates.</p>
                 </div>
               )}
             </div>

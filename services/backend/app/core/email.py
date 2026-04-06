@@ -37,16 +37,11 @@ def _build_verification_html(first_name: str, verify_url: str) -> str:
 
         <!-- Header -->
         <tr><td style="background:linear-gradient(135deg,#111827 0%,#1f2937 100%);padding:36px 40px;text-align:center;">
-          <!-- Pokeball icon -->
-          <div style="margin:0 auto 16px;width:56px;height:56px;border-radius:50%;border:3px solid #fff;position:relative;overflow:hidden;display:inline-block;">
-            <div style="position:absolute;top:0;left:0;right:0;height:50%;background:#ef4444;border-radius:28px 28px 0 0;"></div>
-            <div style="position:absolute;top:50%;left:0;right:0;height:3px;background:#fff;transform:translateY(-50%);z-index:2;"></div>
-            <div style="position:absolute;top:50%;left:50%;width:16px;height:16px;background:#fff;border-radius:50%;border:3px solid #fff;transform:translate(-50%,-50%);z-index:3;">
-              <div style="position:absolute;inset:3px;background:#d1d5db;border-radius:50%;"></div>
-            </div>
-          </div>
-          <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;letter-spacing:-0.3px;">Pok&eacute;mon Market Intel EU</h1>
-          <p style="color:#9ca3af;font-size:13px;margin:6px 0 0;">Real-time market intelligence for the European Pok&eacute;mon TCG market</p>
+          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 16px;"><tr><td style="width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#4f46e5,#6d28d9);text-align:center;vertical-align:middle;">
+            <span style="color:#ffffff;font-size:14px;font-weight:800;letter-spacing:-0.5px;">TCG</span>
+          </td></tr></table>
+          <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;letter-spacing:-0.3px;">TCG Pulse</h1>
+          <p style="color:#9ca3af;font-size:13px;margin:6px 0 0;">EU market intelligence for trading card singles</p>
         </td></tr>
 
         <!-- Body -->
@@ -83,7 +78,7 @@ def _build_verification_html(first_name: str, verify_url: str) -> str:
                 </tr>
                 <tr>
                   <td style="padding:6px 0;color:#111827;font-size:14px;">&#128200;</td>
-                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Market Intelligence</strong> &mdash; Price trends &amp; supply shifts</td>
+                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Market signals</strong> &mdash; Price trends &amp; supply shifts</td>
                 </tr>
                 <tr>
                   <td style="padding:6px 0;color:#111827;font-size:14px;">&#127919;</td>
@@ -104,7 +99,7 @@ def _build_verification_html(first_name: str, verify_url: str) -> str:
             This link expires in {VERIFICATION_TOKEN_HOURS} hours. If you didn&rsquo;t create an account, you can safely ignore this email.
           </p>
           <p style="color:#d1d5db;font-size:11px;margin:12px 0 0;">
-            &copy; {datetime.now(timezone.utc).year} Pok&eacute;mon Market Intel EU
+            &copy; {datetime.now(timezone.utc).year} TCG Pulse
           </p>
         </td></tr>
 
@@ -118,7 +113,7 @@ def _build_verification_html(first_name: str, verify_url: str) -> str:
 def _build_verification_text(first_name: str, verify_url: str) -> str:
     return (
         f"Welcome, {first_name}!\n\n"
-        f"Thanks for signing up to Pokemon Market Intel EU.\n"
+        f"Thanks for signing up to TCG Pulse.\n"
         f"Please verify your email address by clicking the link below:\n\n"
         f"{verify_url}\n\n"
         f"This link expires in {VERIFICATION_TOKEN_HOURS} hours.\n"
@@ -135,7 +130,7 @@ def _send_via_brevo(to_email: str, subject: str, html: str, text: str) -> bool:
     sender_email = settings.SMTP_FROM or settings.SMTP_USER or "pokemonmarketintel@gmail.com"
 
     payload = json.dumps({
-        "sender": {"name": "Pokemon Market Intel EU", "email": sender_email},
+        "sender": {"name": "TCG Pulse", "email": sender_email},
         "to": [{"email": to_email}],
         "subject": subject,
         "htmlContent": html,
@@ -197,13 +192,13 @@ def _build_subscription_success_html(first_name: str, plan_label: str, app_url: 
     <tr><td align="center">
       <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
         <tr><td style="background:linear-gradient(135deg,#111827 0%,#1f2937 100%);padding:36px 40px;text-align:center;">
-          <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;">Pok&eacute;mon Market Intel EU</h1>
+          <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;">TCG Pulse</h1>
           <p style="color:#9ca3af;font-size:13px;margin:8px 0 0;">Subscription active</p>
         </td></tr>
         <tr><td style="padding:36px 40px;">
           <h2 style="color:#111827;font-size:20px;font-weight:700;margin:0 0 12px;">You&rsquo;re in, {first_name}!</h2>
           <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
-            Your <strong style="color:#111827;">{plan_label}</strong> subscription is active. You now have full access to Market Intel, deal scores, and the rest of your plan.
+            Your <strong style="color:#111827;">{plan_label}</strong> subscription is active. You now have full access to Signals, deal scores, and the rest of your plan.
           </p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
             <tr><td align="center" style="padding:0 0 24px;">
@@ -217,7 +212,7 @@ def _build_subscription_success_html(first_name: str, plan_label: str, app_url: 
           </p>
         </td></tr>
         <tr><td style="padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
-          <p style="color:#d1d5db;font-size:11px;margin:0;">&copy; {year} Pok&eacute;mon Market Intel EU</p>
+          <p style="color:#d1d5db;font-size:11px;margin:0;">&copy; {year} TCG Pulse</p>
         </td></tr>
       </table>
     </td></tr>
@@ -229,7 +224,7 @@ def _build_subscription_success_html(first_name: str, plan_label: str, app_url: 
 def _build_subscription_success_text(first_name: str, plan_label: str, app_url: str) -> str:
     return (
         f"Hi {first_name},\n\n"
-        f"Your {plan_label} subscription for Pokemon Market Intel EU is now active.\n"
+        f"Your {plan_label} subscription for TCG Pulse is now active.\n"
         f"Open your dashboard: {app_url}\n\n"
         f"You can manage billing from your account settings.\n"
     )
@@ -238,7 +233,7 @@ def _build_subscription_success_text(first_name: str, plan_label: str, app_url: 
 def send_subscription_success_email(to_email: str, first_name: str, plan_label: str) -> bool:
     """Send confirmation after a successful subscription checkout."""
     app_url = settings.FRONTEND_URL.rstrip("/") + "/home"
-    subject = f"You are subscribed - {plan_label} | Pokemon Market Intel EU"
+    subject = f"You are subscribed - {plan_label} | TCG Pulse"
     html = _build_subscription_success_html(first_name, plan_label, app_url)
     text = _build_subscription_success_text(first_name, plan_label, app_url)
 
@@ -266,7 +261,7 @@ def send_verification_email(to_email: str, first_name: str, token: str) -> bool:
     frontend_url = settings.FRONTEND_URL.rstrip("/")
     verify_url = f"{frontend_url}/verify?token={token}"
 
-    subject = "Verify your email — Pokemon Market Intel EU"
+    subject = "Verify your email — TCG Pulse"
     html = _build_verification_html(first_name, verify_url)
     text = _build_verification_text(first_name, verify_url)
 

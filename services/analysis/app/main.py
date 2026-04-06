@@ -34,7 +34,7 @@ class AnalysisService:
         """
         Start the analysis service
         """
-        logger.info(f"Starting Pokemon Intel EU Analysis Service v{settings.APP_VERSION}")
+        logger.info(f"Starting TCG Pulse Analysis Service v{settings.APP_VERSION}")
         logger.info(f"Analysis schedule: {settings.ANALYSIS_SCHEDULE}")
         
         # Initialize database (creates tables if they don't exist)

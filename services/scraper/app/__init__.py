@@ -1,5 +1,5 @@
 """
-Pokemon Market Intelligence EU - Scraper Service
+TCG Pulse - Scraper Service
 """
 
 __version__ = "1.0.0"

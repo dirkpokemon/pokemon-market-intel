@@ -16,7 +16,7 @@ const PLAN_FEATURES = {
   ],
   paid: [
     'All deal scores (no limits)',
-    'Market Intelligence signals',
+    'Premium signal feed',
     'Set trends & supply monitoring',
     'Email & Telegram alerts',
     'Real-time data (no lag)',
@@ -149,7 +149,7 @@ export default function PricingPage() {
               <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-gray-800 -translate-y-1/2 z-10" />
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full border-[1.5px] border-gray-800 z-20" />
             </div>
-            <span className="text-sm font-bold text-gray-900">Pokemon Market Intel</span>
+            <span className="text-sm font-bold text-gray-900">TCG Pulse</span>
           </Link>
           <div className="flex gap-3 items-center">
             <Link href="/login" className="text-gray-600 hover:text-gray-900 px-4 py-2 text-sm font-medium">Login</Link>

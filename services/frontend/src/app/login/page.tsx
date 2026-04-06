@@ -69,7 +69,7 @@ export default function LoginPage() {
 
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900">Welcome Back</h1>
-          <p className="text-gray-500 mt-1 text-sm">Sign in to Pok&eacute;mon Market Intel EU</p>
+          <p className="text-gray-500 mt-1 text-sm">Sign in to TCG Pulse</p>
         </div>
 
         {error && (
