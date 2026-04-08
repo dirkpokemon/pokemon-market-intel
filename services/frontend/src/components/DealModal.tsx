@@ -107,10 +107,14 @@ function formatDate(iso: string) {
   } catch { return iso; }
 }
 
-// Clean a card name for external site searches (strip condition tags etc.)
+// Strip everything CardMarket/CardTrader don't recognise in their search:
+// parenthetical rarity tags, condition suffixes, extra descriptors
 function cleanSearchName(name: string) {
   return name
+    .replace(/\s*\([^)]*\)/g, '')                                          // (Special Illustration Rare), (Full Art), ...
     .replace(/\s*[-–]\s*(NM|LP|MP|HP|DMG|Near Mint|Lightly Played|Moderately Played|Heavily Played).*$/i, '')
+    .replace(/\s+(Special Illustration Rare|Full Art|Alt Art|Alternate Art|Rainbow Rare|Secret Rare|Ultra Rare|Hyper Rare|Double Rare|Illustration Rare|Promo)\s*$/i, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
