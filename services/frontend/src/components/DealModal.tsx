@@ -197,8 +197,8 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
     deal.deal_score >= 50 ? 'text-gray-700' : 'text-amber-700';
 
   const searchName = cleanSearchName(deal.product_name);
-  const cardMarketUrl = `https://www.cardmarket.com/en/Pokemon/Products/Singles?searchString=${encodeURIComponent(searchName)}`;
-  const cardTraderUrl = `https://www.cardtrader.com/en/pokemon/search?q=${encodeURIComponent(searchName)}`;
+  const cardMarketUrl = `https://www.cardmarket.com/en/Pokemon/Products/Singles?searchString=${encodeURIComponent(searchName)}&sortBy=price_asc&minCondition=2`;
+  const cardTraderUrl = `https://www.cardtrader.com/en/games/pokemon/blueprints_search?q=${encodeURIComponent(searchName)}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
