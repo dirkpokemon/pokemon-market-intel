@@ -454,6 +454,103 @@ async def import_status(db: AsyncSession = Depends(get_db)):
 
 
 # ═══════════════════════════════════════════════════════════════
+# Price History — daily avg/min/max from raw_prices per card
+# ═══════════════════════════════════════════════════════════════
+
+class PriceHistoryPoint(BaseModel):
+    date: str
+    avg_price: float
+    min_price: float
+    max_price: float
+    listing_count: int
+
+
+class ConditionBreakdown(BaseModel):
+    condition: str
+    count: int
+    avg_price: float
+
+
+class PriceHistoryResponse(BaseModel):
+    card_name: str
+    history: List[PriceHistoryPoint]
+    conditions: List[ConditionBreakdown]
+
+
+@router.get("/price_history", response_model=PriceHistoryResponse)
+async def get_price_history(
+    card_name: str = Query(..., description="Exact card name to look up"),
+    days: int = Query(default=30, ge=7, le=90, description="Number of days of history"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Returns daily average, min, and max prices for a specific card over the past N days,
+    derived from the raw_prices append-only table (real scraped data, not simulated).
+    Also returns a condition breakdown (NM / LP / HP etc.) for context.
+    """
+    cutoff = datetime.utcnow() - timedelta(days=days)
+
+    history_result = await db.execute(
+        text("""
+            SELECT
+                DATE(scraped_at AT TIME ZONE 'UTC') AS day,
+                ROUND(AVG(price)::numeric, 2)        AS avg_price,
+                ROUND(MIN(price)::numeric, 2)        AS min_price,
+                ROUND(MAX(price)::numeric, 2)        AS max_price,
+                COUNT(*)                             AS listing_count
+            FROM raw_prices
+            WHERE LOWER(card_name) = LOWER(:name)
+              AND scraped_at >= :cutoff
+              AND price > 0
+            GROUP BY day
+            ORDER BY day ASC
+        """),
+        {"name": card_name, "cutoff": cutoff},
+    )
+    rows = history_result.fetchall()
+
+    cond_result = await db.execute(
+        text("""
+            SELECT
+                COALESCE(condition, 'Unknown') AS condition,
+                COUNT(*)                       AS count,
+                ROUND(AVG(price)::numeric, 2)  AS avg_price
+            FROM raw_prices
+            WHERE LOWER(card_name) = LOWER(:name)
+              AND price > 0
+            GROUP BY condition
+            ORDER BY count DESC
+            LIMIT 6
+        """),
+        {"name": card_name},
+    )
+    cond_rows = cond_result.fetchall()
+
+    return PriceHistoryResponse(
+        card_name=card_name,
+        history=[
+            PriceHistoryPoint(
+                date=str(r.day),
+                avg_price=float(r.avg_price),
+                min_price=float(r.min_price),
+                max_price=float(r.max_price),
+                listing_count=int(r.listing_count),
+            )
+            for r in rows
+        ],
+        conditions=[
+            ConditionBreakdown(
+                condition=c.condition,
+                count=int(c.count),
+                avg_price=float(c.avg_price),
+            )
+            for c in cond_rows
+        ],
+    )
+
+
+# ═══════════════════════════════════════════════════════════════
 # TCG news — fetches from real RSS feeds, cached in memory
 # ═══════════════════════════════════════════════════════════════
 

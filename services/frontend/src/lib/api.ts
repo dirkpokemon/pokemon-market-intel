@@ -61,6 +61,26 @@ export interface MarketDigest {
   top_declining_sets: SetTrend[];
 }
 
+export interface PriceHistoryPoint {
+  date: string;
+  avg_price: number;
+  min_price: number;
+  max_price: number;
+  listing_count: number;
+}
+
+export interface ConditionBreakdown {
+  condition: string;
+  count: number;
+  avg_price: number;
+}
+
+export interface PriceHistoryResponse {
+  card_name: string;
+  history: PriceHistoryPoint[];
+  conditions: ConditionBreakdown[];
+}
+
 export interface DealScore {
   id: number;
   product_name: string;
@@ -190,6 +210,11 @@ export const marketApi = {
 
   getMarketDigest: async (): Promise<MarketDigest> => {
     return apiRequest<MarketDigest>('/api/v1/market_digest');
+  },
+
+  getPriceHistory: async (cardName: string, days = 30): Promise<PriceHistoryResponse> => {
+    const query = new URLSearchParams({ card_name: cardName, days: String(days) }).toString();
+    return apiRequest<PriceHistoryResponse>(`/api/v1/price_history?${query}`);
   },
 };
 
