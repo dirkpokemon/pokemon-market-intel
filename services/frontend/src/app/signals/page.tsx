@@ -39,6 +39,15 @@ function getActionConfig(type: string): { label: string; hint: string; cta: stri
       return { label: 'Set gaining value', hint: 'This set is trending upward. Look for deals within it before prices move higher.', cta: 'Browse set deals', ctaColor: 'bg-emerald-600 hover:bg-emerald-700' };
     case 'set_declining':
       return { label: 'Set losing value', hint: 'This set is trending downward. Wait for stabilisation before buying.', cta: 'Monitor set', ctaColor: 'bg-rose-600 hover:bg-rose-700' };
+    // Legacy types
+    case 'high_deal':
+      return { label: 'Strong deal', hint: 'Detected as a strong buying opportunity — price is significantly below market average.', cta: 'Find & buy', ctaColor: 'bg-green-600 hover:bg-green-700' };
+    case 'medium_deal':
+      return { label: 'Good deal', hint: 'A solid deal — price is below market average. Worth checking if you need this card.', cta: 'Find & buy', ctaColor: 'bg-blue-600 hover:bg-blue-700' };
+    case 'undervalued':
+      return { label: 'Undervalued', hint: 'Card appears undervalued relative to comparable listings. Good potential buy.', cta: 'Find & buy', ctaColor: 'bg-indigo-600 hover:bg-indigo-700' };
+    case 'arbitrage':
+      return { label: 'Arbitrage', hint: 'Price gap detected between platforms. Buy low on one, potentially sell higher elsewhere.', cta: 'Check listings', ctaColor: 'bg-purple-600 hover:bg-purple-700' };
     default:
       return { label: 'Signal', hint: 'Review the data and decide based on your strategy.', cta: 'View', ctaColor: 'bg-gray-600 hover:bg-gray-700' };
   }
@@ -54,6 +63,7 @@ function cleanSearchName(name: string) {
 }
 
 const SIGNAL_TYPE_META: Record<string, { label: string; icon: string; color: string }> = {
+  // Current signal types
   momentum:       { label: 'Momentum',       icon: '🚀', color: 'text-green-700 bg-green-50 border-green-200' },
   risk:           { label: 'Risk',           icon: '⚠️',  color: 'text-red-700 bg-red-50 border-red-200' },
   price_drop:     { label: 'Price Drop',     icon: '📉', color: 'text-orange-700 bg-orange-50 border-orange-200' },
@@ -62,6 +72,11 @@ const SIGNAL_TYPE_META: Record<string, { label: string; icon: string; color: str
   volatility:     { label: 'Volatile',       icon: '🎢', color: 'text-amber-700 bg-amber-50 border-amber-200' },
   set_rising:     { label: 'Set Rising',     icon: '📈', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
   set_declining:  { label: 'Set Declining',  icon: '📉', color: 'text-rose-700 bg-rose-50 border-rose-200' },
+  // Legacy signal types (still in DB from older analysis runs)
+  high_deal:      { label: 'Strong Deal',    icon: '⭐', color: 'text-green-700 bg-green-50 border-green-200' },
+  medium_deal:    { label: 'Good Deal',      icon: '✅', color: 'text-blue-700 bg-blue-50 border-blue-200' },
+  undervalued:    { label: 'Undervalued',    icon: '💎', color: 'text-indigo-700 bg-indigo-50 border-indigo-200' },
+  arbitrage:      { label: 'Arbitrage',      icon: '🔄', color: 'text-purple-700 bg-purple-50 border-purple-200' },
 };
 
 function getTypeMeta(type: string) {
@@ -325,6 +340,17 @@ export default function PriceSignalsPage() {
   const signalTypes = useMemo(() => Array.from(new Set(signals.map(s => s.signal_type))), [signals]);
   const isPaid = user?.role === 'paid' || user?.role === 'pro' || user?.role === 'admin';
 
+  // Check if signals are stale (newest signal older than 25 hours)
+  const newestSignalAge = useMemo(() => {
+    if (signals.length === 0) return null;
+    const newest = signals.reduce((a, b) =>
+      new Date(a.detected_at) > new Date(b.detected_at) ? a : b
+    );
+    const ageHours = (Date.now() - new Date(newest.detected_at).getTime()) / 3600000;
+    return ageHours;
+  }, [signals]);
+  const signalsAreStale = newestSignalAge !== null && newestSignalAge > 25;
+
   return (
     <DashboardLayout>
       <div className="px-6 py-8 max-w-[1400px] mx-auto">
@@ -349,6 +375,24 @@ export default function PriceSignalsPage() {
             Refresh
           </button>
         </div>
+
+        {/* Stale data warning */}
+        {signalsAreStale && !loading && (
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6">
+            <svg className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <div>
+              <p className="text-sm font-semibold text-amber-800">Signals are outdated</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                The newest signal is {newestSignalAge && newestSignalAge > 48
+                  ? `${Math.round(newestSignalAge / 24)} days`
+                  : `${Math.round(newestSignalAge ?? 0)} hours`} old.
+                The analysis service needs to be running on Railway to generate fresh hourly signals.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Subscriber gate */}
         {(!isPaid || accessDenied) && (
