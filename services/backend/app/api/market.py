@@ -491,8 +491,17 @@ async def get_price_history(
     """
     cutoff = datetime.utcnow() - timedelta(days=days)
 
+    # Fuzzy match: exact first, fall back to ILIKE if no results
+    exact_check = await db.execute(
+        text("SELECT 1 FROM raw_prices WHERE LOWER(card_name) = LOWER(:name) LIMIT 1"),
+        {"name": card_name},
+    )
+    use_exact = exact_check.fetchone() is not None
+    name_filter = "LOWER(card_name) = LOWER(:name)" if use_exact else "LOWER(card_name) LIKE LOWER(:name)"
+    fuzzy_name = card_name if use_exact else f"%{card_name}%"
+
     history_result = await db.execute(
-        text("""
+        text(f"""
             SELECT
                 DATE(scraped_at AT TIME ZONE 'UTC') AS day,
                 ROUND(AVG(price)::numeric, 2)        AS avg_price,
@@ -500,30 +509,30 @@ async def get_price_history(
                 ROUND(MAX(price)::numeric, 2)        AS max_price,
                 COUNT(*)                             AS listing_count
             FROM raw_prices
-            WHERE LOWER(card_name) = LOWER(:name)
+            WHERE {name_filter}
               AND scraped_at >= :cutoff
               AND price > 0
             GROUP BY day
             ORDER BY day ASC
         """),
-        {"name": card_name, "cutoff": cutoff},
+        {"name": fuzzy_name, "cutoff": cutoff},
     )
     rows = history_result.fetchall()
 
     cond_result = await db.execute(
-        text("""
+        text(f"""
             SELECT
                 COALESCE(condition, 'Unknown') AS condition,
                 COUNT(*)                       AS count,
                 ROUND(AVG(price)::numeric, 2)  AS avg_price
             FROM raw_prices
-            WHERE LOWER(card_name) = LOWER(:name)
+            WHERE {name_filter}
               AND price > 0
             GROUP BY condition
             ORDER BY count DESC
             LIMIT 6
         """),
-        {"name": card_name},
+        {"name": fuzzy_name},
     )
     cond_rows = cond_result.fetchall()
 
