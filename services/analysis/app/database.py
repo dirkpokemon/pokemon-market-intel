@@ -8,9 +8,16 @@ from sqlalchemy.orm import declarative_base
 
 from app.config import settings
 
+# Railway provides postgresql:// or postgres:// — convert to asyncpg driver
+def _make_async_url(url: str) -> str:
+    url = url.replace("postgres://", "postgresql://", 1)
+    if url.startswith("postgresql://") and "+asyncpg" not in url:
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
 # Create async engine
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    _make_async_url(settings.DATABASE_URL),
     pool_size=10,
     max_overflow=5,
     echo=False,
