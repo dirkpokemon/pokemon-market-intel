@@ -230,7 +230,7 @@ export default function HomePage() {
                   <h2 className="text-lg font-bold text-white">Market Search</h2>
                   <span className="px-2.5 py-0.5 bg-green-500/20 text-green-400 text-[11px] font-bold rounded-full tracking-wider uppercase flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                    Live
+                    Hourly updated
                   </span>
                 </div>
 
@@ -382,7 +382,7 @@ export default function HomePage() {
                 <StatCard title="Total Deals" value={dealScores.length} subtitle="Active opportunities" icon="🎴" color="blue" />
                 <StatCard title="Avg Deal Score" value={avgDealScore} subtitle="Market average" icon="📊" color="purple" trend={{ value: 12, label: 'vs last week', isPositive: true }} />
                 <StatCard title="Excellent Deals" value={excellentDeals} subtitle="Score 80+" icon="⭐" color="green" />
-                <StatCard title="Active Signals" value={signals.length} subtitle="Real-time alerts" icon="🎯" color="blue" />
+                <StatCard title="Active Signals" value={signals.length} subtitle="Hourly scan" icon="🎯" color="blue" />
               </div>
             </div>
 
@@ -480,7 +480,7 @@ export default function HomePage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Latest TCG news</h2>
-                  <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase">Live</span>
+                  <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase">Hourly</span>
                 </div>
               </div>
 
@@ -600,7 +600,7 @@ export default function HomePage() {
               <div className="mt-8 bg-gray-900 rounded-xl p-8 text-center">
                 <h3 className="text-xl font-bold text-white mb-2">Unlock Plus</h3>
                 <p className="text-sm text-gray-400 mb-6">
-                  Get real-time signals, advanced analytics, email & Telegram alerts, and more!
+                  Get the full Signals feed, unlimited deals, email &amp; Telegram alerts, and more!
                 </p>
                 <Link
                   href="/pricing"

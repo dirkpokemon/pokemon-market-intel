@@ -96,7 +96,7 @@ export default function LandingPage() {
           Start buying <span className="text-green-600">below market price.</span>
         </h2>
         <p className="text-lg text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">
-          AI-powered deal scoring, real-time market signals, and portfolio tracking for European trading card singles. See what others miss.
+          AI-powered deal scoring, hourly market signals, and portfolio tracking for European trading card singles. See what others miss.
         </p>
         <div className="flex gap-4 justify-center">
           <button
@@ -166,7 +166,7 @@ export default function LandingPage() {
             {/* Visual */}
             <div className="order-2 lg:order-1">
               <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Live Signals</h4>
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Signals (hourly scan)</h4>
                 <MockSignalRow icon="🚀" label="Momentum" color="text-green-700 bg-green-50 border-green-200" description="Charizard ex 151: price +18.5% and volume +32% in 7 days" time="2h ago" />
                 <MockSignalRow icon="📉" label="Price Drop" color="text-orange-700 bg-orange-50 border-orange-200" description="Mewtwo VSTAR dropped -22% in 7 days (avg was €45.00)" time="4h ago" />
                 <MockSignalRow icon="🔒" label="Supply Drop" color="text-purple-700 bg-purple-50 border-purple-200" description="Umbreon VMAX: -40% fewer listings — price may rise" time="5h ago" />

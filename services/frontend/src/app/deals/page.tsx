@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import Link from 'next/link';
 import { marketApi, DealScore } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import DealModal from '@/components/DealModal';
 import CardImage from '@/components/CardImage';
+import { isSubscriberRole } from '@/lib/plans';
 
 type ViewMode = 'all' | 'watchlist';
 
@@ -24,6 +26,7 @@ export default function DealsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState('score-desc');
   const [viewMode, setViewMode] = useState<ViewMode>('all');
+  const [userRole, setUserRole] = useState<string>('free');
   const [filters, setFilters] = useState<FilterOptions>({
     search: '',
     minScore: 50,
@@ -37,6 +40,8 @@ export default function DealsPage() {
   useEffect(() => {
     const savedWatchlist = localStorage.getItem('watchlist');
     if (savedWatchlist) setWatchlist(JSON.parse(savedWatchlist));
+    const raw = localStorage.getItem('user');
+    if (raw) { try { setUserRole(JSON.parse(raw).role || 'free'); } catch {} }
     loadData();
   }, []);
 
@@ -111,7 +116,11 @@ export default function DealsPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Top Deals</h1>
-            <p className="text-sm text-gray-500 mt-1">Browse {dealScores.length} verified deals with AI-powered scoring</p>
+            <p className="text-sm text-gray-500 mt-1">
+              {isSubscriberRole(userRole)
+                ? `Browse ${dealScores.length} deals with AI-powered scoring`
+                : `Showing top 20 deals (score ≥ 65) — your free plan`}
+            </p>
           </div>
           <button
             onClick={() => { setViewMode(prev => prev === 'all' ? 'watchlist' : 'all'); setCurrentPage(1); }}
@@ -127,6 +136,22 @@ export default function DealsPage() {
             )}
           </button>
         </div>
+
+        {/* Free-tier limit banner */}
+        {!isSubscriberRole(userRole) && (
+          <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
+            <p className="text-sm text-amber-800">
+              <span className="font-semibold">Free plan:</span> showing top 20 deals with score ≥ 65.{' '}
+              Upgrade to Plus for unlimited access.
+            </p>
+            <Link
+              href="/pricing"
+              className="ml-4 flex-shrink-0 px-3 py-1.5 bg-amber-600 text-white text-xs font-semibold rounded-lg hover:bg-amber-700 transition"
+            >
+              Upgrade to Plus
+            </Link>
+          </div>
+        )}
 
         {loading ? (
           <div className="flex items-center justify-center py-20">

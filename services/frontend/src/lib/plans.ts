@@ -30,17 +30,17 @@ export function isSubscriberRole(role: string | undefined | null): boolean {
 export const PLAN_FEATURES = {
   free: [
     'Top 20 deal scores (score ≥ 65)',
-    'Basic market statistics',
+    'Basic market stats (Market Pulse sample)',
     'Portfolio & watchlist',
     'Card search (170K+ listings)',
     'Community support',
   ],
   paid: [
-    'Unlimited deal scores',
-    'Full Signals feed (momentum, supply, set trends)',
-    'Market Pulse insights',
+    'Unlimited deal scores (all scores, no cap)',
+    'Full Signals feed — momentum, supply, set trends',
+    'Full Market Pulse (all sets, signal breakdown)',
     'Email & Telegram alerts',
-    'Hourly-updated EU listings data',
+    'Data refreshed every hour from EU marketplaces',
     'Priority support',
   ],
   pro: [
