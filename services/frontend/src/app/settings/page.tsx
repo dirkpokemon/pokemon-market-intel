@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import ProfileModal from '@/components/ProfileModal';
-import OnboardingTour from '@/components/OnboardingTour';
+import { activateTour } from '@/lib/tour';
 import { authApi, notificationApi, subscriptionApi } from '@/lib/api';
 import { CTA_UPGRADE_BUSINESS, tierLabel, UPSELL_SUBSCRIBE } from '@/lib/plans';
 
@@ -66,7 +66,6 @@ export default function SettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [showProfile, setShowProfile] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
   const [saved, setSaved] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
@@ -372,7 +371,10 @@ export default function SettingsPage() {
                 <p className="text-sm font-medium text-gray-900">Onboarding Tour</p>
                 <p className="text-xs text-gray-500">Replay the platform walkthrough</p>
               </div>
-              <button onClick={() => setShowOnboarding(true)} className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg hover:bg-gray-800 transition font-medium">
+              <button
+                onClick={() => { activateTour(); router.push('/home'); }}
+                className="px-3 py-1.5 bg-gray-900 text-white text-xs rounded-lg hover:bg-gray-800 transition font-medium"
+              >
                 Replay Tour
               </button>
             </div>
@@ -413,9 +415,6 @@ export default function SettingsPage() {
 
       {showProfile && (
         <ProfileModal user={user} onClose={() => setShowProfile(false)} onSave={(data) => { console.log('Profile updated:', data); setShowProfile(false); }} />
-      )}
-      {showOnboarding && (
-        <OnboardingTour user={user} onComplete={() => setShowOnboarding(false)} />
       )}
     </DashboardLayout>
   );

@@ -1,267 +1,78 @@
 'use client';
 
-import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { activateTour, completeTour } from '@/lib/tour';
 
 export type TourUser = { role?: string } | null | undefined;
-
-function isPremiumUser(user: TourUser): boolean {
-  const r = user?.role || 'free';
-  return ['paid', 'pro', 'admin'].includes(r);
-}
-
-type TourStep = {
-  title: string;
-  description: string;
-  position: 'center' | 'top';
-  target?: string;
-  actionLink?: { href: string; label: string };
-};
-
-function freeTourSteps(): TourStep[] {
-  return [
-    {
-      title: 'Welcome to TCG Pulse',
-      description:
-        'We help you spot strong singles deals across the EU: search the catalogue, compare deal scores, and track what you own or want.',
-      position: 'center',
-    },
-    {
-      title: 'Search the full catalogue',
-      description:
-        'On Home, use the search bar to find cards across a large EU listing index. Choose how results are sorted (relevance, price, or number of listings).',
-      position: 'top',
-      target: 'search',
-    },
-    {
-      title: 'Your dashboard at a glance',
-      description:
-        'Stat cards and deal highlights summarise what the market looks like right now. Use them as a quick pulse before you open individual cards.',
-      position: 'top',
-      target: 'kpis',
-    },
-    {
-      title: 'Signals (subscribers)',
-      description:
-        'Richer market signals live under Signals in the sidebar. That area is included with a subscription—useful if you want ideas beyond deal scores alone.',
-      position: 'top',
-      target: 'signals',
-      actionLink: { href: '/pricing', label: 'View plans' },
-    },
-    {
-      title: 'Top deals & Deal Score',
-      description:
-        'Deal Scores from 0–100 rank how attractive a price looks versus the broader market. Open a card for more context and buy links when we have them.',
-      position: 'top',
-      target: 'deals',
-    },
-    {
-      title: 'Portfolio & watchlist',
-      description:
-        'Track collection value and watch cards you care about under Portfolio—My Collection and My Watchlist keep everything in one place.',
-      position: 'top',
-      target: 'portfolio',
-    },
-    {
-      title: 'Tips',
-      description:
-        'Portfolio and watchlist data is stored in this browser. You can replay this tour anytime from Settings if you want a refresher.',
-      position: 'center',
-    },
-    {
-      title: "You're ready",
-      description:
-        'Explore Home and Top Deals, build your portfolio, and subscribe when you want full Signals access. Good luck trading.',
-      position: 'center',
-    },
-  ];
-}
-
-function premiumTourSteps(): TourStep[] {
-  return [
-    {
-      title: 'Welcome — full access',
-      description:
-        'Your plan includes Signals and the rest of the toolkit. Here is how everything fits together in a short walkthrough.',
-      position: 'center',
-    },
-    {
-      title: 'Search the catalogue',
-      description:
-        'From Home, search across a large EU index. Switch sorting to focus on relevance, price, or how many listings support each card.',
-      position: 'top',
-      target: 'search',
-    },
-    {
-      title: 'Dashboard overview',
-      description:
-        'KPIs and previews summarise deals and, when available, recent signal activity. It is a good starting point every time you log in.',
-      position: 'top',
-      target: 'kpis',
-    },
-    {
-      title: 'Signals',
-      description:
-        'Use Signals in the sidebar for the full feed and deeper reads. That space is for Plus and Business—open it when you want narrative and ideas next to raw scores.',
-      position: 'top',
-      target: 'signals',
-      actionLink: { href: '/signals', label: 'Open Signals' },
-    },
-    {
-      title: 'Top deals',
-      description:
-        'Deal Score highlights strong prices versus the market average. Click through for detail and purchase links where available.',
-      position: 'top',
-      target: 'deals',
-    },
-    {
-      title: 'Portfolio',
-      description:
-        'My Collection and My Watchlist help you track value and price targets over time.',
-      position: 'top',
-      target: 'portfolio',
-    },
-    {
-      title: 'Alerts & settings',
-      description:
-        'Tune email or Telegram alerts and other preferences under Settings so notifications match how you like to trade.',
-      position: 'center',
-      actionLink: { href: '/settings', label: 'Go to Settings' },
-    },
-    {
-      title: "You're set",
-      description:
-        'Dive into signals, deals, and your portfolio whenever you like. Use Feedback in the sidebar if something is unclear—we read it.',
-      position: 'center',
-    },
-  ];
-}
 
 interface OnboardingTourProps {
   onComplete: () => void;
   user?: TourUser;
 }
 
-export default function OnboardingTour({ onComplete, user }: OnboardingTourProps) {
-  const steps = useMemo(
-    () => (isPremiumUser(user) ? premiumTourSteps() : freeTourSteps()),
-    [user?.role]
-  );
-
-  const [currentStep, setCurrentStep] = useState(0);
-
-  const currentStepData = steps[currentStep];
-
-  const handleNext = () => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
-    } else {
-      onComplete();
-    }
-  };
-
-  const handleSkip = () => {
+export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
+  const handleStartTour = () => {
+    activateTour();
     onComplete();
   };
 
-  const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
+  const handleSkip = () => {
+    completeTour();
+    onComplete();
   };
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-60 z-50 transition-opacity" />
+      <div className="fixed inset-0 bg-black bg-opacity-60 z-50" />
 
-      <div
-        className={`fixed z-50 ${
-          currentStepData.position === 'center'
-            ? 'top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2'
-            : 'top-24 left-1/2 transform -translate-x-1/2'
-        }`}
-      >
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden">
+      <div className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md px-4">
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+          {/* Header */}
           <div className="bg-gray-900 p-6 text-white">
-            <div className="flex items-center justify-between mb-2 gap-3">
-              <h3 className="text-xl font-bold leading-snug">{currentStepData.title}</h3>
-              <button
-                type="button"
-                onClick={handleSkip}
-                className="text-white/80 hover:text-white text-sm shrink-0"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="flex gap-1">
-              {steps.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`h-1 flex-1 rounded-full ${
-                    idx <= currentStep ? 'bg-white' : 'bg-white/30'
-                  }`}
-                />
-              ))}
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center text-lg font-bold shrink-0">
+                T
+              </div>
+              <div>
+                <h2 className="text-xl font-bold leading-tight">Welkom bij TCG Pulse</h2>
+                <p className="text-gray-400 text-sm">EU market intelligence voor trading card singles</p>
+              </div>
             </div>
           </div>
 
+          {/* Body */}
           <div className="p-6">
-            <p className="text-gray-700 leading-relaxed mb-4">{currentStepData.description}</p>
+            <p className="text-gray-700 text-sm leading-relaxed mb-4">
+              Wil je een rondleiding? We nemen je stap voor stap mee langs alle pagina's — van de
+              zoekbalk op Home tot je Portfolio — en leggen uit wat je per pagina kan verwachten.
+            </p>
 
-            {currentStepData.actionLink && (
-              <div className="mb-6">
-                <Link
-                  href={currentStepData.actionLink.href}
-                  className="inline-flex text-sm font-semibold text-gray-900 underline underline-offset-2 hover:text-gray-600"
-                >
-                  {currentStepData.actionLink.label} →
-                </Link>
-              </div>
-            )}
+            <ul className="space-y-2 mb-6">
+              {['Home — zoeken & dashboard', 'Top Deals — Deal Score uitgelegd', 'Market Pulse — marktoverzicht', 'Signals — momentum & alerts', 'Portfolio — collectie beheren'].map(
+                (item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm text-gray-600">
+                    <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs shrink-0">
+                      ✓
+                    </span>
+                    {item}
+                  </li>
+                )
+              )}
+            </ul>
 
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div className="text-sm text-gray-500">
-                Step {currentStep + 1} of {steps.length}
-              </div>
-              <div className="flex gap-2">
-                {currentStep > 0 && (
-                  <button
-                    type="button"
-                    onClick={handlePrevious}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition"
-                  >
-                    ← Back
-                  </button>
-                )}
-                {currentStep < steps.length - 1 ? (
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="px-6 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition"
-                  >
-                    Next →
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleNext}
-                    className="px-6 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition"
-                  >
-                    Get started
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {currentStep < steps.length - 1 && (
-              <button
-                type="button"
-                onClick={handleSkip}
-                className="w-full mt-3 text-sm text-gray-500 hover:text-gray-700"
-              >
-                Skip tour
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleStartTour}
+              className="w-full py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-800 transition mb-2"
+            >
+              Start rondleiding →
+            </button>
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition"
+            >
+              Overslaan, ik verken het zelf
+            </button>
           </div>
         </div>
       </div>

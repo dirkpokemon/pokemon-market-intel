@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api';
 import Sidebar from './Sidebar';
 import SiteFooter from './SiteFooter';
+import TourBanner from './TourBanner';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -74,6 +75,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <Sidebar user={user} />
       {/* Main content — offset by sidebar width */}
       <div className="lg:ml-[240px] flex flex-col flex-1 min-h-0 transition-all duration-200">
+        <TourBanner />
         <main className="flex-1">{children}</main>
         <SiteFooter />
       </div>
