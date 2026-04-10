@@ -42,8 +42,8 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
           {/* Body */}
           <div className="p-6">
             <p className="text-gray-700 text-sm leading-relaxed mb-4">
-              Wil je een rondleiding? We nemen je stap voor stap mee langs alle pagina's — van de
-              zoekbalk op Home tot je Portfolio — en leggen uit wat je per pagina kan verwachten.
+              Wil je een rondleiding? We nemen je stap voor stap mee langs alle pagina&apos;s — van
+              de zoekbalk op Home tot je Portfolio — en leggen uit wat je per pagina kan verwachten.
             </p>
 
             <ul className="space-y-2 mb-6">

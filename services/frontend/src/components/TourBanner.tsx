@@ -142,7 +142,7 @@ export default function TourBanner() {
 
             {!isOnCorrectPage && (
               <p className="mt-3 text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
-                Klik op "Volgende" om naar deze pagina te gaan.
+                Klik op &quot;Volgende&quot; om naar deze pagina te gaan.
               </p>
             )}
 
