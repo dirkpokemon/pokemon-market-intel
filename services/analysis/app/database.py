@@ -49,22 +49,38 @@ async def init_db() -> None:
         # Import all models to ensure they're registered
         from app import models
 
-        # Check if market_statistics has all required columns; if not, drop it
-        # so create_all can recreate it with the correct schema.
-        required_columns = {
-            "avg_price_7d", "min_price_7d", "max_price_7d", "volume_7d",
-            "avg_price_30d", "min_price_30d", "max_price_30d", "volume_30d",
-            "price_trend_7d", "price_trend_30d", "volume_trend_7d", "volume_trend_30d",
-            "liquidity_score", "volatility", "sample_size", "data_quality",
-            "calculated_at", "created_at",
+        # Tables that are fully derived/computed — safe to drop and recreate
+        # if their schema is out of date (missing columns from later model changes).
+        tables_to_validate = {
+            "market_statistics": {
+                "avg_price_7d", "min_price_7d", "max_price_7d", "volume_7d",
+                "avg_price_30d", "min_price_30d", "max_price_30d", "volume_30d",
+                "price_trend_7d", "price_trend_30d", "volume_trend_7d", "volume_trend_30d",
+                "liquidity_score", "volatility", "sample_size", "data_quality",
+                "calculated_at", "created_at",
+            },
+            "deal_scores": {
+                "product_name", "product_set", "category", "current_price",
+                "currency", "condition", "source", "market_avg_price", "market_min_price",
+                "price_deviation_score", "volume_trend_score", "liquidity_score",
+                "popularity_score", "deal_score", "confidence", "data_quality",
+                "is_active", "expires_at", "calculated_at", "created_at",
+            },
+            "signals": {
+                "signal_type", "signal_level", "product_name", "product_set", "category",
+                "current_price", "market_avg_price", "deal_score", "description",
+                "signal_metadata", "confidence", "priority", "is_active", "is_sent",
+                "sent_at", "detected_at", "expires_at", "created_at",
+            },
         }
 
         def check_and_drop(sync_conn):
             insp = inspect(sync_conn)
-            if insp.has_table("market_statistics"):
-                existing = {col["name"] for col in insp.get_columns("market_statistics")}
-                if not required_columns.issubset(existing):
-                    sync_conn.execute(text("DROP TABLE IF EXISTS market_statistics CASCADE"))
+            for table_name, required_cols in tables_to_validate.items():
+                if insp.has_table(table_name):
+                    existing = {col["name"] for col in insp.get_columns(table_name)}
+                    if not required_cols.issubset(existing):
+                        sync_conn.execute(text(f"DROP TABLE IF EXISTS {table_name} CASCADE"))
 
         await conn.run_sync(check_and_drop)
         await conn.run_sync(Base.metadata.create_all)
