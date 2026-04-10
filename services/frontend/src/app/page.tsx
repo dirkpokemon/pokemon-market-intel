@@ -227,7 +227,7 @@ export default function LandingPage() {
       {/* ─── Feature 3: Portfolio ─── */}
       <section className="max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div>
+            <div>
             <div className="inline-block px-2.5 py-1 bg-gray-100 text-gray-600 text-[11px] font-semibold rounded-md uppercase tracking-wide mb-4">
               Portfolio
             </div>
