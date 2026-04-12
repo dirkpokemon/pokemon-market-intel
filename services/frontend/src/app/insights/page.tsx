@@ -173,8 +173,8 @@ export default function MarketPulsePage() {
         {loading ? (
           <div className="flex items-center justify-center flex-1 min-h-[320px]">
             <div className="text-center">
-              <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-800 rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-sm text-gray-500">Marktdata laden…</p>
+              <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-800 dark:border-gray-600 dark:border-t-gray-200 rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">Marktdata laden…</p>
             </div>
           </div>
         ) : marketData ? (
@@ -191,7 +191,7 @@ export default function MarketPulsePage() {
           </div>
         ) : (
           <div className="text-center py-20 flex-1">
-            <p className="text-gray-500">Geen marktdata beschikbaar.</p>
+            <p className="text-gray-500 dark:text-gray-400">Geen marktdata beschikbaar.</p>
           </div>
         )}
       </div>

@@ -64,30 +64,30 @@ function cleanSearchName(name: string) {
 
 const SIGNAL_TYPE_META: Record<string, { label: string; icon: string; color: string }> = {
   // Current signal types
-  momentum:       { label: 'Momentum',       icon: '🚀', color: 'text-green-700 bg-green-50 border-green-200' },
-  risk:           { label: 'Risk',           icon: '⚠️',  color: 'text-red-700 bg-red-50 border-red-200' },
-  price_drop:     { label: 'Price Drop',     icon: '📉', color: 'text-orange-700 bg-orange-50 border-orange-200' },
-  supply_surge:   { label: 'Supply Surge',   icon: '📦', color: 'text-blue-700 bg-blue-50 border-blue-200' },
-  supply_drop:    { label: 'Supply Drop',    icon: '🔒', color: 'text-purple-700 bg-purple-50 border-purple-200' },
-  volatility:     { label: 'Volatile',       icon: '🎢', color: 'text-amber-700 bg-amber-50 border-amber-200' },
-  set_rising:     { label: 'Set Rising',     icon: '📈', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-  set_declining:  { label: 'Set Declining',  icon: '📉', color: 'text-rose-700 bg-rose-50 border-rose-200' },
+  momentum:       { label: 'Momentum',       icon: '🚀', color: 'text-green-700 bg-green-50 border-green-200 dark:text-green-300 dark:bg-green-950/40 dark:border-green-800' },
+  risk:           { label: 'Risk',           icon: '⚠️',  color: 'text-red-700 bg-red-50 border-red-200 dark:text-red-300 dark:bg-red-950/40 dark:border-red-800' },
+  price_drop:     { label: 'Price Drop',     icon: '📉', color: 'text-orange-700 bg-orange-50 border-orange-200 dark:text-orange-300 dark:bg-orange-950/40 dark:border-orange-800' },
+  supply_surge:   { label: 'Supply Surge',   icon: '📦', color: 'text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-300 dark:bg-blue-950/40 dark:border-blue-800' },
+  supply_drop:    { label: 'Supply Drop',    icon: '🔒', color: 'text-purple-700 bg-purple-50 border-purple-200 dark:text-purple-300 dark:bg-purple-950/40 dark:border-purple-800' },
+  volatility:     { label: 'Volatile',       icon: '🎢', color: 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-950/40 dark:border-amber-800' },
+  set_rising:     { label: 'Set Rising',     icon: '📈', color: 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-800' },
+  set_declining:  { label: 'Set Declining',  icon: '📉', color: 'text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-300 dark:bg-rose-950/40 dark:border-rose-800' },
   // Legacy signal types (still in DB from older analysis runs)
-  high_deal:      { label: 'Strong Deal',    icon: '⭐', color: 'text-green-700 bg-green-50 border-green-200' },
-  medium_deal:    { label: 'Good Deal',      icon: '✅', color: 'text-blue-700 bg-blue-50 border-blue-200' },
-  undervalued:    { label: 'Undervalued',    icon: '💎', color: 'text-indigo-700 bg-indigo-50 border-indigo-200' },
-  arbitrage:      { label: 'Arbitrage',      icon: '🔄', color: 'text-purple-700 bg-purple-50 border-purple-200' },
+  high_deal:      { label: 'Strong Deal',    icon: '⭐', color: 'text-green-700 bg-green-50 border-green-200 dark:text-green-300 dark:bg-green-950/40 dark:border-green-800' },
+  medium_deal:    { label: 'Good Deal',      icon: '✅', color: 'text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-300 dark:bg-blue-950/40 dark:border-blue-800' },
+  undervalued:    { label: 'Undervalued',    icon: '💎', color: 'text-indigo-700 bg-indigo-50 border-indigo-200 dark:text-indigo-300 dark:bg-indigo-950/40 dark:border-indigo-800' },
+  arbitrage:      { label: 'Arbitrage',      icon: '🔄', color: 'text-purple-700 bg-purple-50 border-purple-200 dark:text-purple-300 dark:bg-purple-950/40 dark:border-purple-800' },
 };
 
 function getTypeMeta(type: string) {
-  return SIGNAL_TYPE_META[type] || { label: type.replace(/_/g, ' '), icon: '📊', color: 'text-gray-700 bg-gray-50 border-gray-200' };
+  return SIGNAL_TYPE_META[type] || { label: type.replace(/_/g, ' '), icon: '📊', color: 'text-gray-700 bg-gray-50 border-gray-200 dark:text-gray-200 dark:bg-gray-800 dark:border-gray-700' };
 }
 
 function getLevelConfig(level: string) {
   switch (level) {
-    case 'high': return { badge: 'bg-red-100 text-red-800', dot: 'bg-red-500' };
-    case 'medium': return { badge: 'bg-amber-100 text-amber-800', dot: 'bg-amber-500' };
-    default: return { badge: 'bg-blue-100 text-blue-800', dot: 'bg-blue-500' };
+    case 'high': return { badge: 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200', dot: 'bg-red-500' };
+    case 'medium': return { badge: 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200', dot: 'bg-amber-500' };
+    default: return { badge: 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-200', dot: 'bg-blue-500' };
   }
 }
 
@@ -152,23 +152,23 @@ function SignalCard({ signal }: { signal: Signal }) {
                 {meta.icon} {meta.label}
               </span>
               {signal.confidence != null && (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">
                   {Math.round(Number(signal.confidence))}% zekerheid
                 </span>
               )}
               <span className="text-[11px] text-gray-400 ml-auto">{timeAgo(signal.detected_at)}</span>
             </div>
 
-            <h4 className="text-sm font-semibold text-gray-900 mb-0.5 truncate">{signal.product_name}</h4>
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5 truncate">{signal.product_name}</h4>
             {signal.product_set && !isSetSignal && (
               <p className="text-xs text-gray-400 mb-1">{signal.product_set}</p>
             )}
             {isSetSignal && (
-              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-md px-2 py-1 mt-1 inline-block">
+              <p className="text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-800 rounded-md px-2 py-1 mt-1 inline-block">
                 Set-signaal: gemiddelde trend over meerdere kaarten in deze set
               </p>
             )}
-            {signal.description && <p className="text-xs text-gray-600 leading-relaxed mt-1.5">{signal.description}</p>}
+            {signal.description && <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mt-1.5">{signal.description}</p>}
 
             {Object.keys(parsedMeta).length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
@@ -210,7 +210,7 @@ function SignalCard({ signal }: { signal: Signal }) {
             {signal.current_price && (
               <div className="text-right">
                 <p className="text-xs text-gray-400">Price</p>
-                <p className="text-sm font-bold text-gray-900">&euro;{signal.current_price.toFixed(2)}</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">&euro;{signal.current_price.toFixed(2)}</p>
                 {signal.market_avg_price && signal.market_avg_price !== signal.current_price && (
                   <p className="text-[11px] text-gray-400">avg &euro;{signal.market_avg_price.toFixed(2)}</p>
                 )}
@@ -225,15 +225,15 @@ function SignalCard({ signal }: { signal: Signal }) {
 
       {/* ── Action panel (expanded) ── */}
       {expanded && (
-        <div className="px-5 pb-5 border-t border-gray-100 pt-4">
-          <p className="text-[11px] text-gray-400 mb-3">
+        <div className="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">
             Gedetecteerd:{' '}
             {new Date(signal.detected_at).toLocaleString('nl-NL', {
               dateStyle: 'medium',
               timeStyle: 'short',
             })}
             {signal.deal_score != null && (
-              <span className="ml-2 text-gray-600">
+              <span className="ml-2 text-gray-600 dark:text-gray-400">
                 · deal-score {Math.round(signal.deal_score)}
               </span>
             )}
@@ -245,7 +245,7 @@ function SignalCard({ signal }: { signal: Signal }) {
                 {action.label}
               </span>
             </div>
-            <p className="text-sm text-gray-600 leading-relaxed">{action.hint}</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{action.hint}</p>
           </div>
 
           {/* Actions */}
@@ -299,8 +299,8 @@ function SignalCard({ signal }: { signal: Signal }) {
               onClick={handleWatchlist}
               className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition ${
                 inWatchlist
-                  ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
-                  : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                  ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800 dark:hover:bg-amber-950/60'
+                  : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700'
               }`}
             >
               <svg className="w-3.5 h-3.5" fill={inWatchlist ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
@@ -433,13 +433,13 @@ export default function PriceSignalsPage() {
 
         {/* Stale data warning */}
         {signalsAreStale && !loading && (
-          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6">
-            <svg className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/35 border border-amber-200 dark:border-amber-800/60 rounded-xl px-4 py-3 mb-6">
+            <svg className="w-4 h-4 text-amber-600 dark:text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
             </svg>
             <div>
-              <p className="text-sm font-semibold text-amber-800">Signals are outdated</p>
-              <p className="text-xs text-amber-700 mt-0.5">
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Signals are outdated</p>
+              <p className="text-xs text-amber-700 dark:text-amber-300/90 mt-0.5">
                 The newest signal is {newestSignalAge && newestSignalAge > 48
                   ? `${Math.round(newestSignalAge / 24)} days`
                   : `${Math.round(newestSignalAge ?? 0)} hours`} old.
@@ -451,16 +451,16 @@ export default function PriceSignalsPage() {
 
         {/* Subscriber gate */}
         {(!isPaid || accessDenied) && (
-          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 p-8 mb-8">
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/40 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 p-8 mb-8">
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/60 rounded-xl flex items-center justify-center flex-shrink-0">
+                <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-bold text-gray-900 mb-1">Unlock Signals</h3>
-                <p className="text-sm text-gray-600 mb-4">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Unlock Signals</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                   Track momentum shifts, supply changes, volatility spikes, and set-level trends. Updated every hour.
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
@@ -470,7 +470,7 @@ export default function PriceSignalsPage() {
                     { label: 'Set trends', icon: '📈' },
                     { label: 'Risk warnings', icon: '⚠️' },
                   ].map(f => (
-                    <div key={f.label} className="flex items-center gap-2 text-sm text-gray-700">
+                    <div key={f.label} className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
                       <span>{f.icon}</span>
                       <span className="text-xs font-medium">{f.label}</span>
                     </div>
@@ -493,17 +493,17 @@ export default function PriceSignalsPage() {
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
-              <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-800 rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-sm text-gray-500">Loading market data...</p>
+              <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-800 dark:border-gray-600 dark:border-t-gray-200 rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">Loading market data...</p>
             </div>
           </div>
         ) : accessDenied && signals.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-            <svg className="w-16 h-16 text-indigo-200 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center">
+            <svg className="w-16 h-16 text-indigo-200 dark:text-indigo-800 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Signals need Plus or Business</h3>
-            <p className="text-sm text-gray-500 mb-5">Upgrade your account to access real-time market signals.</p>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Signals need Plus or Business</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-5">Upgrade your account to access real-time market signals.</p>
             <Link href="/pricing" className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition">
               {UPSELL_SUBSCRIBE}
             </Link>
@@ -513,36 +513,36 @@ export default function PriceSignalsPage() {
             {/* ─── Market Digest Row ─────────────────────── */}
             {digest && (
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <div className="bg-white rounded-xl border border-gray-200 p-4">
-                  <p className="text-xs text-gray-500 mb-1">Cards Tracked</p>
-                  <p className="text-2xl font-bold text-gray-900">{digest.total_cards_tracked.toLocaleString()}</p>
-                  <p className="text-[11px] text-gray-400">{digest.total_sets} sets</p>
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Cards Tracked</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{digest.total_cards_tracked.toLocaleString()}</p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500">{digest.total_sets} sets</p>
                 </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-4">
-                  <p className="text-xs text-gray-500 mb-1">Total Listings</p>
-                  <p className="text-2xl font-bold text-gray-900">{digest.total_listings.toLocaleString()}</p>
-                  <p className="text-[11px] text-gray-400">across all sources</p>
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Total Listings</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{digest.total_listings.toLocaleString()}</p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500">across all sources</p>
                 </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-4">
-                  <p className="text-xs text-gray-500 mb-1">Active Signals</p>
-                  <p className="text-2xl font-bold text-gray-900">{signals.length}</p>
-                  <p className="text-[11px] text-gray-400">{Object.keys(digest.signal_counts).length} categories</p>
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Active Signals</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{signals.length}</p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500">{Object.keys(digest.signal_counts).length} categories</p>
                 </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-4">
-                  <p className="text-xs text-gray-500 mb-1">Last Analysis</p>
-                  <p className="text-lg font-bold text-gray-900">
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Last Analysis</p>
+                  <p className="text-lg font-bold text-gray-900 dark:text-white">
                     {digest.last_analysis_at ? timeAgo(digest.last_analysis_at) : 'Pending'}
                   </p>
-                  <p className="text-[11px] text-gray-400">updates every hour</p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500">updates every hour</p>
                 </div>
               </div>
             )}
 
             {/* ─── Filters: scope (cards vs sets) + search + type (counts = this page only) ─── */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 space-y-4">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 mb-6 space-y-4">
               <div>
-                <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-2">Weergave</p>
-                <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
+                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Weergave</p>
+                <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 bg-gray-50 dark:bg-gray-800/80">
                   {(
                     [
                       { id: 'all' as const, label: 'Alles' },
@@ -558,7 +558,9 @@ export default function PriceSignalsPage() {
                         setFilterType('all');
                       }}
                       className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${
-                        scope === id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                        scope === id
+                          ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-white dark:shadow-none'
+                          : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
                       }`}
                     >
                       {label}
@@ -585,13 +587,13 @@ export default function PriceSignalsPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Zoek op kaart, set of beschrijving…"
-                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 focus:border-transparent"
                   />
                 </div>
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
-                  className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent min-w-[180px]"
+                  className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 focus:border-transparent min-w-[180px]"
                 >
                   <option value="all">Alle types ({scopedSignals.length})</option>
                   {signalTypes.map((type) => {
@@ -611,25 +613,25 @@ export default function PriceSignalsPage() {
                       setFilterType('all');
                       setSearchQuery('');
                     }}
-                    className="text-xs text-gray-500 hover:text-gray-700 underline"
+                    className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 underline"
                   >
                     Reset
                   </button>
                 )}
               </div>
-              <p className="text-[11px] text-gray-400">
+              <p className="text-[11px] text-gray-400 dark:text-gray-500">
                 Tellingen gelden voor deze feed (max. 100 signalen), niet voor de hele database.
               </p>
             </div>
 
             {/* ─── Signal Feed ───────────────────────────── */}
             {filteredSignals.length === 0 ? (
-              <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-                <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center">
+                <svg className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
-                <p className="text-sm font-medium text-gray-900 mb-1">No signals found</p>
-                <p className="text-xs text-gray-500">
+                <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">No signals found</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
                   {filterType !== 'all' || searchQuery
                     ? 'Try adjusting your filters'
                     : 'Signals will appear after the next analysis cycle (runs every hour)'}
@@ -644,7 +646,7 @@ export default function PriceSignalsPage() {
             )}
 
             {filteredSignals.length > 60 && (
-              <p className="text-center text-xs text-gray-400 mt-4">
+              <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-4">
                 Showing 60 of {filteredSignals.length} signals
               </p>
             )}
