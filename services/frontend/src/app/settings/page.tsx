@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import ProfileModal from '@/components/ProfileModal';
 import { activateTour } from '@/lib/tour';
 import { authApi, notificationApi, subscriptionApi } from '@/lib/api';
-import { CTA_UPGRADE_BUSINESS, tierLabel, UPSELL_SUBSCRIBE } from '@/lib/plans';
+import { businessWaitlistMailto, CTA_BUSINESS_WAITLIST, tierLabel, UPSELL_SUBSCRIBE } from '@/lib/plans';
 
 const NOTIF_PREFS_KEY = 'notification_preferences';
 
@@ -70,8 +70,6 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [billingError, setBillingError] = useState('');
-  const [upgradeLoading, setUpgradeLoading] = useState(false);
-  const [upgradeError, setUpgradeError] = useState('');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -135,22 +133,6 @@ export default function SettingsPage() {
     }
   };
 
-  const handleUpgradeToBusiness = async () => {
-    setUpgradeError('');
-    setUpgradeLoading(true);
-    try {
-      await subscriptionApi.upgradeToBusiness();
-      const u = await authApi.getMe();
-      localStorage.setItem('user', JSON.stringify(u));
-      setUser(u);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Upgrade failed';
-      setUpgradeError(msg);
-    } finally {
-      setUpgradeLoading(false);
-    }
-  };
-
   return (
     <DashboardLayout>
       <div className="px-6 py-8 max-w-3xl mx-auto">
@@ -194,27 +176,19 @@ export default function SettingsPage() {
 
         {user?.role === 'paid' && (
           <div className="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-xl border border-indigo-100 p-6 mb-6">
-            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-2">Upgrade to Business</h2>
+            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-2">Business (coming soon)</h2>
             <p className="text-sm text-gray-600 mb-4">
-              Move from Plus to Business on the same subscription (Stripe prorates the difference). You get the same
-              product access today; Business-only tools (API, exports, advanced rules) roll out here first.
+              We are not selling Business yet — it will add API access, bulk export, and advanced alerts when ready. Join the
+              waitlist and we will email you when checkout opens. You keep Plus until then.
             </p>
-            {upgradeError && (
-              <div className="mb-3 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{upgradeError}</div>
-            )}
-            <button
-              type="button"
-              onClick={handleUpgradeToBusiness}
-              disabled={upgradeLoading}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-60"
+            <a
+              href={businessWaitlistMailto()}
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
             >
-              {upgradeLoading && (
-                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" aria-hidden />
-              )}
-              {upgradeLoading ? 'Upgrading…' : CTA_UPGRADE_BUSINESS}
-            </button>
+              {CTA_BUSINESS_WAITLIST}
+            </a>
             <p className="text-xs text-gray-500 mt-3">
-              You can also open <span className="font-medium">Pricing</span> and use the Business column — same upgrade path.
+              Same link as on the <span className="font-medium">Pricing</span> page under Business.
             </p>
           </div>
         )}

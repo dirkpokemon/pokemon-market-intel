@@ -3,7 +3,13 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import SiteFooter from '@/components/SiteFooter';
-import { CTA_GET_BUSINESS, CTA_SUBSCRIBE_PLUS, PLAN_FEATURES, SUBSCRIBER_BADGE } from '@/lib/plans';
+import {
+  businessWaitlistMailto,
+  CTA_BUSINESS_WAITLIST,
+  CTA_SUBSCRIBE_PLUS,
+  PLAN_FEATURES,
+  SUBSCRIBER_BADGE,
+} from '@/lib/plans';
 
 // ─── Brand mark (header) ────────────────────────────────────────
 function BrandMark({ size = 40 }: { size?: number }) {
@@ -419,12 +425,15 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* Business */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            {/* Business (waitlist — no checkout yet) */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 relative">
+              <div className="absolute top-4 right-4 px-2 py-0.5 bg-violet-100 text-violet-800 text-[10px] font-bold rounded-full uppercase">
+                Waitlist
+              </div>
               <h4 className="text-lg font-bold text-gray-900 mb-1">Business</h4>
               <div className="mb-5">
-                <span className="text-3xl font-bold text-gray-900">&euro;49</span>
-                <span className="text-gray-400 text-sm">/month</span>
+                <span className="text-2xl font-bold text-gray-900">Coming soon</span>
+                <p className="text-xs text-gray-400 mt-1">Paid plans when API &amp; export launch</p>
               </div>
               <ul className="space-y-2.5 mb-6">
                 {PLAN_FEATURES.pro.slice(0, 5).map((f) => (
@@ -436,9 +445,12 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <Link href="/pricing" className="block w-full text-center py-2.5 px-4 rounded-lg border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition">
-                {CTA_GET_BUSINESS}
-              </Link>
+              <a
+                href={businessWaitlistMailto()}
+                className="block w-full text-center py-2.5 px-4 rounded-lg border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition"
+              >
+                {CTA_BUSINESS_WAITLIST}
+              </a>
             </div>
           </div>
 

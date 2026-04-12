@@ -3,12 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { authApi, subscriptionApi } from '@/lib/api';
+import { subscriptionApi } from '@/lib/api';
 import SiteFooter from '@/components/SiteFooter';
 import {
-  CTA_GET_BUSINESS,
+  businessWaitlistMailto,
+  CTA_BUSINESS_WAITLIST,
   CTA_SUBSCRIBE_PLUS,
-  CTA_UPGRADE_BUSINESS,
   PLAN_FEATURES,
 } from '@/lib/plans';
 
@@ -22,10 +22,8 @@ export default function PricingPage() {
   const [accountRole, setAccountRole] = useState<string | null>(null);
   const [stripePrices, setStripePrices] = useState<{
     paid?: string;
-    pro?: string;
   }>(() => ({
     paid: process.env.NEXT_PUBLIC_STRIPE_PRICE_PAID || undefined,
-    pro: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO || undefined,
   }));
 
   useEffect(() => {
@@ -59,7 +57,6 @@ export default function PricingPage() {
         if (cancelled) return;
         setStripePrices({
           paid: p.stripe_price_paid?.trim() || undefined,
-          pro: p.stripe_price_pro?.trim() || undefined,
         });
       } catch {
         /* keep build-time env fallback */
@@ -96,15 +93,15 @@ export default function PricingPage() {
         {
           key: 'pro' as const,
           name: 'Business',
-          price: '€49',
-          period: '/month',
-          description: 'For shops and power users',
+          price: 'Coming soon',
+          period: '',
+          description: 'API, exports, and advanced rules — join the waitlist',
           features: [...PLAN_FEATURES.pro],
           highlighted: false,
-          priceId: stripePrices.pro || null,
+          priceId: null as string | null,
         },
       ] as const,
-    [stripePrices.paid, stripePrices.pro]
+    [stripePrices.paid]
   );
 
   const resolveButton = (planKey: PlanKey) => {
@@ -120,11 +117,12 @@ export default function PricingPage() {
     if (planKey === 'paid') {
       if (r === 'free') return { disabled: false as const, label: CTA_SUBSCRIBE_PLUS, mode: 'checkout' as const };
       if (r === 'paid') return { disabled: true as const, label: 'Your plan', mode: 'idle' as const };
-      return { disabled: true as const, label: 'Included in Business', mode: 'idle' as const };
+      return { disabled: true as const, label: 'Included in Plus today', mode: 'idle' as const };
     }
-    /* pro / Business column */
-    if (r === 'free') return { disabled: false as const, label: CTA_GET_BUSINESS, mode: 'checkout' as const };
-    if (r === 'paid') return { disabled: false as const, label: CTA_UPGRADE_BUSINESS, mode: 'upgrade' as const };
+    /* pro / Business — waitlist only (no Stripe checkout yet) */
+    if (r === 'free' || r === 'paid') {
+      return { disabled: false as const, label: CTA_BUSINESS_WAITLIST, mode: 'waitlist' as const };
+    }
     return { disabled: true as const, label: 'Your plan', mode: 'idle' as const };
   };
 
@@ -132,31 +130,18 @@ export default function PricingPage() {
     const { mode } = resolveButton(planKey);
     if (mode === 'idle') return;
 
+    if (mode === 'waitlist') {
+      window.location.href = businessWaitlistMailto();
+      return;
+    }
+
     const token = localStorage.getItem('access_token');
     if (!token) {
       router.push('/login?redirect=/pricing');
       return;
     }
 
-    if (mode === 'upgrade') {
-      setLoading(planKey);
-      setError('');
-      try {
-        await subscriptionApi.upgradeToBusiness();
-        const user = await authApi.getMe();
-        localStorage.setItem('user', JSON.stringify(user));
-        setAccountRole(user.role);
-        router.push('/home?subscription=upgraded');
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Upgrade failed';
-        setError(msg);
-      } finally {
-        setLoading(null);
-      }
-      return;
-    }
-
-    /* checkout */
+    /* checkout (Plus only) */
     if (!priceId) {
       setError(
         'This plan has no Stripe price on the server. Set STRIPE_PRICE_PAID and STRIPE_PRICE_PRO on the backend, redeploy the API, then refresh this page.'
@@ -235,12 +220,20 @@ export default function PricingPage() {
                     Most popular
                   </div>
                 )}
+                {plan.key === 'pro' && (
+                  <div className="absolute -top-3 right-4 px-2 py-0.5 bg-violet-100 text-violet-800 text-[10px] font-bold rounded-full uppercase tracking-wide">
+                    Waitlist
+                  </div>
+                )}
 
                 <h3 className="text-lg font-bold text-gray-900 mb-0.5">{plan.name}</h3>
                 <p className="text-xs text-gray-500 mb-4">{plan.description}</p>
                 <div className="mb-5">
-                  <span className="text-3xl font-bold text-gray-900">{plan.price}</span>
-                  <span className="text-gray-400 text-sm">{plan.period}</span>
+                  <span className={`font-bold text-gray-900 ${plan.key === 'pro' ? 'text-2xl' : 'text-3xl'}`}>{plan.price}</span>
+                  {plan.period ? <span className="text-gray-400 text-sm">{plan.period}</span> : null}
+                  {plan.key === 'pro' && (
+                    <p className="text-xs text-gray-400 mt-1">Paid checkout opens when API &amp; export ship</p>
+                  )}
                 </div>
 
                 <ul className="space-y-2.5 mb-6">
@@ -273,11 +266,7 @@ export default function PricingPage() {
                     />
                   )}
                   <span>
-                    {isLoading
-                      ? btn.mode === 'upgrade'
-                        ? 'Upgrading…'
-                        : 'Redirecting to checkout…'
-                      : btn.label}
+                    {isLoading ? 'Redirecting to checkout…' : btn.label}
                   </span>
                 </button>
               </div>
@@ -286,7 +275,7 @@ export default function PricingPage() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-8">
-          30-day money-back guarantee. Cancel anytime. On Plus, you can upgrade to Business here or in Settings — we prorate the difference.
+          30-day money-back guarantee on Plus. Cancel anytime. Business is waitlist-only until we launch API and data export — same email as in the waitlist button.
         </p>
       </main>
 

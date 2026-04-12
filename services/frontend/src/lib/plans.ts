@@ -1,9 +1,24 @@
 /**
  * Subscription tiers: internal roles stay `paid` | `pro` (API/DB).
  * Display names: Plus / Business.
+ *
+ * Business is not sold via Stripe until API/export features ship — use the waitlist mailto.
  */
 
+import { SITE_CONTACT_EMAIL } from './site';
+
 export type AppTier = 'free' | 'paid' | 'pro';
+
+/** Opens the user's mail client to join the Business waitlist (no checkout). */
+export function businessWaitlistMailto(): string {
+  const email =
+    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BUSINESS_WAITLIST_EMAIL) || SITE_CONTACT_EMAIL;
+  const subject = encodeURIComponent('TCG Pulse — Business waitlist');
+  const body = encodeURIComponent(
+    "Hi,\n\nI'd like to join the waitlist for Business (API, data export, advanced alerts).\n\nThanks,\n"
+  );
+  return `mailto:${email}?subject=${subject}&body=${body}`;
+}
 
 export const TIER_LABEL: Record<AppTier, string> = {
   free: 'Free',
@@ -44,22 +59,25 @@ export const PLAN_FEATURES = {
     'Priority support',
   ],
   pro: [
-    'Everything in Plus',
-    'Same product access today — we ship Business-only tools first',
-    'Next: read-only API & bulk data export',
-    'Next: advanced alert rules',
-    'Best for shops and power users',
+    'Everything in Plus today — same app access until extras launch',
+    'Planned: read-only API & bulk data export',
+    'Planned: advanced alert rules for shops',
+    'Join the waitlist — we email you when Business checkout opens',
+    'Built for shops and power users',
   ],
 } as const;
 
 /** CTA for free users upgrading to the first paid tier. */
 export const CTA_SUBSCRIBE_PLUS = 'Subscribe — Plus';
 
-/** CTA for free users choosing Business (checkout). */
-export const CTA_GET_BUSINESS = 'Get Business';
+/** Business is waitlist-only until API/export ships; opens email. */
+export const CTA_BUSINESS_WAITLIST = 'Join Business waitlist';
 
-/** CTA for Plus subscribers moving to Business (in-app upgrade). */
-export const CTA_UPGRADE_BUSINESS = 'Upgrade to Business';
+/** @deprecated alias — use CTA_BUSINESS_WAITLIST */
+export const CTA_GET_BUSINESS = CTA_BUSINESS_WAITLIST;
+
+/** @deprecated alias — use CTA_BUSINESS_WAITLIST */
+export const CTA_UPGRADE_BUSINESS = CTA_BUSINESS_WAITLIST;
 
 /** Free-user upsell lines (replace vague “Premium”). */
 export const UPSELL_SUBSCRIBE = 'Upgrade to Plus';
