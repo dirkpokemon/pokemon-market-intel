@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { marketApi, DealScore } from '@/lib/api';
@@ -75,7 +75,7 @@ function DealCard({ deal, watchlist, toggleWatchlist, setSelectedDeal, getScoreC
   );
 }
 
-export default function DealsPage() {
+function DealsPageInner() {
   const searchParams = useSearchParams();
   const presetSet = searchParams.get('set') || '';
   const presetCard = searchParams.get('card') || '';
@@ -346,5 +346,13 @@ export default function DealsPage() {
 
       {selectedDeal && <DealModal deal={selectedDeal} onClose={() => setSelectedDeal(null)} />}
     </DashboardLayout>
+  );
+}
+
+export default function DealsPage() {
+  return (
+    <Suspense fallback={null}>
+      <DealsPageInner />
+    </Suspense>
   );
 }
