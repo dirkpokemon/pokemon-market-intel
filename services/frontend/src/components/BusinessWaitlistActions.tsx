@@ -30,7 +30,7 @@ export default function BusinessWaitlistActions({ variant = 'card' }: { variant?
 
   const primaryBtn =
     variant === 'card'
-      ? 'w-full py-2.5 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 min-h-[42px] border border-gray-200 text-gray-700 hover:bg-gray-50'
+      ? 'w-full py-2.5 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 min-h-[42px] border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
       : 'w-full py-2.5 px-4 rounded-lg text-sm font-semibold text-center bg-indigo-600 text-white hover:bg-indigo-700 transition';
 
   return (
@@ -42,7 +42,7 @@ export default function BusinessWaitlistActions({ variant = 'card' }: { variant?
         href={businessWaitlistGmailUrl()}
         target="_blank"
         rel="noopener noreferrer"
-        className="w-full py-2 px-4 rounded-lg text-sm font-medium text-center block border border-violet-200 bg-violet-50 text-violet-900 hover:bg-violet-100 transition"
+        className="w-full py-2 px-4 rounded-lg text-sm font-medium text-center block border border-violet-200 dark:border-violet-700 bg-violet-50 dark:bg-violet-950/50 text-violet-900 dark:text-violet-200 hover:bg-violet-100 dark:hover:bg-violet-950/80 transition"
       >
         Open in Gmail (browser)
       </a>
@@ -50,7 +50,7 @@ export default function BusinessWaitlistActions({ variant = 'card' }: { variant?
         <button
           type="button"
           onClick={copyEmail}
-          className="w-full py-1.5 text-xs font-medium text-gray-600 hover:text-gray-900 underline-offset-2 hover:underline"
+          className="w-full py-1.5 text-xs font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 underline-offset-2 hover:underline"
         >
           {copied ? 'Copied to clipboard' : `Copy ${email}`}
         </button>
