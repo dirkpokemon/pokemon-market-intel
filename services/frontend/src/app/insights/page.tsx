@@ -97,11 +97,6 @@ export default function MarketPulsePage() {
     const avgPrice = visibleDeals.reduce((sum, d) => sum + d.current_price, 0) / visibleDeals.length;
     const avgScore = visibleDeals.reduce((sum, d) => sum + d.deal_score, 0) / visibleDeals.length;
 
-    const highScoreCount = visibleDeals.filter((d) => d.deal_score >= 75).length;
-    const lowScoreCount = visibleDeals.filter((d) => d.deal_score < 55).length;
-    const marketBias =
-      highScoreCount > lowScoreCount ? 'bullish' : lowScoreCount > highScoreCount ? 'bearish' : 'neutral';
-
     const cardsWithDelta = visibleDeals
       .filter((d) => d.market_avg_price && d.market_avg_price > 0)
       .map((d) => ({
@@ -153,9 +148,6 @@ export default function MarketPulsePage() {
       avgPrice,
       avgScore: Math.round(avgScore),
       totalProducts: visibleDeals.length,
-      marketBias,
-      highScoreCount,
-      lowScoreCount,
       buying: buying.slice(0, 10),
       overpriced: overpriced.slice(0, 10),
       ranges,
@@ -164,35 +156,6 @@ export default function MarketPulsePage() {
     };
   }, [visibleDeals]);
 
-  const getSentimentConfig = (bias: string) => {
-    switch (bias) {
-      case 'bullish':
-        return {
-          label: 'Strong scores dominate',
-          desc: 'More high-scored deals than weak ones in this view.',
-          color: 'text-green-800',
-          bg: 'bg-green-50/80 border-green-100',
-          icon: '📈',
-        };
-      case 'bearish':
-        return {
-          label: 'Weaker scores more common',
-          desc: 'More low-scored listings than very strong ones here.',
-          color: 'text-amber-800',
-          bg: 'bg-amber-50/80 border-amber-100',
-          icon: '📉',
-        };
-      default:
-        return {
-          label: 'Mixed scores',
-          desc: 'High and low scores are roughly balanced.',
-          color: 'text-gray-800',
-          bg: 'bg-gray-50 border-gray-200',
-          icon: '➡️',
-        };
-    }
-  };
-
   const lastUpdated = formatDigestTime(digest?.last_analysis_at);
 
   return (
@@ -200,15 +163,10 @@ export default function MarketPulsePage() {
       <div className="px-6 py-8 max-w-[1400px] mx-auto">
         <div className="mb-5">
           <h1 className="text-2xl font-bold text-gray-900">Market Pulse</h1>
-          <p className="text-sm text-gray-700 mt-2 max-w-3xl leading-relaxed">
-            Marktbeeld op basis van onze gescoorde EU-listings: waar prijzen t.o.v. gemiddelden liggen, hoe sterk deals
-            verdeeld zijn, welke sets zwaarder voorkomen, en korte set-trends — met grafieken. Geen kooplijst: dat blijft
-            bij Top Deals.
-          </p>
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="text-sm text-gray-500 mt-1">
             {isSubscriber
-              ? `${dealScores.length} listings in deze weergave · vernieuwd elk uur${lastUpdated ? ` · laatste analyse ${lastUpdated}` : ''}`
-              : `Free: steekproef (top 20, score ≥65)${lastUpdated ? ` · ${lastUpdated}` : ''}`}
+              ? `${dealScores.length} listings · hourly refresh${lastUpdated ? ` · ${lastUpdated}` : ''}`
+              : `Free sample (top 20, score ≥65)${lastUpdated ? ` · ${lastUpdated}` : ''}`}
           </p>
         </div>
 
@@ -266,31 +224,6 @@ export default function MarketPulsePage() {
           </div>
         ) : marketData ? (
           <>
-            {(() => {
-              const config = getSentimentConfig(marketData.marketBias);
-              return (
-                <div className={`rounded-lg border px-4 py-3 mb-6 ${config.bg}`}>
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-xl shrink-0" aria-hidden>
-                        {config.icon}
-                      </span>
-                      <div className="min-w-0">
-                        <h2 className={`text-sm font-bold ${config.color}`}>{config.label}</h2>
-                        <p className="text-xs text-gray-600 mt-0.5">{config.desc}</p>
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-600 tabular-nums shrink-0">
-                      <span className="font-semibold text-gray-800">{marketData.totalProducts}</span> deals
-                      {!isSubscriber && ' · sample'}
-                      <span className="text-gray-400 mx-1">·</span>≥75: {marketData.highScoreCount}
-                      <span className="text-gray-400 mx-1">·</span>&lt;55: {marketData.lowScoreCount}
-                    </p>
-                  </div>
-                </div>
-              );
-            })()}
-
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <p className="text-xs text-gray-500 font-medium mb-1">Deals in view</p>
