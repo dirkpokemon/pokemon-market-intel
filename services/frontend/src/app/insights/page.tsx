@@ -149,9 +149,9 @@ export default function MarketPulsePage() {
         <div className="mb-4 shrink-0">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pulse</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Markt-assistent: kies een suggestie voor antwoorden uit live data.{' '}
+            Market assistant: pick a suggestion for answers from live data.{' '}
             {isSubscriber
-              ? `${dealScores.length} listings · uurlijks ververst${lastUpdated ? ` · ${lastUpdated}` : ''}`
+              ? `${dealScores.length} listings · refreshed hourly${lastUpdated ? ` · ${lastUpdated}` : ''}`
               : `Free: top 20 (score ≥65)${lastUpdated ? ` · ${lastUpdated}` : ''}`}
           </p>
         </div>
@@ -159,7 +159,7 @@ export default function MarketPulsePage() {
         {!loading && !isSubscriber && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg px-3 py-2 mb-4 shrink-0">
             <p className="text-xs text-amber-900 dark:text-amber-100">
-              Free: beperkte steekproef. <span className="font-medium">Plus</span> gebruikt de volledige catalogus in Pulse.
+              Free: limited sample. <span className="font-medium">Plus</span> uses the full catalog in Pulse.
             </p>
             <Link
               href="/pricing"
@@ -174,7 +174,7 @@ export default function MarketPulsePage() {
           <div className="flex items-center justify-center flex-1 min-h-[320px]">
             <div className="text-center">
               <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-800 dark:border-gray-600 dark:border-t-gray-200 rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">Marktdata laden…</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Loading market data…</p>
             </div>
           </div>
         ) : marketData ? (
@@ -191,7 +191,7 @@ export default function MarketPulsePage() {
           </div>
         ) : (
           <div className="text-center py-20 flex-1">
-            <p className="text-gray-500 dark:text-gray-400">Geen marktdata beschikbaar.</p>
+            <p className="text-gray-500 dark:text-gray-400">No market data available.</p>
           </div>
         )}
       </div>

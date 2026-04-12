@@ -13,44 +13,44 @@ export function getTourSteps(role: TourRole): TourStep[] {
     {
       page: '/home',
       pageLabel: 'Home',
-      title: 'Jouw dashboard',
-      body: 'Dit is je commandocentrum. Gebruik de zoekbalk om elke kaart te vinden in 170K+ EU-aanbiedingen. De stats hieronder geven je een snelle marktindruk.',
+      title: 'Your dashboard',
+      body: 'This is your command center. Use the search bar to find any card across 170K+ EU listings. The stats below give you a quick read on the market.',
     },
     {
       page: '/deals',
       pageLabel: 'Top Deals',
-      title: 'Deal Score uitgelegd',
-      body: 'Elke kaart krijgt een Deal Score van 0 tot 100. Hoe hoger de score, hoe beter de prijs ten opzichte van het EU-marktgemiddelde. Klik een kaart aan voor kooplinks op CardMarket, CardTrader en eBay.',
+      title: 'Deal Score explained',
+      body: 'Each card gets a Deal Score from 0 to 100. The higher the score, the better the price versus the EU market average. Click a card for buy links on CardMarket, CardTrader, and eBay.',
     },
     {
       page: '/insights',
       pageLabel: 'Market Pulse',
-      title: role === 'subscriber' ? 'Volledig marktoverzicht' : 'Marktoverzicht (gratis sample)',
+      title: role === 'subscriber' ? 'Full market overview' : 'Market overview (free sample)',
       body:
         role === 'subscriber'
-          ? 'Zie de EU-markt in één oogopslag: kopers- of verkopersmarkt, meest actieve sets, dealkwaliteit en signalen. Alle data wordt elk uur vernieuwd.'
-          : 'Je ziet een gratis sample van het marktoverzicht. Upgrade naar Plus voor alle sets, de dealkwaliteitsverdeling en het volledige signaaloverzicht.',
+          ? 'See the EU market at a glance: buyer vs seller market, most active sets, deal quality, and signals. All data refreshes every hour.'
+          : 'You are seeing a free sample of the market overview. Upgrade to Plus for all sets, the deal quality breakdown, and the full signal overview.',
       actionLink:
-        role === 'free' ? { href: '/pricing', label: 'Bekijk Plus plannen' } : undefined,
+        role === 'free' ? { href: '/pricing', label: 'View Plus plans' } : undefined,
     },
     {
       page: '/signals',
       pageLabel: 'Signals',
-      title: role === 'subscriber' ? 'Jouw signalenlijst' : 'Signals (Plus-functie)',
+      title: role === 'subscriber' ? 'Your signal feed' : 'Signals (Plus feature)',
       body:
         role === 'subscriber'
-          ? 'Signals detecteren elk uur prijsbewegingen, aanbodverschuivingen en momentum. Klik een signaal uit voor aanbevolen acties en directe kooplinks. Filter op type of zoek op kaartnaam.'
-          : 'Signals detecteren elk uur prijsbewegingen en momentum. De volledige feed zit in Plus en Business. Hier zie je een preview.',
+          ? 'Signals detect hourly price moves, supply shifts, and momentum. Open a signal for suggested actions and direct buy links. Filter by type or search by card name.'
+          : 'Signals detect hourly price moves and momentum. The full feed is in Plus and Business. Here you see a preview.',
       actionLink:
         role === 'free'
-          ? { href: '/pricing', label: 'Signals ontgrendelen met Plus' }
+          ? { href: '/pricing', label: 'Unlock Signals with Plus' }
           : undefined,
     },
     {
       page: '/portfolio',
       pageLabel: 'Portfolio',
-      title: 'Beheer je collectie',
-      body: 'Voeg kaarten toe die je bezit met aankoopprijzen. Wij vergelijken ze met live marktdata zodat je altijd je winst of verlies weet. Kaarten op je watchlist verschijnen hier ook.',
+      title: 'Manage your collection',
+      body: 'Add cards you own with purchase prices. We compare them to live market data so you always know your gain or loss. Watchlist cards show up here too.',
     },
   ];
 }

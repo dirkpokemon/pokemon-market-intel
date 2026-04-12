@@ -153,7 +153,7 @@ function SignalCard({ signal }: { signal: Signal }) {
               </span>
               {signal.confidence != null && (
                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">
-                  {Math.round(Number(signal.confidence))}% zekerheid
+                  {Math.round(Number(signal.confidence))}% confidence
                 </span>
               )}
               <span className="text-[11px] text-gray-400 ml-auto">{timeAgo(signal.detected_at)}</span>
@@ -165,7 +165,7 @@ function SignalCard({ signal }: { signal: Signal }) {
             )}
             {isSetSignal && (
               <p className="text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-800 rounded-md px-2 py-1 mt-1 inline-block">
-                Set-signaal: gemiddelde trend over meerdere kaarten in deze set
+                Set signal: average trend across multiple cards in this set
               </p>
             )}
             {signal.description && <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mt-1.5">{signal.description}</p>}
@@ -174,7 +174,7 @@ function SignalCard({ signal }: { signal: Signal }) {
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {parsedMeta.avg_trend !== undefined && (
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${parsedMeta.avg_trend >= 0 ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`}>
-                    set gem. {parsedMeta.avg_trend >= 0 ? '+' : ''}{parsedMeta.avg_trend}%
+                    set avg. {parsedMeta.avg_trend >= 0 ? '+' : ''}{parsedMeta.avg_trend}%
                   </span>
                 )}
                 {parsedMeta.avg_volume_trend !== undefined && (
@@ -184,12 +184,12 @@ function SignalCard({ signal }: { signal: Signal }) {
                 )}
                 {parsedMeta.card_count !== undefined && (
                   <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">
-                    {parsedMeta.card_count} kaarten in sample
+                    {parsedMeta.card_count} cards in sample
                   </span>
                 )}
                 {parsedMeta.price_trend !== undefined && (
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${parsedMeta.price_trend >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                    prijs {parsedMeta.price_trend >= 0 ? '+' : ''}{parsedMeta.price_trend}%
+                    price {parsedMeta.price_trend >= 0 ? '+' : ''}{parsedMeta.price_trend}%
                   </span>
                 )}
                 {parsedMeta.volume_trend !== undefined && (
@@ -199,7 +199,7 @@ function SignalCard({ signal }: { signal: Signal }) {
                 )}
                 {parsedMeta.volatility !== undefined && (
                   <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700">
-                    volatiliteit {parsedMeta.volatility}%
+                    volatility {parsedMeta.volatility}%
                   </span>
                 )}
               </div>
@@ -227,14 +227,14 @@ function SignalCard({ signal }: { signal: Signal }) {
       {expanded && (
         <div className="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
           <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">
-            Gedetecteerd:{' '}
-            {new Date(signal.detected_at).toLocaleString('nl-NL', {
+            Detected:{' '}
+            {new Date(signal.detected_at).toLocaleString(undefined, {
               dateStyle: 'medium',
               timeStyle: 'short',
             })}
             {signal.deal_score != null && (
               <span className="ml-2 text-gray-600 dark:text-gray-400">
-                · deal-score {Math.round(signal.deal_score)}
+                · deal score {Math.round(signal.deal_score)}
               </span>
             )}
           </p>
@@ -541,12 +541,12 @@ export default function PriceSignalsPage() {
             {/* ─── Filters: scope (cards vs sets) + search + type (counts = this page only) ─── */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 mb-6 space-y-4">
               <div>
-                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Weergave</p>
+                <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">View</p>
                 <div className="inline-flex rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 bg-gray-50 dark:bg-gray-800/80">
                   {(
                     [
-                      { id: 'all' as const, label: 'Alles' },
-                      { id: 'cards' as const, label: 'Losse kaarten' },
+                      { id: 'all' as const, label: 'All' },
+                      { id: 'cards' as const, label: 'Singles' },
                       { id: 'sets' as const, label: 'Sets' },
                     ] as const
                   ).map(({ id, label }) => (
@@ -586,7 +586,7 @@ export default function PriceSignalsPage() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Zoek op kaart, set of beschrijving…"
+                    placeholder="Search card, set, or description…"
                     className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 focus:border-transparent"
                   />
                 </div>
@@ -595,7 +595,7 @@ export default function PriceSignalsPage() {
                   onChange={(e) => setFilterType(e.target.value)}
                   className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 focus:border-transparent min-w-[180px]"
                 >
-                  <option value="all">Alle types ({scopedSignals.length})</option>
+                  <option value="all">All types ({scopedSignals.length})</option>
                   {signalTypes.map((type) => {
                     const meta = getTypeMeta(type);
                     const n = typeCountsInScope.get(type) ?? 0;
@@ -620,7 +620,7 @@ export default function PriceSignalsPage() {
                 )}
               </div>
               <p className="text-[11px] text-gray-400 dark:text-gray-500">
-                Tellingen gelden voor deze feed (max. 100 signalen), niet voor de hele database.
+                Counts apply to this feed (max. 100 signals), not the entire database.
               </p>
             </div>
 

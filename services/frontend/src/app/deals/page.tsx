@@ -199,19 +199,19 @@ function DealsPageInner() {
                 <span className="ml-2 text-base font-normal text-gray-500 dark:text-gray-400">· set: {presetSet}</span>
               )}
               {!presetSet && presetCard && (
-                <span className="ml-2 text-base font-normal text-gray-500 dark:text-gray-400">· kaart: {presetCard}</span>
+                <span className="ml-2 text-base font-normal text-gray-500 dark:text-gray-400">· card: {presetCard}</span>
               )}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {presetSet || presetCard ? (
                 <>
-                  {dealScores.length} deal{dealScores.length !== 1 ? 's' : ''} geladen voor deze filter
-                  {isSubscriberRole(userRole) ? ' · volledige lijst voor abonnees' : ' · free: top 20 met score ≥65'}
+                  {dealScores.length} deal{dealScores.length !== 1 ? 's' : ''} loaded for this filter
+                  {isSubscriberRole(userRole) ? ' · full list for subscribers' : ' · free: top 20 with score ≥65'}
                 </>
               ) : isSubscriberRole(userRole) ? (
-                `${dealScores.length} deals met AI-scoring, elk uur vernieuwd`
+                `${dealScores.length} deals with AI scoring, refreshed hourly`
               ) : (
-                `${FREE_VISIBLE} deals zichtbaar. Upgrade voor volledige toegang.`
+                `${FREE_VISIBLE} deals visible. Upgrade for full access.`
               )}
             </p>
           </div>
@@ -286,7 +286,7 @@ function DealsPageInner() {
                 </div>
                 <div className="space-y-2 min-w-0">
                   <div className="flex justify-between gap-2 text-xs text-gray-600 dark:text-gray-400">
-                    <span>Min. prijs</span>
+                    <span>Min. price</span>
                     <span className="font-semibold tabular-nums text-gray-900 dark:text-white">€{filters.minPrice}</span>
                   </div>
                   <input
@@ -302,7 +302,7 @@ function DealsPageInner() {
                 </div>
                 <div className="space-y-2 min-w-0">
                   <div className="flex justify-between gap-2 text-xs text-gray-600 dark:text-gray-400">
-                    <span>Max. prijs</span>
+                    <span>Max. price</span>
                     <span className="font-semibold tabular-nums text-gray-900 dark:text-white">€{filters.maxPrice}</span>
                   </div>
                   <input
@@ -332,16 +332,16 @@ function DealsPageInner() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-                  {viewMode === 'watchlist' ? 'Je watchlist is leeg' : 'Geen deals gevonden'}
+                  {viewMode === 'watchlist' ? 'Your watchlist is empty' : 'No deals found'}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 max-w-md mx-auto">
                   {viewMode === 'watchlist'
-                    ? 'Klik de ster op een deal om hem op te slaan'
+                    ? 'Click the star on a deal to save it'
                     : dealScores.length > 0
-                      ? 'Je filters sluiten alle geladen deals uit. Verlaag min. score of prijs, of wis het zoekveld.'
+                      ? 'Your filters exclude every loaded deal. Lower min. score or price, or clear the search field.'
                       : presetSet || presetCard
-                        ? 'Er zijn op dit moment geen gescoorde deals die aan deze set/kaart voldoen (free: alleen score ≥65). Probeer alle deals of kom later terug.'
-                        : 'Pas je zoekterm of filters aan'}
+                        ? 'No scored deals match this set/card right now (free: score ≥65 only). Try all deals or check back later.'
+                        : 'Adjust your search or filters'}
                 </p>
                 <button
                   onClick={() => {
@@ -353,7 +353,7 @@ function DealsPageInner() {
                   }}
                   className="px-4 py-2 bg-gray-900 dark:bg-indigo-600 text-white text-sm rounded-lg hover:bg-gray-800 dark:hover:bg-indigo-500 transition"
                 >
-                  {viewMode === 'watchlist' ? 'Alle deals bekijken' : presetSet || presetCard ? 'Alle deals laden' : 'Filters resetten'}
+                  {viewMode === 'watchlist' ? 'View all deals' : presetSet || presetCard ? 'Load all deals' : 'Reset filters'}
                 </button>
               </div>
             ) : isSubscriberRole(userRole) ? (
@@ -419,16 +419,16 @@ function DealsPageInner() {
                         </svg>
                       </div>
                       <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1">
-                        {filteredAndSortedDeals.length - FREE_VISIBLE} deals verborgen
+                        {filteredAndSortedDeals.length - FREE_VISIBLE} deals hidden
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                        Upgrade naar Plus voor alle {filteredAndSortedDeals.length} deals, elk uur vernieuwd.
+                        Upgrade to Plus for all {filteredAndSortedDeals.length} deals, refreshed hourly.
                       </p>
                       <Link
                         href="/pricing"
                         className="block w-full py-2.5 bg-gray-900 dark:bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-gray-800 dark:hover:bg-indigo-500 transition"
                       >
-                        Upgrade naar Plus
+                        Upgrade to Plus
                       </Link>
                     </div>
                   </div>

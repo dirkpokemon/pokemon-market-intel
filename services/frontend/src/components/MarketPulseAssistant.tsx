@@ -35,13 +35,13 @@ type ChatMessage =
   | { id: string; role: 'assistant'; hint: string };
 
 const PILLS: { id: PillId; label: string; subscriberOnly?: boolean }[] = [
-  { id: 'snapshot', label: 'Snel overzicht' },
-  { id: 'priceVsAvg', label: 'Prijs vs gemiddelde' },
+  { id: 'snapshot', label: 'Quick overview' },
+  { id: 'priceVsAvg', label: 'Price vs average' },
   { id: 'topSets', label: 'Top sets' },
   { id: 'trends7d', label: 'Sets ↑↓ 7d' },
-  { id: 'scoreMix', label: 'Score-mix' },
-  { id: 'priceSpread', label: 'Prijs-spreiding' },
-  { id: 'priceBuckets', label: 'Prijsbuckets', subscriberOnly: true },
+  { id: 'scoreMix', label: 'Score mix' },
+  { id: 'priceSpread', label: 'Price spread' },
+  { id: 'priceBuckets', label: 'Price buckets', subscriberOnly: true },
 ];
 
 function PulseAvatar({ busy }: { busy?: boolean }) {
@@ -100,10 +100,10 @@ function renderAssistantBody(
   }
 ) {
   const { marketData, visibleDeals, digest, isSubscriber, selectedSetLabel, lastUpdatedLine } = ctx;
-  const scopeNote = selectedSetLabel ? `Filter: set “${selectedSetLabel}”.` : 'Alle sets in deze data-slice.';
+  const scopeNote = selectedSetLabel ? `Filter: set “${selectedSetLabel}”.` : 'All sets in this data slice.';
   const sourceFooter = (
     <span>
-      Bron: gescoorde deals in deze weergave
+      Source: scored deals in this view
       {lastUpdatedLine ? ` · ${lastUpdatedLine}` : ''}
     </span>
   );
@@ -111,7 +111,7 @@ function renderAssistantBody(
   switch (pillId) {
     case 'snapshot':
       return (
-        <AssistantCard title="Snel overzicht" footer={sourceFooter}>
+        <AssistantCard title="Quick overview" footer={sourceFooter}>
           <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">{scopeNote}</p>
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-lg bg-gray-50 dark:bg-gray-800/90 p-2 text-center">
@@ -120,26 +120,26 @@ function renderAssistantBody(
             </div>
             <div className="rounded-lg bg-gray-50 dark:bg-gray-800/90 p-2 text-center">
               <p className="text-lg font-bold text-gray-900 dark:text-white">€{marketData.avgPrice.toFixed(2)}</p>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">Gem. prijs</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">Avg. price</p>
             </div>
             <div className="rounded-lg bg-gray-50 dark:bg-gray-800/90 p-2 text-center">
               <p className="text-lg font-bold text-gray-900 dark:text-white">{marketData.avgScore}</p>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">Gem. score</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">Avg. score</p>
             </div>
             <div className="rounded-lg bg-gray-50 dark:bg-gray-800/90 p-2 text-center">
               <p className="text-lg font-bold text-gray-900 dark:text-white">
-                {digest?.total_sets != null ? digest.total_sets.toLocaleString() : 'n.v.t.'}
+                {digest?.total_sets != null ? digest.total_sets.toLocaleString() : '—'}
               </p>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">Sets (catalogus)</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400">Sets (catalog)</p>
             </div>
           </div>
         </AssistantCard>
       );
     case 'priceVsAvg':
       return (
-        <AssistantCard title="Onder / boven marktgemiddelde" footer={sourceFooter}>
+        <AssistantCard title="Below / above market average" footer={sourceFooter}>
           <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-            Sterste kortingen (listing onder eigen marktgemiddelde) in deze slice. Tik voor Deals.
+            Deepest discounts (listing below its own market average) in this slice. Tap for Deals.
           </p>
           <ul className="space-y-1.5 max-h-48 overflow-y-auto">
             {marketData.buying.slice(0, 6).map((d) => (
@@ -155,13 +155,13 @@ function renderAssistantBody(
             ))}
           </ul>
           {marketData.buying.length === 0 && (
-            <p className="text-xs text-gray-400 dark:text-gray-500">Geen rijen met marktgemiddelde voor deze selectie.</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">No rows with market average for this selection.</p>
           )}
         </AssistantCard>
       );
     case 'topSets':
       return (
-        <AssistantCard title="Top sets in deze weergave" footer={sourceFooter}>
+        <AssistantCard title="Top sets in this view" footer={sourceFooter}>
           <ul className="space-y-1.5">
             {marketData.topSets.slice(0, 6).map((s, i) => (
               <li key={s.name} className="flex justify-between gap-2 text-xs">
@@ -182,17 +182,17 @@ function renderAssistantBody(
     case 'trends7d':
       if (!digest?.top_rising_sets?.length && !digest?.top_declining_sets?.length) {
         return (
-          <AssistantCard title="Set-trends (7d)" footer={sourceFooter}>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Nog geen trenddata beschikbaar.</p>
+          <AssistantCard title="Set trends (7d)" footer={sourceFooter}>
+            <p className="text-xs text-gray-500 dark:text-gray-400">No trend data available yet.</p>
           </AssistantCard>
         );
       }
       return (
-        <AssistantCard title="Set-trends (7d gemiddelde)" footer={sourceFooter}>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Uit market stats (breder dan alleen de deal-toplijst).</p>
+        <AssistantCard title="Set trends (7d average)" footer={sourceFooter}>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">From market stats (broader than the deal leaderboard alone).</p>
           <div className="grid grid-cols-1 gap-3 text-xs">
             <div>
-              <p className="font-semibold text-green-800 dark:text-green-300 mb-1">Stijgend</p>
+              <p className="font-semibold text-green-800 dark:text-green-300 mb-1">Rising</p>
               <ul className="space-y-1">
                 {(digest.top_rising_sets || []).slice(0, 4).map((t) => (
                   <li key={t.product_set} className="flex justify-between gap-2">
@@ -205,7 +205,7 @@ function renderAssistantBody(
               </ul>
             </div>
             <div>
-              <p className="font-semibold text-rose-800 dark:text-rose-300 mb-1">Dalend</p>
+              <p className="font-semibold text-rose-800 dark:text-rose-300 mb-1">Declining</p>
               <ul className="space-y-1">
                 {(digest.top_declining_sets || []).slice(0, 4).map((t) => (
                   <li key={t.product_set} className="flex justify-between gap-2">
@@ -223,8 +223,8 @@ function renderAssistantBody(
     case 'scoreMix':
       if (!isSubscriber) {
         return (
-          <AssistantCard title="Score-mix" footer={sourceFooter}>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">Volledige verdeling over alle score-buckets zit op Plus.</p>
+          <AssistantCard title="Score mix" footer={sourceFooter}>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">Full distribution across all score buckets is on Plus.</p>
             <Link href="/pricing" className="inline-flex text-xs font-semibold text-white bg-gray-900 px-3 py-1.5 rounded-lg hover:bg-gray-800">
               Plus
             </Link>
@@ -232,12 +232,12 @@ function renderAssistantBody(
         );
       }
       return (
-        <AssistantCard title="Score-mix (deze weergave)" footer={sourceFooter}>
+        <AssistantCard title="Score mix (this view)" footer={sourceFooter}>
           <div className="space-y-2">
             {[
               { label: '80+', count: marketData.scoreDistribution.excellent, color: 'bg-green-500' },
-              { label: '65 tot 79', count: marketData.scoreDistribution.good, color: 'bg-blue-500' },
-              { label: '50 tot 64', count: marketData.scoreDistribution.fair, color: 'bg-gray-400' },
+              { label: '65–79', count: marketData.scoreDistribution.good, color: 'bg-blue-500' },
+              { label: '50–64', count: marketData.scoreDistribution.fair, color: 'bg-gray-400' },
               { label: '<50', count: marketData.scoreDistribution.low, color: 'bg-gray-300' },
             ].map((row) => (
               <div key={row.label}>
@@ -260,8 +260,8 @@ function renderAssistantBody(
       );
     case 'priceSpread':
       return (
-        <AssistantCard title="Prijs-spreiding" footer={sourceFooter}>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Verdeling van listingprijzen in deze slice.</p>
+        <AssistantCard title="Price spread" footer={sourceFooter}>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Distribution of listing prices in this slice.</p>
           <div className="h-[200px] w-full">
             <PriceChart deals={visibleDeals.slice(0, isSubscriber ? 100 : 20)} />
           </div>
@@ -270,8 +270,8 @@ function renderAssistantBody(
     case 'priceBuckets':
       if (!isSubscriber) {
         return (
-          <AssistantCard title="Prijsbuckets" footer={sourceFooter}>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">Beschikbaar op Plus.</p>
+          <AssistantCard title="Price buckets" footer={sourceFooter}>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">Available on Plus.</p>
             <Link href="/pricing" className="inline-flex text-xs font-semibold text-white bg-gray-900 px-3 py-1.5 rounded-lg hover:bg-gray-800">
               Plus
             </Link>
@@ -279,12 +279,12 @@ function renderAssistantBody(
         );
       }
       return (
-        <AssistantCard title="Prijsbuckets" footer={sourceFooter}>
+        <AssistantCard title="Price buckets" footer={sourceFooter}>
           <div className="grid grid-cols-2 gap-2 text-center text-xs">
             {[
               { label: '< €5', n: marketData.ranges.under5 },
-              { label: '€5 tot €20', n: marketData.ranges.range5to20 },
-              { label: '€20 tot €50', n: marketData.ranges.range20to50 },
+              { label: '€5–€20', n: marketData.ranges.range5to20 },
+              { label: '€20–€50', n: marketData.ranges.range20to50 },
               { label: '> €50', n: marketData.ranges.over50 },
             ].map((b) => (
               <div key={b.label} className="rounded-lg bg-gray-50 dark:bg-gray-800/90 py-2">
@@ -362,7 +362,7 @@ export default function MarketPulseAssistant({
         id: `a-${Date.now()}`,
         role: 'assistant',
         hint:
-          'Ik gebruik nog vaste data-blokken (geen vrije AI). Kies een suggestie hierboven voor prijzen, sets of trends. Dan krijg je antwoord uit de live feed.',
+          'I still use fixed data blocks (no free-form AI yet). Pick a suggestion above for prices, sets, or trends—you will get an answer from the live feed.',
       },
     ]);
   };
@@ -379,12 +379,12 @@ export default function MarketPulseAssistant({
         <PulseAvatar busy={busy} />
         <div className="min-w-0">
           <p className="text-sm font-bold text-gray-900 dark:text-white">Pulse</p>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">Antwoorden uit live marktdata</p>
+          <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">Answers from live market data</p>
         </div>
       </div>
 
       <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80">
-        <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Suggesties</p>
+        <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Suggestions</p>
         <div className="flex flex-wrap gap-1.5">
           {visiblePills.map((p) => (
             <button
@@ -434,18 +434,18 @@ export default function MarketPulseAssistant({
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Korte vraag (experimenteel)…"
+            placeholder="Short question (experimental)…"
             className="flex-1 min-w-0 text-xs px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900 focus:border-indigo-300 dark:focus:border-indigo-700"
           />
           <button
             type="submit"
             className="shrink-0 px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400"
           >
-            Stuur
+            Send
           </button>
         </div>
         <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">
-          Voor antwoorden uit de feed: gebruik de pillen. Vrij typen geeft alleen een korte hint (nog geen AI).
+          For answers from the feed, use the pills. Free typing only returns a short hint (no AI yet).
         </p>
       </form>
     </div>

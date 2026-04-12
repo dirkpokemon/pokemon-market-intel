@@ -289,7 +289,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
             </div>
             <div className="bg-gray-50 dark:bg-gray-800/80 rounded-xl p-3 text-center">
               <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Confidence</p>
-              <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{deal.confidence != null ? `${deal.confidence}%` : 'n.v.t.'}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{deal.confidence != null ? `${deal.confidence}%` : 'N/A'}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-800/80 rounded-xl p-3 text-center">
               <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Last updated</p>

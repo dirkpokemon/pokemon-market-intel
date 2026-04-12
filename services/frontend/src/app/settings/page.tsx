@@ -163,7 +163,7 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800">
               <div>
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Email</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email || 'Onbekend'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email || 'Unknown'}</p>
               </div>
             </div>
             <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800">
@@ -332,7 +332,7 @@ export default function SettingsPage() {
               <div className="mb-4">
                 <div className="space-y-2 py-1">
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Drempel (1 = alles, 10 = alleen kritiek)</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-400">Threshold (1 = all, 10 = critical only)</span>
                     <span className="text-sm font-semibold tabular-nums text-indigo-700 dark:text-indigo-300 min-w-[1.5rem] text-right">
                       {prefs.min_priority}
                     </span>
@@ -348,11 +348,11 @@ export default function SettingsPage() {
                     aria-valuemin={1}
                     aria-valuemax={10}
                     aria-valuenow={prefs.min_priority}
-                    aria-label="Minimum signaal-prioriteit"
+                    aria-label="Minimum signal priority"
                   />
                 </div>
                 <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                  Alleen meldingen met prioriteit {prefs.min_priority}+ (1 = alles, 10 = alleen kritiek)
+                  Only notifications with priority {prefs.min_priority}+ (1 = all, 10 = critical only)
                 </p>
               </div>
 

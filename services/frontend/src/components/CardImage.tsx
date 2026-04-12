@@ -152,7 +152,7 @@ export default function CardImage({ cardName, size = 'sm', className = '' }: Car
         />
       ) : (
         <div className="w-full h-full bg-gradient-to-br from-indigo-100 via-purple-50 to-blue-100 rounded-lg flex items-center justify-center border border-gray-200">
-          <span className="text-lg" title="Geen TCG-afbeelding gevonden">
+          <span className="text-lg" title="No TCG image found">
             🃏
           </span>
         </div>

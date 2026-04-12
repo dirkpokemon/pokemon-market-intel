@@ -6,7 +6,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { adminApi, AdminStatsResponse } from '@/lib/api';
 
 function formatDt(iso?: string | null) {
-  if (!iso) return 'n.v.t.';
+  if (!iso) return 'N/A';
   try {
     return new Date(iso).toLocaleString();
   } catch {
@@ -150,7 +150,7 @@ export default function AdminPage() {
                           stats.last_scrapes.map((row, i) => (
                             <tr key={`${row.source}-${row.started_at}-${i}`} className="hover:bg-gray-50/80">
                               <td className="px-4 py-2 font-medium text-gray-900 truncate max-w-[140px]" title={row.source || ''}>
-                                {row.source || 'n.v.t.'}
+                                {row.source || 'N/A'}
                               </td>
                               <td className="px-4 py-2">
                                 <span
@@ -162,11 +162,11 @@ export default function AdminPage() {
                                         : 'bg-gray-100 text-gray-700'
                                   }`}
                                 >
-                                  {row.status || 'n.v.t.'}
+                                  {row.status || 'N/A'}
                                 </span>
                               </td>
                               <td className="px-4 py-2 text-right tabular-nums text-gray-700">
-                                {row.items_scraped ?? 'n.v.t.'}
+                                {row.items_scraped ?? 'N/A'}
                                 {(row.errors_count ?? 0) > 0 && (
                                   <span className="text-red-600 ml-1">({row.errors_count} err)</span>
                                 )}

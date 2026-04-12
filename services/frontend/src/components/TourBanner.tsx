@@ -113,7 +113,7 @@ export default function TourBanner() {
               <button
                 onClick={handleSkip}
                 className="text-gray-400 hover:text-white text-lg leading-none shrink-0 mt-0.5 transition"
-                aria-label="Tour overslaan"
+                aria-label="Skip tour"
               >
                 ✕
               </button>
@@ -142,7 +142,7 @@ export default function TourBanner() {
 
             {!isOnCorrectPage && (
               <p className="mt-3 text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">
-                Klik op &quot;Volgende&quot; om naar deze pagina te gaan.
+                Click &quot;Next&quot; to open this page.
               </p>
             )}
 
@@ -163,7 +163,7 @@ export default function TourBanner() {
           <div className="px-6 pb-5">
             <div className="flex items-center justify-between">
               <span className="text-xs text-gray-400">
-                Stap {step + 1} van {steps.length}
+                Step {step + 1} of {steps.length}
               </span>
               <div className="flex items-center gap-2">
                 {step > 0 && (
@@ -171,7 +171,7 @@ export default function TourBanner() {
                     onClick={handleBack}
                     className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition"
                   >
-                    ← Terug
+                    ← Back
                   </button>
                 )}
                 <button
@@ -182,7 +182,7 @@ export default function TourBanner() {
                       : 'bg-gray-900 hover:bg-gray-700 text-white'
                   }`}
                 >
-                  {isLastStep ? 'Klaar ✓' : 'Volgende →'}
+                  {isLastStep ? 'Done ✓' : 'Next →'}
                 </button>
               </div>
             </div>
@@ -191,7 +191,7 @@ export default function TourBanner() {
                 onClick={handleSkip}
                 className="w-full mt-2 text-xs text-gray-400 hover:text-gray-600 transition"
               >
-                Tour overslaan
+                Skip tour
               </button>
             )}
           </div>

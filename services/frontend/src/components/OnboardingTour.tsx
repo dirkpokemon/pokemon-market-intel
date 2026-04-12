@@ -33,8 +33,8 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
                 T
               </div>
               <div>
-                <h2 className="text-xl font-bold leading-tight">Welkom bij TCG Pulse</h2>
-                <p className="text-gray-400 text-sm">EU market intelligence voor trading card singles</p>
+                <h2 className="text-xl font-bold leading-tight">Welcome to TCG Pulse</h2>
+                <p className="text-gray-400 text-sm">EU market intelligence for trading card singles</p>
               </div>
             </div>
           </div>
@@ -42,12 +42,12 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
           {/* Body */}
           <div className="p-6">
             <p className="text-gray-700 text-sm leading-relaxed mb-4">
-              Wil je een rondleiding? We nemen je stap voor stap mee langs alle pagina&apos;s, van de
-              zoekbalk op Home tot je Portfolio, en leggen uit wat je per pagina kan verwachten.
+              Want a guided tour? We walk you step by step through every page—from the Home search bar to
+              Portfolio—and explain what to expect on each screen.
             </p>
 
             <ul className="space-y-2 mb-6">
-              {['Home: zoeken en dashboard', 'Top Deals: Deal Score uitgelegd', 'Market Pulse: marktoverzicht', 'Signals: momentum en alerts', 'Portfolio: collectie beheren'].map(
+              {['Home: search & dashboard', 'Top Deals: Deal Score explained', 'Market Pulse: market overview', 'Signals: momentum & alerts', 'Portfolio: manage your collection'].map(
                 (item) => (
                   <li key={item} className="flex items-center gap-2 text-sm text-gray-600">
                     <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs shrink-0">
@@ -64,14 +64,14 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
               onClick={handleStartTour}
               className="w-full py-3 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-800 transition mb-2"
             >
-              Start rondleiding →
+              Start tour →
             </button>
             <button
               type="button"
               onClick={handleSkip}
               className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition"
             >
-              Overslaan, ik verken het zelf
+              Skip—I&apos;ll explore on my own
             </button>
           </div>
         </div>

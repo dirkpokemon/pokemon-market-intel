@@ -201,7 +201,7 @@ export default function ProfileModal({ user, onClose, onSave }: ProfileModalProp
                   </label>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center gap-3">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">Min. score voor melding</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">Min. score for alerts</span>
                       <span className="text-lg font-bold tabular-nums text-indigo-700 dark:text-indigo-300">{dealScoreThreshold}</span>
                     </div>
                     <input
