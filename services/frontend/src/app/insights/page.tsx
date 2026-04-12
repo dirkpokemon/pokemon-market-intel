@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { marketApi, DealScore, MarketDigest } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
+import MarketPulseAssistant from '@/components/MarketPulseAssistant';
 import dynamic from 'next/dynamic';
 import { isSubscriberRole } from '@/lib/plans';
 
@@ -29,6 +30,7 @@ export default function MarketPulsePage() {
   const [userRole, setUserRole] = useState<string>('free');
   const [selectedSet, setSelectedSet] = useState('');
   const [availableSets, setAvailableSets] = useState<string[]>([]);
+  const [mobilePulseTab, setMobilePulseTab] = useState<'overview' | 'pulse'>('overview');
 
   useEffect(() => {
     const raw = localStorage.getItem('user');
@@ -224,6 +226,45 @@ export default function MarketPulsePage() {
           </div>
         ) : marketData ? (
           <>
+            <div
+              className="flex md:hidden gap-1 p-1 bg-gray-100 rounded-xl mb-5"
+              role="tablist"
+              aria-label="Market Pulse weergave"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mobilePulseTab === 'overview'}
+                onClick={() => setMobilePulseTab('overview')}
+                className={`flex-1 py-2.5 text-xs font-semibold rounded-lg transition ${
+                  mobilePulseTab === 'overview'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Overzicht
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mobilePulseTab === 'pulse'}
+                onClick={() => setMobilePulseTab('pulse')}
+                className={`flex-1 py-2.5 text-xs font-semibold rounded-lg transition ${
+                  mobilePulseTab === 'pulse'
+                    ? 'bg-white text-indigo-800 shadow-sm ring-1 ring-indigo-200'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Pulse
+              </button>
+            </div>
+
+            <div className="lg:flex lg:gap-8 lg:items-start">
+              <div
+                className={
+                  mobilePulseTab === 'pulse' ? 'hidden lg:block lg:flex-1 min-w-0' : 'lg:flex-1 min-w-0'
+                }
+              >
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <p className="text-xs text-gray-500 font-medium mb-1">Deals in view</p>
@@ -489,6 +530,25 @@ export default function MarketPulsePage() {
                 </div>
               </div>
             )}
+              </div>
+
+              <aside
+                className={
+                  mobilePulseTab === 'overview'
+                    ? 'hidden lg:block shrink-0 w-full lg:w-[380px] lg:sticky lg:top-24 lg:self-start'
+                    : 'shrink-0 w-full lg:w-[380px] lg:sticky lg:top-24 lg:self-start'
+                }
+              >
+                <MarketPulseAssistant
+                  marketData={marketData}
+                  visibleDeals={visibleDeals}
+                  digest={digest}
+                  isSubscriber={isSubscriber}
+                  lastUpdatedLine={lastUpdated}
+                  selectedSetLabel={selectedSet}
+                />
+              </aside>
+            </div>
           </>
         ) : (
           <div className="text-center py-20">
