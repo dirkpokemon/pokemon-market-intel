@@ -3,13 +3,8 @@
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import SiteFooter from '@/components/SiteFooter';
-import {
-  businessWaitlistMailto,
-  CTA_BUSINESS_WAITLIST,
-  CTA_SUBSCRIBE_PLUS,
-  PLAN_FEATURES,
-  SUBSCRIBER_BADGE,
-} from '@/lib/plans';
+import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
+import { CTA_SUBSCRIBE_PLUS, PLAN_FEATURES, SUBSCRIBER_BADGE } from '@/lib/plans';
 
 // ─── Brand mark (header) ────────────────────────────────────────
 function BrandMark({ size = 40 }: { size?: number }) {
@@ -445,12 +440,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a
-                href={businessWaitlistMailto()}
-                className="block w-full text-center py-2.5 px-4 rounded-lg border border-gray-200 text-gray-700 text-sm font-medium hover:bg-gray-50 transition"
-              >
-                {CTA_BUSINESS_WAITLIST}
-              </a>
+              <BusinessWaitlistActions variant="card" />
             </div>
           </div>
 

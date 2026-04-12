@@ -6,7 +6,8 @@ import DashboardLayout from '@/components/DashboardLayout';
 import ProfileModal from '@/components/ProfileModal';
 import { activateTour } from '@/lib/tour';
 import { authApi, notificationApi, subscriptionApi } from '@/lib/api';
-import { businessWaitlistMailto, CTA_BUSINESS_WAITLIST, tierLabel, UPSELL_SUBSCRIBE } from '@/lib/plans';
+import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
+import { tierLabel, UPSELL_SUBSCRIBE } from '@/lib/plans';
 
 const NOTIF_PREFS_KEY = 'notification_preferences';
 
@@ -181,12 +182,7 @@ export default function SettingsPage() {
               We are not selling Business yet — it will add API access, bulk export, and advanced alerts when ready. Join the
               waitlist and we will email you when checkout opens. You keep Plus until then.
             </p>
-            <a
-              href={businessWaitlistMailto()}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700"
-            >
-              {CTA_BUSINESS_WAITLIST}
-            </a>
+            <BusinessWaitlistActions variant="settings" />
             <p className="text-xs text-gray-500 mt-3">
               Same link as on the <span className="font-medium">Pricing</span> page under Business.
             </p>

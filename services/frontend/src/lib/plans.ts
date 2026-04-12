@@ -9,15 +9,29 @@ import { SITE_CONTACT_EMAIL } from './site';
 
 export type AppTier = 'free' | 'paid' | 'pro';
 
+const WAITLIST_SUBJECT = 'TCG Pulse — Business waitlist';
+const WAITLIST_BODY =
+  "Hi,\n\nI'd like to join the waitlist for Business (API, data export, advanced alerts).\n\nThanks,\n";
+
+/** Target inbox for the Business waitlist (mailto + copy + Gmail compose). */
+export function businessWaitlistEmail(): string {
+  const raw =
+    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BUSINESS_WAITLIST_EMAIL) || SITE_CONTACT_EMAIL;
+  return String(raw).trim() || SITE_CONTACT_EMAIL;
+}
+
 /** Opens the user's mail client to join the Business waitlist (no checkout). */
 export function businessWaitlistMailto(): string {
-  const email =
-    (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_BUSINESS_WAITLIST_EMAIL) || SITE_CONTACT_EMAIL;
-  const subject = encodeURIComponent('TCG Pulse — Business waitlist');
-  const body = encodeURIComponent(
-    "Hi,\n\nI'd like to join the waitlist for Business (API, data export, advanced alerts).\n\nThanks,\n"
-  );
+  const email = businessWaitlistEmail();
+  const subject = encodeURIComponent(WAITLIST_SUBJECT);
+  const body = encodeURIComponent(WAITLIST_BODY);
   return `mailto:${email}?subject=${subject}&body=${body}`;
+}
+
+/** Gmail in the browser — works when no desktop mail app is configured (common on Windows). */
+export function businessWaitlistGmailUrl(): string {
+  const email = businessWaitlistEmail();
+  return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(WAITLIST_SUBJECT)}&body=${encodeURIComponent(WAITLIST_BODY)}`;
 }
 
 export const TIER_LABEL: Record<AppTier, string> = {

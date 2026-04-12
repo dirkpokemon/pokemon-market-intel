@@ -5,12 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { subscriptionApi } from '@/lib/api';
 import SiteFooter from '@/components/SiteFooter';
-import {
-  businessWaitlistMailto,
-  CTA_BUSINESS_WAITLIST,
-  CTA_SUBSCRIBE_PLUS,
-  PLAN_FEATURES,
-} from '@/lib/plans';
+import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
+import { CTA_SUBSCRIBE_PLUS, PLAN_FEATURES } from '@/lib/plans';
 
 type PlanKey = 'free' | 'paid' | 'pro';
 
@@ -119,9 +115,9 @@ export default function PricingPage() {
       if (r === 'paid') return { disabled: true as const, label: 'Your plan', mode: 'idle' as const };
       return { disabled: true as const, label: 'Included in Plus today', mode: 'idle' as const };
     }
-    /* pro / Business — waitlist only (no Stripe checkout yet) */
+    /* pro / Business — waitlist UI is rendered as links (not this button handler) */
     if (r === 'free' || r === 'paid') {
-      return { disabled: false as const, label: CTA_BUSINESS_WAITLIST, mode: 'waitlist' as const };
+      return { disabled: false as const, label: '', mode: 'waitlist' as const };
     }
     return { disabled: true as const, label: 'Your plan', mode: 'idle' as const };
   };
@@ -130,10 +126,7 @@ export default function PricingPage() {
     const { mode } = resolveButton(planKey);
     if (mode === 'idle') return;
 
-    if (mode === 'waitlist') {
-      window.location.href = businessWaitlistMailto();
-      return;
-    }
+    if (mode === 'waitlist') return;
 
     const token = localStorage.getItem('access_token');
     if (!token) {
@@ -247,28 +240,40 @@ export default function PricingPage() {
                   ))}
                 </ul>
 
-                <button
-                  type="button"
-                  onClick={() => handlePlanClick(plan.key, plan.priceId)}
-                  disabled={btn.disabled || isLoading}
-                  className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 min-h-[42px] ${
-                    plan.highlighted
-                      ? 'bg-gray-900 text-white hover:bg-gray-800'
-                      : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
-                  } disabled:opacity-40 disabled:cursor-not-allowed`}
-                >
-                  {isLoading && (
-                    <span
-                      className={`h-4 w-4 shrink-0 rounded-full border-2 animate-spin ${
-                        plan.highlighted ? 'border-white/25 border-t-white' : 'border-gray-300 border-t-gray-800'
-                      }`}
-                      aria-hidden
-                    />
-                  )}
-                  <span>
-                    {isLoading ? 'Redirecting to checkout…' : btn.label}
-                  </span>
-                </button>
+                {plan.key === 'pro' ? (
+                  btn.mode === 'waitlist' ? (
+                    <BusinessWaitlistActions variant="card" />
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full py-2.5 px-4 rounded-lg text-sm font-medium border border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed min-h-[42px]"
+                    >
+                      {btn.label}
+                    </button>
+                  )
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handlePlanClick(plan.key, plan.priceId)}
+                    disabled={btn.disabled || isLoading}
+                    className={`w-full py-2.5 px-4 rounded-lg text-sm font-medium transition flex items-center justify-center gap-2 min-h-[42px] ${
+                      plan.highlighted
+                        ? 'bg-gray-900 text-white hover:bg-gray-800'
+                        : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                    } disabled:opacity-40 disabled:cursor-not-allowed`}
+                  >
+                    {isLoading && (
+                      <span
+                        className={`h-4 w-4 shrink-0 rounded-full border-2 animate-spin ${
+                          plan.highlighted ? 'border-white/25 border-t-white' : 'border-gray-300 border-t-gray-800'
+                        }`}
+                        aria-hidden
+                      />
+                    )}
+                    <span>{isLoading ? 'Redirecting to checkout…' : btn.label}</span>
+                  </button>
+                )}
               </div>
             );
           })}
