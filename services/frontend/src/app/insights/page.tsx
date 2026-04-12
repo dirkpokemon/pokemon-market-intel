@@ -24,8 +24,6 @@ export default function MarketPulsePage() {
   const [dealScores, setDealScores] = useState<DealScore[]>([]);
   const [digest, setDigest] = useState<MarketDigest | null>(null);
   const [userRole, setUserRole] = useState<string>('free');
-  const [selectedSet, setSelectedSet] = useState('');
-  const [availableSets, setAvailableSets] = useState<string[]>([]);
 
   useEffect(() => {
     const raw = localStorage.getItem('user');
@@ -40,29 +38,19 @@ export default function MarketPulsePage() {
 
   const isSubscriber = isSubscriberRole(userRole);
 
-  const loadData = useCallback(async (setFilter: string) => {
-    const trimmed = setFilter.trim();
-    const productSet = trimmed || undefined;
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [scoresRes, digRes] = await Promise.allSettled([
         marketApi.getDealScores({
           limit: 100,
           min_score: 40,
-          ...(productSet ? { product_set: productSet } : {}),
         }),
         marketApi.getMarketDigest(),
       ]);
 
       if (scoresRes.status === 'fulfilled') {
         setDealScores(scoresRes.value);
-        if (!productSet) {
-          const names = scoresRes.value
-            .map((d) => d.product_set)
-            .filter((s): s is string => Boolean(s && s !== 'Unknown'));
-          const uniq = [...new Set(names)].sort((a, b) => a.localeCompare(b));
-          setAvailableSets(uniq);
-        }
       } else {
         setDealScores([]);
       }
@@ -77,8 +65,8 @@ export default function MarketPulsePage() {
   }, []);
 
   useEffect(() => {
-    loadData(selectedSet);
-  }, [selectedSet, loadData]);
+    loadData();
+  }, [loadData]);
 
   const visibleDeals = useMemo(() => {
     if (isSubscriber) return dealScores;
@@ -168,36 +156,6 @@ export default function MarketPulsePage() {
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4 shrink-0">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
-            <label htmlFor="pulse-set-filter" className="text-xs font-medium text-gray-500 shrink-0 sm:w-20">
-              Set
-            </label>
-            <select
-              id="pulse-set-filter"
-              value={selectedSet}
-              onChange={(e) => setSelectedSet(e.target.value)}
-              disabled={loading && availableSets.length === 0}
-              className="flex-1 max-w-md px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-gray-300 focus:border-transparent"
-            >
-              <option value="">Alle sets</option>
-              {availableSets.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
-          {selectedSet ? (
-            <Link
-              href={`/deals?set=${encodeURIComponent(selectedSet)}`}
-              className="text-xs font-medium text-indigo-600 hover:text-indigo-800 whitespace-nowrap shrink-0"
-            >
-              Open in Deals →
-            </Link>
-          ) : null}
-        </div>
-
         {!loading && !isSubscriber && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4 shrink-0">
             <p className="text-xs text-amber-900">
@@ -227,22 +185,13 @@ export default function MarketPulsePage() {
               digest={digest}
               isSubscriber={isSubscriber}
               lastUpdatedLine={lastUpdated}
-              selectedSetLabel={selectedSet}
+              selectedSetLabel=""
               className="flex-1 shadow-md"
             />
           </div>
         ) : (
           <div className="text-center py-20 flex-1">
-            <p className="text-gray-500 mb-4">Geen marktdata voor dit filter.</p>
-            {selectedSet && (
-              <button
-                type="button"
-                onClick={() => setSelectedSet('')}
-                className="text-sm font-medium text-indigo-600 hover:underline"
-              >
-                Filter wissen
-              </button>
-            )}
+            <p className="text-gray-500">Geen marktdata beschikbaar.</p>
           </div>
         )}
       </div>
