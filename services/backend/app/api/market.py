@@ -76,12 +76,22 @@ async def get_signals(
     return [SignalResponse.from_orm(signal) for signal in signals]
 
 
+def _escape_ilike_pattern(value: str) -> str:
+    """Escape % and _ for PostgreSQL ILIKE with ESCAPE '\\'."""
+    return (
+        value.replace("\\", "\\\\")
+        .replace("%", "\\%")
+        .replace("_", "\\_")
+    )
+
+
 @router.get("/deal_scores", response_model=List[DealScoreResponse])
 async def get_deal_scores(
     limit: int = Query(default=50, le=100, description="Maximum number of deal scores to return"),
     min_score: float = Query(default=0, ge=0, le=100, description="Minimum deal score"),
     category: Optional[str] = Query(default=None, description="Filter by category (single/sealed)"),
-    product_set: Optional[str] = Query(default=None, description="Filter by product set"),
+    product_set: Optional[str] = Query(default=None, description="Filter by product set (exact, case-insensitive)"),
+    product_name: Optional[str] = Query(default=None, description="Filter by product name (substring, case-insensitive)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -96,7 +106,8 @@ async def get_deal_scores(
     - **limit**: Maximum number of scores (default: 50, max: 100)
     - **min_score**: Minimum deal score filter (0-100)
     - **category**: Filter by category (single or sealed)
-    - **product_set**: Filter by card set name
+    - **product_set**: Filter by card set name (case-insensitive match)
+    - **product_name**: Filter by card name substring (case-insensitive)
     """
     logger.info(f"User {current_user.email} fetching deal scores")
     
@@ -120,8 +131,16 @@ async def get_deal_scores(
         query = query.where(DealScore.category == category)
     
     if product_set:
-        query = query.where(DealScore.product_set == product_set)
-    
+        ps = product_set.strip()
+        if ps:
+            query = query.where(func.lower(DealScore.product_set) == func.lower(ps))
+
+    if product_name:
+        pn = product_name.strip()
+        if pn:
+            esc = _escape_ilike_pattern(pn)
+            query = query.where(DealScore.product_name.ilike(f"%{esc}%", escape="\\"))
+
     # Order by deal score (desc)
     query = query.order_by(desc(DealScore.deal_score)).limit(limit)
     

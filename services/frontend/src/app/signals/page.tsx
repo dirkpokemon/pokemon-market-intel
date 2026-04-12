@@ -119,6 +119,7 @@ function SignalCard({ signal }: { signal: Signal }) {
   const cardTraderUrl = `https://www.cardtrader.com/en/games/pokemon/blueprints_search?q=${encodeURIComponent(searchName)}`;
   const ebayUrl = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchName + ' Pokemon card')}&_sacat=183454&LH_BIN=1&_sop=15`;
   const setDealsUrl = signal.product_set ? `/deals?set=${encodeURIComponent(signal.product_set)}` : '/deals';
+  const cardDealsUrl = `/deals?card=${encodeURIComponent(signal.product_name)}`;
 
   const handleWatchlist = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -146,6 +147,11 @@ function SignalCard({ signal }: { signal: Signal }) {
               <span className={`text-[11px] font-medium px-2 py-0.5 rounded border ${meta.color}`}>
                 {meta.icon} {meta.label}
               </span>
+              {signal.confidence != null && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">
+                  {Math.round(Number(signal.confidence))}% zekerheid
+                </span>
+              )}
               <span className="text-[11px] text-gray-400 ml-auto">{timeAgo(signal.detected_at)}</span>
             </div>
 
@@ -153,23 +159,43 @@ function SignalCard({ signal }: { signal: Signal }) {
             {signal.product_set && !isSetSignal && (
               <p className="text-xs text-gray-400 mb-1">{signal.product_set}</p>
             )}
-            {signal.description && <p className="text-xs text-gray-600 leading-relaxed">{signal.description}</p>}
+            {isSetSignal && (
+              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-md px-2 py-1 mt-1 inline-block">
+                Set-signaal — gemiddelde trend over meerdere kaarten in deze set
+              </p>
+            )}
+            {signal.description && <p className="text-xs text-gray-600 leading-relaxed mt-1.5">{signal.description}</p>}
 
             {Object.keys(parsedMeta).length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
+                {parsedMeta.avg_trend !== undefined && (
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${parsedMeta.avg_trend >= 0 ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`}>
+                    set gem. {parsedMeta.avg_trend >= 0 ? '+' : ''}{parsedMeta.avg_trend}%
+                  </span>
+                )}
+                {parsedMeta.avg_volume_trend !== undefined && (
+                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${parsedMeta.avg_volume_trend >= 0 ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'}`}>
+                    set volume {parsedMeta.avg_volume_trend >= 0 ? '+' : ''}{parsedMeta.avg_volume_trend}%
+                  </span>
+                )}
+                {parsedMeta.card_count !== undefined && (
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">
+                    {parsedMeta.card_count} kaarten in sample
+                  </span>
+                )}
                 {parsedMeta.price_trend !== undefined && (
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${parsedMeta.price_trend >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                    price {parsedMeta.price_trend >= 0 ? '+' : ''}{parsedMeta.price_trend}%
+                    prijs {parsedMeta.price_trend >= 0 ? '+' : ''}{parsedMeta.price_trend}%
                   </span>
                 )}
                 {parsedMeta.volume_trend !== undefined && (
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${parsedMeta.volume_trend >= 0 ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'}`}>
-                    vol {parsedMeta.volume_trend >= 0 ? '+' : ''}{parsedMeta.volume_trend}%
+                    volume {parsedMeta.volume_trend >= 0 ? '+' : ''}{parsedMeta.volume_trend}%
                   </span>
                 )}
                 {parsedMeta.volatility !== undefined && (
                   <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700">
-                    volatility {parsedMeta.volatility}%
+                    volatiliteit {parsedMeta.volatility}%
                   </span>
                 )}
               </div>
@@ -196,6 +222,18 @@ function SignalCard({ signal }: { signal: Signal }) {
       {/* ── Action panel (expanded) ── */}
       {expanded && (
         <div className="px-5 pb-5 border-t border-gray-100 pt-4">
+          <p className="text-[11px] text-gray-400 mb-3">
+            Gedetecteerd:{' '}
+            {new Date(signal.detected_at).toLocaleString('nl-NL', {
+              dateStyle: 'medium',
+              timeStyle: 'short',
+            })}
+            {signal.deal_score != null && (
+              <span className="ml-2 text-gray-600">
+                · deal-score {Math.round(signal.deal_score)}
+              </span>
+            )}
+          </p>
           {/* Recommendation */}
           <div className="flex items-start gap-2 mb-4">
             <div className="flex-shrink-0 mt-0.5">
@@ -220,6 +258,15 @@ function SignalCard({ signal }: { signal: Signal }) {
               </Link>
             ) : (
               <>
+                <Link
+                  href={cardDealsUrl}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white rounded-lg bg-emerald-600 hover:bg-emerald-700 transition"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Deal-scores (app)
+                </Link>
                 <a href={cardMarketUrl} target="_blank" rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-white rounded-lg bg-blue-600 hover:bg-blue-700 transition">
                   <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

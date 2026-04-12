@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { marketApi, DealScore } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import DealModal from '@/components/DealModal';
@@ -76,9 +76,11 @@ function DealCard({ deal, watchlist, toggleWatchlist, setSelectedDeal, getScoreC
 }
 
 function DealsPageInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const presetSet = searchParams.get('set') || '';
-  const presetCard = searchParams.get('card') || '';
+  const presetSet = (searchParams.get('set') || '').trim();
+  const presetCard = (searchParams.get('card') || '').trim();
+  const queryKey = searchParams.toString();
 
   const [loading, setLoading] = useState(true);
   const [dealScores, setDealScores] = useState<DealScore[]>([]);
@@ -90,7 +92,7 @@ function DealsPageInner() {
   const [userRole, setUserRole] = useState<string>('free');
   const [filters, setFilters] = useState<FilterOptions>({
     search: presetSet || presetCard,
-    minScore: 50,
+    minScore: presetSet || presetCard ? 0 : 50,
     maxScore: 100,
     minPrice: 0,
     maxPrice: 1000,
@@ -103,20 +105,36 @@ function DealsPageInner() {
     if (savedWatchlist) setWatchlist(JSON.parse(savedWatchlist));
     const raw = localStorage.getItem('user');
     if (raw) { try { setUserRole(JSON.parse(raw).role || 'free'); } catch {} }
-    loadData();
   }, []);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const scores = await marketApi.getDealScores({ limit: 100, min_score: 50 });
-      setDealScores(scores);
-    } catch (err) {
-      console.error('Error loading data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const setP = (searchParams.get('set') || '').trim();
+    const cardP = (searchParams.get('card') || '').trim();
+    setFilters((prev) => ({
+      ...prev,
+      search: setP || cardP ? setP || cardP : '',
+      minScore: setP || cardP ? 0 : 50,
+    }));
+    setCurrentPage(1);
+
+    (async () => {
+      try {
+        setLoading(true);
+        const scoped = Boolean(setP || cardP);
+        const scores = await marketApi.getDealScores({
+          limit: 100,
+          min_score: scoped ? 0 : 50,
+          ...(setP ? { product_set: setP } : {}),
+          ...(cardP ? { product_name: cardP } : {}),
+        });
+        setDealScores(scores);
+      } catch (err) {
+        console.error('Error loading data:', err);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [queryKey]);
 
   const toggleWatchlist = (dealId: number) => {
     const newWatchlist = watchlist.includes(dealId)
@@ -178,12 +196,24 @@ function DealsPageInner() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
               Top Deals
-              {presetSet && <span className="ml-2 text-base font-normal text-gray-500">· {presetSet}</span>}
+              {presetSet && (
+                <span className="ml-2 text-base font-normal text-gray-500">· set: {presetSet}</span>
+              )}
+              {!presetSet && presetCard && (
+                <span className="ml-2 text-base font-normal text-gray-500">· kaart: {presetCard}</span>
+              )}
             </h1>
             <p className="text-sm text-gray-500 mt-1">
-              {isSubscriberRole(userRole)
-                ? `${dealScores.length} deals met AI-scoring, elk uur vernieuwd`
-                : `${FREE_VISIBLE} deals zichtbaar — upgrade voor volledige toegang`}
+              {presetSet || presetCard ? (
+                <>
+                  {dealScores.length} deal{dealScores.length !== 1 ? 's' : ''} geladen voor deze filter
+                  {isSubscriberRole(userRole) ? ' · volledige lijst voor abonnees' : ' · free: top 20 met score ≥65'}
+                </>
+              ) : isSubscriberRole(userRole) ? (
+                `${dealScores.length} deals met AI-scoring, elk uur vernieuwd`
+              ) : (
+                `${FREE_VISIBLE} deals zichtbaar — upgrade voor volledige toegang`
+              )}
             </p>
           </div>
           {isSubscriberRole(userRole) && (
@@ -273,14 +303,26 @@ function DealsPageInner() {
                 <p className="text-sm font-medium text-gray-900 mb-1">
                   {viewMode === 'watchlist' ? 'Je watchlist is leeg' : 'Geen deals gevonden'}
                 </p>
-                <p className="text-xs text-gray-500 mb-4">
-                  {viewMode === 'watchlist' ? 'Klik de ster op een deal om hem op te slaan' : 'Pas je zoekterm of filters aan'}
+                <p className="text-xs text-gray-500 mb-4 max-w-md mx-auto">
+                  {viewMode === 'watchlist'
+                    ? 'Klik de ster op een deal om hem op te slaan'
+                    : dealScores.length > 0
+                      ? 'Je filters sluiten alle geladen deals uit. Verlaag min. score of prijs, of wis het zoekveld.'
+                      : presetSet || presetCard
+                        ? 'Er zijn op dit moment geen gescoorde deals die aan deze set/kaart voldoen (free: alleen score ≥65). Probeer alle deals of kom later terug.'
+                        : 'Pas je zoekterm of filters aan'}
                 </p>
                 <button
-                  onClick={() => { setFilters({ search: '', minScore: 50, maxScore: 100, minPrice: 0, maxPrice: 1000 }); setViewMode('all'); }}
+                  onClick={() => {
+                    setFilters({ search: '', minScore: 50, maxScore: 100, minPrice: 0, maxPrice: 1000 });
+                    setViewMode('all');
+                    setCurrentPage(1);
+                    if (viewMode === 'watchlist') return;
+                    router.replace('/deals');
+                  }}
                   className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition"
                 >
-                  {viewMode === 'watchlist' ? 'Alle deals bekijken' : 'Filters resetten'}
+                  {viewMode === 'watchlist' ? 'Alle deals bekijken' : presetSet || presetCard ? 'Alle deals laden' : 'Filters resetten'}
                 </button>
               </div>
             ) : isSubscriberRole(userRole) ? (

@@ -203,8 +203,13 @@ export const marketApi = {
     limit?: number;
     min_score?: number;
     category?: string;
+    product_set?: string;
+    product_name?: string;
   }): Promise<DealScore[]> => {
-    const query = new URLSearchParams(params as any).toString();
+    const entries = Object.entries(params || {})
+      .filter(([, v]) => v !== undefined && v !== null && v !== '')
+      .map(([k, v]) => [k, String(v)] as [string, string]);
+    const query = new URLSearchParams(entries).toString();
     return apiRequest<DealScore[]>(`/api/v1/deal_scores?${query}`);
   },
 
