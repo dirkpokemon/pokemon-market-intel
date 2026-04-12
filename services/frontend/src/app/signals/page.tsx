@@ -100,6 +100,10 @@ function timeAgo(dateStr: string) {
   return `${days}d ago`;
 }
 
+function isSetLevelSignal(s: Signal) {
+  return s.category === 'set_trend';
+}
+
 // ─── Signal Card ────────────────────────────────────────────
 
 function SignalCard({ signal }: { signal: Signal }) {
@@ -319,6 +323,8 @@ export default function PriceSignalsPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [filterType, setFilterType] = useState<string>('all');
+  /** Feed scope: card-level signals vs set-level (set_trend) */
+  const [scope, setScope] = useState<'all' | 'cards' | 'sets'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [accessDenied, setAccessDenied] = useState(false);
 
@@ -355,18 +361,37 @@ export default function PriceSignalsPage() {
     }
   };
 
+  const scopedSignals = useMemo(() => {
+    if (scope === 'cards') return signals.filter((s) => !isSetLevelSignal(s));
+    if (scope === 'sets') return signals.filter((s) => isSetLevelSignal(s));
+    return signals;
+  }, [signals, scope]);
+
+  const typeCountsInScope = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const s of scopedSignals) {
+      m.set(s.signal_type, (m.get(s.signal_type) || 0) + 1);
+    }
+    return m;
+  }, [scopedSignals]);
+
   const filteredSignals = useMemo(() => {
-    return signals.filter(signal => {
+    return scopedSignals.filter((signal) => {
       const typeMatch = filterType === 'all' || signal.signal_type === filterType;
-      const searchMatch = !searchQuery ||
+      const searchMatch =
+        !searchQuery ||
         signal.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (signal.product_set || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         signal.signal_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (signal.description || '').toLowerCase().includes(searchQuery.toLowerCase());
       return typeMatch && searchMatch;
     });
-  }, [signals, filterType, searchQuery]);
+  }, [scopedSignals, filterType, searchQuery]);
 
-  const signalTypes = useMemo(() => Array.from(new Set(signals.map(s => s.signal_type))), [signals]);
+  const signalTypes = useMemo(
+    () => Array.from(new Set(scopedSignals.map((s) => s.signal_type))).sort(),
+    [scopedSignals]
+  );
   const isPaid = user?.role === 'paid' || user?.role === 'pro' || user?.role === 'admin';
 
   // Check if signals are stale (newest signal older than 25 hours)
@@ -512,33 +537,43 @@ export default function PriceSignalsPage() {
               </div>
             )}
 
-            {/* ─── Signal Type Overview ──────────────────── */}
-            {digest && Object.keys(digest.signal_counts).length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">Signal Breakdown</h3>
-                <div className="flex flex-wrap gap-2">
-                  {Object.entries(digest.signal_counts).map(([type, count]) => {
-                    const meta = getTypeMeta(type);
-                    return (
-                      <button
-                        key={type}
-                        onClick={() => setFilterType(filterType === type ? 'all' : type)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition ${
-                          filterType === type ? 'ring-2 ring-gray-400 ' + meta.color : meta.color + ' opacity-80 hover:opacity-100'
-                        }`}
-                      >
-                        <span>{meta.icon}</span>
-                        <span className="capitalize">{meta.label}</span>
-                        <span className="ml-1 text-[11px] opacity-70">({count})</span>
-                      </button>
-                    );
-                  })}
+            {/* ─── Filters: scope (cards vs sets) + search + type (counts = this page only) ─── */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6 space-y-4">
+              <div>
+                <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide mb-2">Weergave</p>
+                <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
+                  {(
+                    [
+                      { id: 'all' as const, label: 'Alles' },
+                      { id: 'cards' as const, label: 'Losse kaarten' },
+                      { id: 'sets' as const, label: 'Sets' },
+                    ] as const
+                  ).map(({ id, label }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => {
+                        setScope(id);
+                        setFilterType('all');
+                      }}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-md transition ${
+                        scope === id ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      {label}
+                      <span className="ml-1 tabular-nums text-[10px] font-normal text-gray-400">
+                        (
+                        {id === 'all'
+                          ? signals.length
+                          : id === 'cards'
+                            ? signals.filter((s) => !isSetLevelSignal(s)).length
+                            : signals.filter((s) => isSetLevelSignal(s)).length}
+                        )
+                      </span>
+                    </button>
+                  ))}
                 </div>
               </div>
-            )}
-
-            {/* ─── Filters ──────────────────────────────── */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-[200px] relative">
                   <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -548,30 +583,42 @@ export default function PriceSignalsPage() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search signals by card, set, or description..."
+                    placeholder="Zoek op kaart, set of beschrijving…"
                     className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent"
                   />
                 </div>
                 <select
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
-                  className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                  className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-transparent min-w-[180px]"
                 >
-                  <option value="all">All Types</option>
-                  {signalTypes.map(type => {
+                  <option value="all">Alle types ({scopedSignals.length})</option>
+                  {signalTypes.map((type) => {
                     const meta = getTypeMeta(type);
-                    return <option key={type} value={type}>{meta.icon} {meta.label}</option>;
+                    const n = typeCountsInScope.get(type) ?? 0;
+                    return (
+                      <option key={type} value={type}>
+                        {meta.label} ({n})
+                      </option>
+                    );
                   })}
                 </select>
-                {filterType !== 'all' && (
+                {(filterType !== 'all' || searchQuery) && (
                   <button
-                    onClick={() => setFilterType('all')}
+                    type="button"
+                    onClick={() => {
+                      setFilterType('all');
+                      setSearchQuery('');
+                    }}
                     className="text-xs text-gray-500 hover:text-gray-700 underline"
                   >
-                    Clear filter
+                    Reset
                   </button>
                 )}
               </div>
+              <p className="text-[11px] text-gray-400">
+                Tellingen gelden voor deze feed (max. 100 signalen), niet voor de hele database.
+              </p>
             </div>
 
             {/* ─── Signal Feed ───────────────────────────── */}
