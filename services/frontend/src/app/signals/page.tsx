@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { marketApi, Signal, MarketDigest, SetTrend } from '@/lib/api';
+import { marketApi, Signal, MarketDigest } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import CardImage from '@/components/CardImage';
 import Link from 'next/link';
@@ -98,24 +98,6 @@ function timeAgo(dateStr: string) {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
-}
-
-// ─── Set Trend Row ──────────────────────────────────────────
-
-function SetTrendRow({ trend, direction }: { trend: SetTrend; direction: 'up' | 'down' }) {
-  const isUp = direction === 'up';
-  return (
-    <div className="flex items-center justify-between py-2.5 border-b border-gray-50 last:border-0">
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-gray-900 truncate">{trend.product_set}</p>
-        <p className="text-[11px] text-gray-400">{trend.card_count} cards &middot; avg &euro;{trend.avg_price.toFixed(2)}</p>
-      </div>
-      <div className={`text-right flex-shrink-0 ml-4 ${isUp ? 'text-green-600' : 'text-red-600'}`}>
-        <p className="text-sm font-bold">{isUp ? '+' : ''}{trend.avg_trend.toFixed(1)}%</p>
-        <p className="text-[11px] opacity-70">vol {trend.avg_volume_trend >= 0 ? '+' : ''}{trend.avg_volume_trend.toFixed(0)}%</p>
-      </div>
-    </div>
-  );
 }
 
 // ─── Signal Card ────────────────────────────────────────────
@@ -505,34 +487,6 @@ export default function PriceSignalsPage() {
                     );
                   })}
                 </div>
-              </div>
-            )}
-
-            {/* ─── Set Trends ────────────────────────────── */}
-            {digest && (digest.top_rising_sets.length > 0 || digest.top_declining_sets.length > 0) && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-                {digest.top_rising_sets.length > 0 && (
-                  <div className="bg-white rounded-xl border border-gray-200 p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-green-600">📈</span>
-                      <h3 className="text-sm font-semibold text-gray-900">Rising Sets</h3>
-                    </div>
-                    {digest.top_rising_sets.map(t => (
-                      <SetTrendRow key={t.product_set} trend={t} direction="up" />
-                    ))}
-                  </div>
-                )}
-                {digest.top_declining_sets.length > 0 && (
-                  <div className="bg-white rounded-xl border border-gray-200 p-5">
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-red-600">📉</span>
-                      <h3 className="text-sm font-semibold text-gray-900">Declining Sets</h3>
-                    </div>
-                    {digest.top_declining_sets.map(t => (
-                      <SetTrendRow key={t.product_set} trend={t} direction="down" />
-                    ))}
-                  </div>
-                )}
               </div>
             )}
 
