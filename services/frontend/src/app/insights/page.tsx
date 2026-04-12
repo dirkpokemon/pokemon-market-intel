@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { marketApi, DealScore, MarketDigest, Signal } from '@/lib/api';
+import { marketApi, DealScore, MarketDigest } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import dynamic from 'next/dynamic';
 import { isSubscriberRole } from '@/lib/plans';
@@ -24,7 +24,6 @@ function formatDigestTime(iso?: string): string | null {
 export default function MarketPulsePage() {
   const [loading, setLoading] = useState(true);
   const [dealScores, setDealScores] = useState<DealScore[]>([]);
-  const [signals, setSignals] = useState<Signal[]>([]);
   const [digest, setDigest] = useState<MarketDigest | null>(null);
   const [moversTab, setMoversTab] = useState<'buying' | 'overpriced'>('buying');
   const [userRole, setUserRole] = useState<string>('free');
@@ -49,13 +48,12 @@ export default function MarketPulsePage() {
     const productSet = trimmed || undefined;
     try {
       setLoading(true);
-      const [scoresRes, sigsRes, digRes] = await Promise.allSettled([
+      const [scoresRes, digRes] = await Promise.allSettled([
         marketApi.getDealScores({
           limit: 100,
           min_score: 40,
           ...(productSet ? { product_set: productSet } : {}),
         }),
-        marketApi.getSignals({ limit: 100 }),
         marketApi.getMarketDigest(),
       ]);
 
@@ -71,9 +69,6 @@ export default function MarketPulsePage() {
       } else {
         setDealScores([]);
       }
-
-      if (sigsRes.status === 'fulfilled') setSignals(sigsRes.value);
-      else setSignals([]);
 
       if (digRes.status === 'fulfilled') setDigest(digRes.value);
       else setDigest(null);
@@ -132,12 +127,6 @@ export default function MarketPulsePage() {
       low: visibleDeals.filter((d) => d.deal_score < 50).length,
     };
 
-    const signalBreakdown = {
-      high: signals.filter((s) => s.signal_level === 'high').length,
-      medium: signals.filter((s) => s.signal_level === 'medium').length,
-      low: signals.filter((s) => s.signal_level === 'low').length,
-    };
-
     const sets = visibleDeals.reduce(
       (acc, d) => {
         const set = d.product_set || 'Unknown';
@@ -171,10 +160,9 @@ export default function MarketPulsePage() {
       overpriced: overpriced.slice(0, 10),
       ranges,
       scoreDistribution,
-      signalBreakdown,
       topSets,
     };
-  }, [visibleDeals, signals]);
+  }, [visibleDeals]);
 
   const getSentimentConfig = (bias: string) => {
     switch (bias) {
@@ -206,47 +194,21 @@ export default function MarketPulsePage() {
   };
 
   const lastUpdated = formatDigestTime(digest?.last_analysis_at);
-  const highlightSignals = (digest?.signal_highlights || []).slice(0, 3);
 
   return (
     <DashboardLayout>
       <div className="px-6 py-8 max-w-[1400px] mx-auto">
-        {/* Page header — compact */}
         <div className="mb-5">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
-            <h1 className="text-2xl font-bold text-gray-900">Market Pulse</h1>
-            <nav className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
-              <Link href="/deals" className="text-gray-700 hover:text-gray-900 font-medium">
-                Deals
-              </Link>
-              <span className="text-gray-300" aria-hidden>
-                ·
-              </span>
-              <Link href="/signals" className="text-gray-700 hover:text-gray-900 font-medium">
-                Signals
-              </Link>
-              <span className="text-gray-300" aria-hidden>
-                ·
-              </span>
-              <Link href="/home" className="text-gray-700 hover:text-gray-900 font-medium">
-                Search
-              </Link>
-              {!isSubscriber && (
-                <>
-                  <span className="text-gray-300" aria-hidden>
-                    ·
-                  </span>
-                  <Link href="/pricing" className="text-amber-700 hover:text-amber-900 font-medium">
-                    Plus
-                  </Link>
-                </>
-              )}
-            </nav>
-          </div>
-          <p className="text-sm text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-gray-900">Market Pulse</h1>
+          <p className="text-sm text-gray-700 mt-2 max-w-3xl leading-relaxed">
+            Marktbeeld op basis van onze gescoorde EU-listings: waar prijzen t.o.v. gemiddelden liggen, hoe sterk deals
+            verdeeld zijn, welke sets zwaarder voorkomen, en korte set-trends — met grafieken. Geen kooplijst: dat blijft
+            bij Top Deals.
+          </p>
+          <p className="text-xs text-gray-500 mt-2">
             {isSubscriber
-              ? `${dealScores.length} listings · hourly refresh${lastUpdated ? ` · ${lastUpdated}` : ''}`
-              : `Free sample (top 20, score ≥65)${lastUpdated ? ` · ${lastUpdated}` : ''}`}
+              ? `${dealScores.length} listings in deze weergave · vernieuwd elk uur${lastUpdated ? ` · laatste analyse ${lastUpdated}` : ''}`
+              : `Free: steekproef (top 20, score ≥65)${lastUpdated ? ` · ${lastUpdated}` : ''}`}
           </p>
         </div>
 
@@ -284,7 +246,7 @@ export default function MarketPulsePage() {
         {!loading && !isSubscriber && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-5">
             <p className="text-xs text-amber-900">
-              Free: limited sample — <span className="font-medium">Plus</span> unlocks full catalog &amp; Signals.
+              Free: beperkte steekproef — <span className="font-medium">Plus</span> gebruikt de volledige gescoorde catalogus voor deze grafieken.
             </p>
             <Link
               href="/pricing"
@@ -344,83 +306,13 @@ export default function MarketPulsePage() {
                 <p className="text-2xl font-bold text-gray-900">{marketData.avgScore}</p>
               </div>
               <div className="bg-white rounded-xl border border-gray-200 p-5">
-                <p className="text-xs text-gray-500 font-medium mb-1">Active signals</p>
-                {isSubscriber ? (
-                  <>
-                    <p className="text-2xl font-bold text-gray-900">{signals.length}</p>
-                    {signals.length > 0 && (
-                      <Link href="/signals" className="text-[10px] text-indigo-600 hover:underline font-medium">
-                        View feed →
-                      </Link>
-                    )}
-                  </>
-                ) : (
-                  <div>
-                    <p className="text-lg font-bold text-indigo-500">Plus</p>
-                    <Link href="/pricing" className="text-[10px] text-indigo-600 hover:underline font-medium">
-                      Unlock →
-                    </Link>
-                  </div>
-                )}
+                <p className="text-xs text-gray-500 font-medium mb-1">Sets in catalog</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {digest?.total_sets != null ? digest.total_sets.toLocaleString() : '—'}
+                </p>
+                <p className="text-[10px] text-gray-400 mt-1">Distinct sets in EU scrape</p>
               </div>
             </div>
-
-            {highlightSignals.length > 0 && (
-              <div className="bg-white rounded-xl border border-gray-200 p-5 mb-8">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Signal picks</h3>
-                    <p className="text-[11px] text-gray-400 mt-0.5">From the latest scan</p>
-                  </div>
-                  {isSubscriber ? (
-                    <Link href="/signals" className="text-xs text-indigo-600 hover:underline font-medium shrink-0">
-                      All →
-                    </Link>
-                  ) : (
-                    <Link href="/pricing" className="text-xs text-amber-700 hover:underline font-medium shrink-0">
-                      Plus →
-                    </Link>
-                  )}
-                </div>
-                <ul className="divide-y divide-gray-100">
-                  {highlightSignals.map((s) => (
-                    <li key={s.id} className="py-3 first:pt-0">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">{s.product_name}</p>
-                          <p className="text-[11px] text-gray-500">
-                            {s.signal_type.replace(/_/g, ' ')} · {s.signal_level} priority
-                          </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2 shrink-0">
-                          <Link
-                            href={`/deals?card=${encodeURIComponent(s.product_name)}`}
-                            className="text-xs font-semibold text-gray-700 px-2 py-1 rounded-md border border-gray-200 hover:bg-gray-50"
-                          >
-                            Deals
-                          </Link>
-                          {isSubscriber ? (
-                            <Link
-                              href="/signals"
-                              className="text-xs font-semibold text-indigo-700 px-2 py-1 rounded-md bg-indigo-50 hover:bg-indigo-100"
-                            >
-                              Feed
-                            </Link>
-                          ) : (
-                            <Link
-                              href="/pricing"
-                              className="text-xs font-semibold text-amber-800 px-2 py-1 rounded-md bg-amber-50 hover:bg-amber-100"
-                            >
-                              Plus
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
               <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -662,52 +554,6 @@ export default function MarketPulsePage() {
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-
-            {isSubscriber ? (
-              signals.length > 0 ? (
-                <div className="bg-white rounded-xl border border-gray-200 p-5">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-900">Signals by priority</h3>
-                      <p className="text-[11px] text-gray-400 mt-0.5">Active now</p>
-                    </div>
-                    <Link href="/signals" className="text-xs text-gray-500 hover:text-gray-700 font-medium">
-                      All →
-                    </Link>
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-4 rounded-lg bg-red-50">
-                      <p className="text-2xl font-bold text-red-700">{marketData.signalBreakdown.high}</p>
-                      <p className="text-xs font-medium text-red-600 mt-1">High</p>
-                    </div>
-                    <div className="text-center p-4 rounded-lg bg-amber-50">
-                      <p className="text-2xl font-bold text-amber-700">{marketData.signalBreakdown.medium}</p>
-                      <p className="text-xs font-medium text-amber-600 mt-1">Medium</p>
-                    </div>
-                    <div className="text-center p-4 rounded-lg bg-blue-50">
-                      <p className="text-2xl font-bold text-blue-700">{marketData.signalBreakdown.low}</p>
-                      <p className="text-xs font-medium text-blue-600 mt-1">Low</p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 text-center text-sm text-gray-500">
-                  No active signals right now. Try again after the next hourly scan.
-                </div>
-              )
-            ) : (
-              <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <p className="text-sm text-gray-700">
-                  Live <span className="font-medium">Signals</span> feed is on Plus — picks above are a preview.
-                </p>
-                <Link
-                  href="/pricing"
-                  className="inline-flex shrink-0 items-center justify-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition"
-                >
-                  Plus
-                </Link>
               </div>
             )}
           </>
