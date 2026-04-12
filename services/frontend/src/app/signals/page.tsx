@@ -394,16 +394,29 @@ export default function PriceSignalsPage() {
   );
   const isPaid = user?.role === 'paid' || user?.role === 'pro' || user?.role === 'admin';
 
-  // Check if signals are stale (newest signal older than 25 hours)
+  const STALE_HOURS = 25;
+
+  // Newest *signal row* timestamp (can stay old if no patterns matched this run)
   const newestSignalAge = useMemo(() => {
     if (signals.length === 0) return null;
     const newest = signals.reduce((a, b) =>
       new Date(a.detected_at) > new Date(b.detected_at) ? a : b
     );
-    const ageHours = (Date.now() - new Date(newest.detected_at).getTime()) / 3600000;
-    return ageHours;
+    return (Date.now() - new Date(newest.detected_at).getTime()) / 3600000;
   }, [signals]);
-  const signalsAreStale = newestSignalAge !== null && newestSignalAge > 25;
+
+  // True pipeline freshness: last market-stats run (from digest), not signal timestamps alone
+  const analysisIsFresh = useMemo(() => {
+    const at = digest?.last_analysis_at;
+    if (!at) return false;
+    const ageHours = (Date.now() - new Date(at).getTime()) / 3600000;
+    return ageHours <= STALE_HOURS;
+  }, [digest?.last_analysis_at]);
+
+  const signalsAreStale =
+    newestSignalAge !== null &&
+    newestSignalAge > STALE_HOURS &&
+    !analysisIsFresh;
 
   return (
     <DashboardLayout>
@@ -442,8 +455,8 @@ export default function PriceSignalsPage() {
               <p className="text-xs text-amber-700 dark:text-amber-300/90 mt-0.5">
                 The newest signal is {newestSignalAge && newestSignalAge > 48
                   ? `${Math.round(newestSignalAge / 24)} days`
-                  : `${Math.round(newestSignalAge ?? 0)} hours`} old.
-                The analysis service needs to be running on Railway to generate fresh hourly signals.
+                  : `${Math.round(newestSignalAge ?? 0)} hours`} old, and market statistics have not been refreshed in the last {STALE_HOURS} hours.
+                Check that the analysis service is running on Railway (start command: <code className="text-[11px] bg-amber-100/80 dark:bg-amber-900/40 px-1 rounded">python -m app.main</code>) and has <code className="text-[11px] bg-amber-100/80 dark:bg-amber-900/40 px-1 rounded">DATABASE_URL</code> set.
               </p>
             </div>
           </div>
