@@ -10,12 +10,13 @@ import { useState } from 'react';
 
 interface SidebarProps {
   user: any;
+  collapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
 }
 
-export default function Sidebar({ user }: SidebarProps) {
+export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
@@ -208,8 +209,10 @@ export default function Sidebar({ user }: SidebarProps) {
         {/* Collapse toggle (desktop only) */}
         <button 
           type="button"
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => onCollapsedChange(!collapsed)}
           className="hidden lg:flex items-center justify-center h-10 border-t border-gray-100 dark:border-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition"
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <svg className={`w-4 h-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />

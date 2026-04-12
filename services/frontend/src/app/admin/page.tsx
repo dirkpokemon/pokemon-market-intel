@@ -8,7 +8,7 @@ import { adminApi, AdminStatsResponse } from '@/lib/api';
 function formatDt(iso?: string | null) {
   if (!iso) return 'N/A';
   try {
-    return new Date(iso).toLocaleString();
+    return new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
   } catch {
     return iso;
   }

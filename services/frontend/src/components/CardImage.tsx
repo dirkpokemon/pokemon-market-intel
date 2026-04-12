@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 
 interface CardImageProps {
   cardName: string;
@@ -104,6 +105,13 @@ export default function CardImage({ cardName, size = 'sm', className = '' }: Car
     lg: 'w-24 h-32',
   };
 
+  const sizePx: Record<NonNullable<CardImageProps['size']>, { w: number; h: number }> = {
+    xs: { w: 32, h: 44 },
+    sm: { w: 48, h: 64 },
+    md: { w: 64, h: 88 },
+    lg: { w: 96, h: 128 },
+  };
+
   useEffect(() => {
     const key = cacheKeyFor(cardName);
 
@@ -144,11 +152,13 @@ export default function CardImage({ cardName, size = 'sm', className = '' }: Car
       {loading ? (
         <div className="w-full h-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 animate-pulse rounded-lg" />
       ) : imageUrl ? (
-        <img
+        <Image
           src={imageUrl}
           alt={cardName}
+          width={sizePx[size].w}
+          height={sizePx[size].h}
+          unoptimized
           className="w-full h-full object-cover rounded-lg"
-          loading="lazy"
         />
       ) : (
         <div className="w-full h-full bg-gradient-to-br from-indigo-100 via-purple-50 to-blue-100 rounded-lg flex items-center justify-center border border-gray-200">

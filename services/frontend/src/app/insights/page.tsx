@@ -10,7 +10,7 @@ import { isSubscriberRole } from '@/lib/plans';
 function formatDigestTime(iso?: string): string | null {
   if (!iso) return null;
   try {
-    return new Date(iso).toLocaleString(undefined, {
+    return new Date(iso).toLocaleString('en-GB', {
       dateStyle: 'medium',
       timeStyle: 'short',
     });

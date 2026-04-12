@@ -434,7 +434,7 @@ export default function SettingsPage() {
       </div>
 
       {showProfile && (
-        <ProfileModal user={user} onClose={() => setShowProfile(false)} onSave={(data) => { console.log('Profile updated:', data); setShowProfile(false); }} />
+        <ProfileModal user={user} onClose={() => setShowProfile(false)} onSave={() => {}} />
       )}
     </DashboardLayout>
   );

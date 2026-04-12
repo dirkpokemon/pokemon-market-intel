@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api';
+import { readSidebarCollapsed, writeSidebarCollapsed } from '@/lib/sidebar-prefs';
 import Sidebar from './Sidebar';
 import SiteFooter from './SiteFooter';
 import TourBanner from './TourBanner';
@@ -15,6 +16,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    setSidebarCollapsed(readSidebarCollapsed());
+  }, []);
+
+  const onSidebarCollapsedChange = useCallback((collapsed: boolean) => {
+    setSidebarCollapsed(collapsed);
+    writeSidebarCollapsed(collapsed);
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -72,8 +83,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col text-gray-900 dark:text-gray-100">
-      <Sidebar user={user} />
-      <div className="lg:ml-[240px] flex flex-col flex-1 min-h-0 transition-all duration-200">
+      <Sidebar user={user} collapsed={sidebarCollapsed} onCollapsedChange={onSidebarCollapsedChange} />
+      <div
+        className={`flex flex-col flex-1 min-h-0 transition-all duration-200 ease-in-out ${
+          sidebarCollapsed ? 'lg:ml-[68px]' : 'lg:ml-[240px]'
+        }`}
+      >
         <TourBanner />
         <main className="flex-1 min-w-0">{children}</main>
         <SiteFooter />

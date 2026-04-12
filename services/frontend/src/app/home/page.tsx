@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { authApi, marketApi, searchApi, newsApi, Signal, DealScore, CardSearchResult, NewsArticle } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import StatCard from '@/components/StatCard';
@@ -79,16 +80,16 @@ export default function HomePage() {
       try {
         const sigs = await marketApi.getSignals({ limit: 50 });
         setSignals(sigs);
-      } catch (err) {
-        console.log('Signals require premium');
+      } catch {
+        /* Signals are premium-gated for free users */
       }
 
       // Fetch news in background
       try {
         const articles = await newsApi.getNews(8);
         setNews(articles);
-      } catch (err) {
-        console.log('News unavailable');
+      } catch {
+        /* News feed optional */
       } finally {
         setNewsLoading(false);
       }
@@ -512,11 +513,13 @@ export default function HomePage() {
                     >
                       <div className="flex items-start gap-3">
                         {article.image_url ? (
-                          <img
+                          <Image
                             src={article.image_url}
                             alt=""
+                            width={80}
+                            height={56}
+                            unoptimized
                             className="w-20 h-14 object-cover rounded-lg flex-shrink-0 bg-gray-100 dark:bg-gray-800"
-                            loading="lazy"
                           />
                         ) : (
                           <div className="w-20 h-14 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 rounded-lg flex items-center justify-center flex-shrink-0">
