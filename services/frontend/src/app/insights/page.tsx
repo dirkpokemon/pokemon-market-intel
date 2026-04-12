@@ -180,25 +180,25 @@ export default function MarketPulsePage() {
     switch (bias) {
       case 'bullish':
         return {
-          label: 'Buyer-friendly skew',
-          desc: 'In this sample, more listings have strong deal scores (≥75) than weak ones (<55). Use the lists below to jump into deals.',
-          color: 'text-green-700',
-          bg: 'bg-green-50 border-green-200',
+          label: 'Strong scores dominate',
+          desc: 'More high-scored deals than weak ones in this view.',
+          color: 'text-green-800',
+          bg: 'bg-green-50/80 border-green-100',
           icon: '📈',
         };
       case 'bearish':
         return {
-          label: 'More weaker deals in view',
-          desc: 'This sample has more low-scored listings than very strong ones — shop selectively and compare to market averages.',
-          color: 'text-amber-700',
-          bg: 'bg-amber-50 border-amber-200',
+          label: 'Weaker scores more common',
+          desc: 'More low-scored listings than very strong ones here.',
+          color: 'text-amber-800',
+          bg: 'bg-amber-50/80 border-amber-100',
           icon: '📉',
         };
       default:
         return {
-          label: 'Balanced mix',
-          desc: 'Strong and weak deal scores are fairly balanced in this dataset.',
-          color: 'text-gray-700',
+          label: 'Mixed scores',
+          desc: 'High and low scores are roughly balanced.',
+          color: 'text-gray-800',
           bg: 'bg-gray-50 border-gray-200',
           icon: '➡️',
         };
@@ -211,113 +211,80 @@ export default function MarketPulsePage() {
   return (
     <DashboardLayout>
       <div className="px-6 py-8 max-w-[1400px] mx-auto">
-        {/* Page header */}
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
-          <div>
+        {/* Page header — compact */}
+        <div className="mb-5">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
             <h1 className="text-2xl font-bold text-gray-900">Market Pulse</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {isSubscriber
-                ? `${dealScores.length} scored listings in this view · data refreshes hourly`
-                : 'Sample view on Free (top 20 deals, score ≥ 65) — Plus uses the full scored catalog'}
-            </p>
-            {lastUpdated && (
-              <p className="text-xs text-gray-400 mt-1">Last analysis run: {lastUpdated}</p>
-            )}
+            <nav className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+              <Link href="/deals" className="text-gray-700 hover:text-gray-900 font-medium">
+                Deals
+              </Link>
+              <span className="text-gray-300" aria-hidden>
+                ·
+              </span>
+              <Link href="/signals" className="text-gray-700 hover:text-gray-900 font-medium">
+                Signals
+              </Link>
+              <span className="text-gray-300" aria-hidden>
+                ·
+              </span>
+              <Link href="/home" className="text-gray-700 hover:text-gray-900 font-medium">
+                Search
+              </Link>
+              {!isSubscriber && (
+                <>
+                  <span className="text-gray-300" aria-hidden>
+                    ·
+                  </span>
+                  <Link href="/pricing" className="text-amber-700 hover:text-amber-900 font-medium">
+                    Plus
+                  </Link>
+                </>
+              )}
+            </nav>
           </div>
-          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-1.5 self-start">
-            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-xs text-gray-500 font-medium">Hourly pipeline</span>
-          </div>
-        </div>
-
-        {/* Value proposition */}
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 mb-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-2">What this page is for</h2>
-          <ul className="text-sm text-gray-600 space-y-1.5 list-disc list-inside">
-            <li>
-              <span className="font-medium text-gray-800">What you see:</span> aggregates over the scored deals in this
-              view (after your plan limits). Not a full macro-economic index — a snapshot of our deal universe.
-            </li>
-            <li>
-              <span className="font-medium text-gray-800">Why it helps:</span> spot where prices sit vs market averages,
-              which sets show up most, and how deal quality is distributed — then act in Top Deals or Signals.
-            </li>
-            <li>
-              <span className="font-medium text-gray-800">What to do next:</span> click any card or set row to open
-              filtered deals; use the shortcuts below anytime.
-            </li>
-          </ul>
-        </div>
-
-        {/* Next steps — sticky */}
-        <div className="sticky top-2 z-20 flex flex-wrap gap-2 mb-6 p-2 -mx-2 rounded-xl bg-white/95 backdrop-blur border border-gray-200 shadow-sm">
-          <Link
-            href="/deals"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:bg-gray-800 transition"
-          >
-            Top Deals
-          </Link>
-          <Link
-            href="/signals"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 transition"
-          >
-            Signals
-          </Link>
-          <Link
-            href="/home"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-50 transition"
-          >
-            Search cards
-          </Link>
-          {!isSubscriber && (
-            <Link
-              href="/pricing"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-200 bg-amber-50 text-amber-900 text-xs font-semibold hover:bg-amber-100 transition"
-            >
-              Unlock full Pulse (Plus)
-            </Link>
-          )}
+          <p className="text-sm text-gray-500 mt-1">
+            {isSubscriber
+              ? `${dealScores.length} listings · hourly refresh${lastUpdated ? ` · ${lastUpdated}` : ''}`
+              : `Free sample (top 20, score ≥65)${lastUpdated ? ` · ${lastUpdated}` : ''}`}
+          </p>
         </div>
 
         {/* Set filter */}
-        <div className="flex flex-col sm:flex-row sm:items-end gap-3 mb-6">
-          <div className="flex-1 max-w-md">
-            <label htmlFor="pulse-set-filter" className="block text-xs font-medium text-gray-500 mb-1">
-              Focus on one set
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
+            <label htmlFor="pulse-set-filter" className="text-xs font-medium text-gray-500 shrink-0 sm:w-20">
+              Set
             </label>
             <select
               id="pulse-set-filter"
               value={selectedSet}
               onChange={(e) => setSelectedSet(e.target.value)}
               disabled={loading && availableSets.length === 0}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+              className="flex-1 max-w-md px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-gray-300 focus:border-transparent"
             >
-              <option value="">All sets (in current catalog slice)</option>
+              <option value="">All sets</option>
               {availableSets.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>
               ))}
             </select>
-            <p className="text-[11px] text-gray-400 mt-1">
-              Reloads scored deals for that set only. Set list comes from your last &quot;all sets&quot; load.
-            </p>
           </div>
-          {selectedSet && (
+          {selectedSet ? (
             <Link
               href={`/deals?set=${encodeURIComponent(selectedSet)}`}
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-800 whitespace-nowrap"
+              className="text-xs font-medium text-indigo-600 hover:text-indigo-800 whitespace-nowrap shrink-0"
             >
-              Open all deals for this set →
+              Open in Deals →
             </Link>
-          )}
+          ) : null}
         </div>
 
         {!loading && !isSubscriber && (
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6">
-            <p className="text-sm text-amber-800">
-              <span className="font-semibold">Free plan:</span> charts and counts use your sample only. Plus includes the
-              full scored catalog and Signals.
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-5">
+            <p className="text-xs text-amber-900">
+              Free: limited sample — <span className="font-medium">Plus</span> unlocks full catalog &amp; Signals.
             </p>
             <Link
               href="/pricing"
@@ -340,33 +307,23 @@ export default function MarketPulsePage() {
             {(() => {
               const config = getSentimentConfig(marketData.marketBias);
               return (
-                <div className={`rounded-xl border p-5 mb-8 ${config.bg}`}>
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                      <span className="text-3xl shrink-0">{config.icon}</span>
-                      <div>
-                        <h2 className={`text-lg font-bold ${config.color}`}>{config.label}</h2>
-                        <p className="text-sm text-gray-600 mt-0.5">{config.desc}</p>
-                        <p className="text-[11px] text-gray-500 mt-2">
-                          Method: compare count of deals with score ≥75 vs &lt;55 in{' '}
-                          {selectedSet ? (
-                            <span className="font-medium">set &quot;{selectedSet}&quot;</span>
-                          ) : (
-                            'this view'
-                          )}
-                          . Not a prediction of the whole TCG market.
-                        </p>
+                <div className={`rounded-lg border px-4 py-3 mb-6 ${config.bg}`}>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-xl shrink-0" aria-hidden>
+                        {config.icon}
+                      </span>
+                      <div className="min-w-0">
+                        <h2 className={`text-sm font-bold ${config.color}`}>{config.label}</h2>
+                        <p className="text-xs text-gray-600 mt-0.5">{config.desc}</p>
                       </div>
                     </div>
-                    <div className="text-left lg:text-right shrink-0">
-                      <p className="text-xs text-gray-500">Rows in this view</p>
-                      <p className="text-sm font-medium text-gray-700">
-                        {marketData.totalProducts} deals{!isSubscriber && ' (after Free cap)'}
-                      </p>
-                      <p className="text-[11px] text-gray-400 mt-1">
-                        ≥75: {marketData.highScoreCount} · &lt;55: {marketData.lowScoreCount}
-                      </p>
-                    </div>
+                    <p className="text-xs text-gray-600 tabular-nums shrink-0">
+                      <span className="font-semibold text-gray-800">{marketData.totalProducts}</span> deals
+                      {!isSubscriber && ' · sample'}
+                      <span className="text-gray-400 mx-1">·</span>≥75: {marketData.highScoreCount}
+                      <span className="text-gray-400 mx-1">·</span>&lt;55: {marketData.lowScoreCount}
+                    </p>
                   </div>
                 </div>
               );
@@ -408,23 +365,20 @@ export default function MarketPulsePage() {
               </div>
             </div>
 
-            {/* Latest signal highlights (digest) — all tiers; free → pricing on row click optional */}
             {highlightSignals.length > 0 && (
               <div className="bg-white rounded-xl border border-gray-200 p-5 mb-8">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Latest signal highlights</h3>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
-                      High-priority picks from the last scan — open the card or the full feed
-                    </p>
+                    <h3 className="text-sm font-semibold text-gray-900">Signal picks</h3>
+                    <p className="text-[11px] text-gray-400 mt-0.5">From the latest scan</p>
                   </div>
                   {isSubscriber ? (
                     <Link href="/signals" className="text-xs text-indigo-600 hover:underline font-medium shrink-0">
-                      Full Signals →
+                      All →
                     </Link>
                   ) : (
                     <Link href="/pricing" className="text-xs text-amber-700 hover:underline font-medium shrink-0">
-                      Plus required for feed →
+                      Plus →
                     </Link>
                   )}
                 </div>
@@ -443,21 +397,21 @@ export default function MarketPulsePage() {
                             href={`/deals?card=${encodeURIComponent(s.product_name)}`}
                             className="text-xs font-semibold text-gray-700 px-2 py-1 rounded-md border border-gray-200 hover:bg-gray-50"
                           >
-                            Deals for card
+                            Deals
                           </Link>
                           {isSubscriber ? (
                             <Link
                               href="/signals"
                               className="text-xs font-semibold text-indigo-700 px-2 py-1 rounded-md bg-indigo-50 hover:bg-indigo-100"
                             >
-                              Open Signals
+                              Feed
                             </Link>
                           ) : (
                             <Link
                               href="/pricing"
                               className="text-xs font-semibold text-amber-800 px-2 py-1 rounded-md bg-amber-50 hover:bg-amber-100"
                             >
-                              Upgrade for feed
+                              Plus
                             </Link>
                           )}
                         </div>
@@ -503,9 +457,7 @@ export default function MarketPulsePage() {
 
                 <div className="px-5 pt-2 pb-1">
                   <p className="text-[11px] text-gray-400">
-                    {moversTab === 'buying'
-                      ? 'Listed below market average — largest gap first. Row opens filtered Top Deals for that card.'
-                      : 'Listed above market average. Row opens Top Deals for that card.'}
+                    {moversTab === 'buying' ? 'Below market avg · tap row for Deals' : 'Above market avg · tap row for Deals'}
                   </p>
                 </div>
 
@@ -542,7 +494,6 @@ export default function MarketPulsePage() {
                           {card.delta > 0 ? '+' : ''}
                           {card.delta.toFixed(1)}%
                         </span>
-                        <span className="text-[10px] text-gray-400 hidden sm:inline">View →</span>
                       </div>
                     </Link>
                   ))}
@@ -555,10 +506,7 @@ export default function MarketPulsePage() {
               </div>
 
               <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-5">
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">Price distribution</h3>
-                <p className="text-[11px] text-gray-400 mb-4">
-                  {isSubscriber ? 'Deals in this view' : 'Your Free sample'}
-                </p>
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Price spread</h3>
                 <div style={{ height: isSubscriber ? '280px' : '200px' }}>
                   <PriceChart deals={visibleDeals.slice(0, isSubscriber ? 100 : 20)} />
                 </div>
@@ -569,10 +517,8 @@ export default function MarketPulsePage() {
               <div className="bg-white rounded-xl border border-gray-200 p-5">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900">Top sets in this view</h3>
-                    <p className="text-[11px] text-gray-400 mt-0.5">
-                      By number of scored deals here — click a set to open Top Deals filtered
-                    </p>
+                    <h3 className="text-sm font-semibold text-gray-900">Top sets</h3>
+                    <p className="text-[11px] text-gray-400 mt-0.5">By deal count in this view</p>
                   </div>
                 </div>
                 <div className="space-y-1">
@@ -611,8 +557,8 @@ export default function MarketPulsePage() {
               {isSubscriber ? (
                 <div className="bg-white rounded-xl border border-gray-200 p-5">
                   <div className="mb-4">
-                    <h3 className="text-sm font-semibold text-gray-900">Deal quality breakdown</h3>
-                    <p className="text-[11px] text-gray-400 mt-0.5">Share of deals by AI score band</p>
+                    <h3 className="text-sm font-semibold text-gray-900">Score mix</h3>
+                    <p className="text-[11px] text-gray-400 mt-0.5">By deal score band</p>
                   </div>
                   <div className="space-y-4">
                     {[
@@ -639,17 +585,14 @@ export default function MarketPulsePage() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-gradient-to-br from-gray-50 to-slate-100 border border-gray-200 rounded-xl p-5 flex flex-col justify-center">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Deal quality breakdown</h3>
-                  <p className="text-sm text-gray-600 mb-4">
-                    Full score bands (including fair and weak deals) and accurate shares are on Plus, where the whole
-                    scored catalog feeds this chart.
-                  </p>
+                <div className="bg-gradient-to-br from-gray-50 to-slate-100 border border-gray-200 rounded-xl p-4 flex flex-col justify-center">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Score mix</h3>
+                  <p className="text-xs text-gray-600 mb-3">Full breakdown on Plus.</p>
                   <Link
                     href="/pricing"
-                    className="inline-flex w-fit items-center gap-2 rounded-lg bg-gray-900 text-white px-4 py-2 text-xs font-semibold hover:bg-gray-800"
+                    className="inline-flex w-fit rounded-lg bg-gray-900 text-white px-3 py-1.5 text-xs font-semibold hover:bg-gray-800"
                   >
-                    See Plus details
+                    Plus
                   </Link>
                 </div>
               )}
@@ -659,8 +602,7 @@ export default function MarketPulsePage() {
             {(digest?.top_rising_sets?.length || digest?.top_declining_sets?.length) ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <div className="bg-white rounded-xl border border-gray-200 p-5">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Sets rising (7d trend)</h3>
-                  <p className="text-[11px] text-gray-400 mb-3">From market stats — avg price trend across cards in each set</p>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Sets ↑ (7d)</h3>
                   <ul className="space-y-2">
                     {(digest?.top_rising_sets || []).slice(0, 5).map((t) => (
                       <li key={t.product_set} className="flex items-center justify-between text-sm">
@@ -676,8 +618,7 @@ export default function MarketPulsePage() {
                   </ul>
                 </div>
                 <div className="bg-white rounded-xl border border-gray-200 p-5">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-1">Sets declining (7d trend)</h3>
-                  <p className="text-[11px] text-gray-400 mb-3">Same methodology — useful for timing buys</p>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Sets ↓ (7d)</h3>
                   <ul className="space-y-2">
                     {(digest?.top_declining_sets || []).slice(0, 5).map((t) => (
                       <li key={t.product_set} className="flex items-center justify-between text-sm">
@@ -698,8 +639,8 @@ export default function MarketPulsePage() {
             {isSubscriber && (
               <div className="bg-white rounded-xl border border-gray-200 p-5 mb-8">
                 <div className="mb-4">
-                  <h3 className="text-sm font-semibold text-gray-900">Price range overview</h3>
-                  <p className="text-[11px] text-gray-400 mt-0.5">How listings in this view spread across price buckets</p>
+                  <h3 className="text-sm font-semibold text-gray-900">Price buckets</h3>
+                  <p className="text-[11px] text-gray-400 mt-0.5">This view</p>
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {[
@@ -729,11 +670,11 @@ export default function MarketPulsePage() {
                 <div className="bg-white rounded-xl border border-gray-200 p-5">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="text-sm font-semibold text-gray-900">Signal priority mix</h3>
-                      <p className="text-[11px] text-gray-400 mt-0.5">All active signals in your feed this hour</p>
+                      <h3 className="text-sm font-semibold text-gray-900">Signals by priority</h3>
+                      <p className="text-[11px] text-gray-400 mt-0.5">Active now</p>
                     </div>
                     <Link href="/signals" className="text-xs text-gray-500 hover:text-gray-700 font-medium">
-                      View full feed →
+                      All →
                     </Link>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
@@ -757,32 +698,16 @@ export default function MarketPulsePage() {
                 </div>
               )
             ) : (
-              <div className="rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-purple-50 p-6">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-900 mb-1">Full Signals feed is Plus</h3>
-                    <p className="text-sm text-gray-600 mb-4 max-w-lg">
-                      Momentum, supply, set trends, and risk flags update hourly. Highlights above show a preview; the live
-                      feed needs Plus.
-                    </p>
-                    <Link
-                      href="/pricing"
-                      className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition"
-                    >
-                      Upgrade to Plus
-                    </Link>
-                  </div>
-                  <ul className="text-xs text-gray-500 space-y-2 shrink-0">
-                    {['Momentum & price drop', 'Supply shifts', 'Set-level trends', 'Email & Telegram'].map((f) => (
-                      <li key={f} className="flex items-center gap-2">
-                        <svg className="w-3.5 h-3.5 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+              <div className="rounded-lg border border-indigo-100 bg-indigo-50/60 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <p className="text-sm text-gray-700">
+                  Live <span className="font-medium">Signals</span> feed is on Plus — picks above are a preview.
+                </p>
+                <Link
+                  href="/pricing"
+                  className="inline-flex shrink-0 items-center justify-center rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-700 transition"
+                >
+                  Plus
+                </Link>
               </div>
             )}
           </>
