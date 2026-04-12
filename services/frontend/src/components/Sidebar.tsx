@@ -4,6 +4,7 @@ import Link from 'next/link';
 import BrandMark from '@/components/BrandMark';
 import ThemeToggle from '@/components/ThemeToggle';
 import { SUBSCRIBER_BADGE, tierLabel } from '@/lib/plans';
+import { feedbackApi } from '@/lib/api';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -20,6 +21,9 @@ export default function Sidebar({ user }: SidebarProps) {
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackType, setFeedbackType] = useState<'idea' | 'bug' | 'other'>('idea');
   const [feedbackSent, setFeedbackSent] = useState(false);
+  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
+  const [feedbackError, setFeedbackError] = useState('');
+  const [feedbackEmailSent, setFeedbackEmailSent] = useState<boolean | null>(null);
 
   const displayName = user?.full_name
     ? user.full_name.split(' ')[0]
@@ -149,7 +153,13 @@ export default function Sidebar({ user }: SidebarProps) {
           <ThemeToggle collapsed={collapsed} />
           <button
             type="button"
-            onClick={() => { setShowFeedback(true); setFeedbackSent(false); setFeedbackText(''); }}
+            onClick={() => {
+              setShowFeedback(true);
+              setFeedbackSent(false);
+              setFeedbackText('');
+              setFeedbackError('');
+              setFeedbackEmailSent(null);
+            }}
             className={`relative group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all w-full text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white ${collapsed ? 'justify-center' : ''}`}
           >
             <span className="flex-shrink-0">
@@ -218,7 +228,20 @@ export default function Sidebar({ user }: SidebarProps) {
                   </svg>
                 </div>
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Thanks for your feedback!</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">We appreciate you helping us improve TCG Pulse.</p>
+                {feedbackEmailSent === true && (
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                    A copy was emailed to the team inbox. Check spam if you manage that mailbox. We may follow up via your account email if needed.
+                  </p>
+                )}
+                {feedbackEmailSent === false && (
+                  <div className="text-sm text-gray-600 dark:text-gray-300 mb-6 text-left space-y-2">
+                    <p>Your message was saved on the server, but <strong>no email was sent</strong> to the feedback inbox.</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      On Railway, open the <strong>backend</strong> service logs right after sending — look for &quot;Brevo HTTP&quot; errors or &quot;Feedback email NOT delivered&quot;.
+                      Usually you need <code className="text-[11px] bg-gray-100 dark:bg-gray-800 px-1 rounded">BREVO_API_KEY</code> plus a <strong>verified sender</strong> in Brevo (same as signup verification mail), or working SMTP variables.
+                    </p>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => setShowFeedback(false)}
@@ -278,36 +301,45 @@ export default function Sidebar({ user }: SidebarProps) {
                   />
 
                   {/* Submit */}
-                  <div className="flex items-center justify-between mt-4">
-                    <p className="text-[11px] text-gray-400">
-                      {user?.email && `Sending as ${user.email}`}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!feedbackText.trim()) return;
-                        // Store feedback locally (could be sent to API later)
-                        const feedback = {
-                          type: feedbackType,
-                          message: feedbackText,
-                          email: user?.email,
-                          timestamp: new Date().toISOString(),
-                        };
-                        const existing = JSON.parse(localStorage.getItem('feedback_log') || '[]');
-                        existing.push(feedback);
-                        localStorage.setItem('feedback_log', JSON.stringify(existing));
-                        console.log('Feedback submitted:', feedback);
-                        setFeedbackSent(true);
-                      }}
-                      disabled={!feedbackText.trim()}
-                      className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
-                        feedbackText.trim()
-                          ? 'bg-gray-900 dark:bg-indigo-600 text-white hover:bg-gray-800 dark:hover:bg-indigo-500'
-                          : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
-                      }`}
-                    >
-                      Send Feedback
-                    </button>
+                  <div className="mt-4 space-y-2">
+                    {feedbackError && (
+                      <p className="text-xs text-red-600 dark:text-red-400">{feedbackError}</p>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] text-gray-400">
+                        {user?.email ? `Logged in as ${user.email}` : 'Sign in required to send feedback'}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!feedbackText.trim() || feedbackSubmitting) return;
+                          setFeedbackError('');
+                          setFeedbackSubmitting(true);
+                          try {
+                            const res = await feedbackApi.submit({
+                              type: feedbackType,
+                              message: feedbackText.trim(),
+                            });
+                            setFeedbackEmailSent(res.email_sent);
+                            setFeedbackSent(true);
+                            setFeedbackText('');
+                          } catch (e: unknown) {
+                            const msg = e instanceof Error ? e.message : 'Could not send feedback. Try again later.';
+                            setFeedbackError(msg);
+                          } finally {
+                            setFeedbackSubmitting(false);
+                          }
+                        }}
+                        disabled={!feedbackText.trim() || feedbackSubmitting}
+                        className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
+                          feedbackText.trim() && !feedbackSubmitting
+                            ? 'bg-gray-900 dark:bg-indigo-600 text-white hover:bg-gray-800 dark:hover:bg-indigo-500'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        {feedbackSubmitting ? 'Sending…' : 'Send Feedback'}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </>

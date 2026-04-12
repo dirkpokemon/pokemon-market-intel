@@ -147,8 +147,21 @@ async function apiRequest<T>(
   });
   
   if (!response.ok) {
-    const error: ApiError = await response.json();
-    const err = new Error(error.detail || 'API request failed');
+    let message = 'API request failed';
+    try {
+      const body = (await response.json()) as { detail?: unknown };
+      const d = body?.detail;
+      if (typeof d === 'string') message = d;
+      else if (Array.isArray(d)) {
+        message = d
+          .map((x: { msg?: string }) => (typeof x?.msg === 'string' ? x.msg : ''))
+          .filter(Boolean)
+          .join(' ') || message;
+      }
+    } catch {
+      /* ignore non-JSON error bodies */
+    }
+    const err = new Error(message);
     (err as any).status = response.status;
     throw err;
   }
@@ -266,6 +279,20 @@ export const notificationApi = {
     return apiRequest<NotificationPrefs>('/api/v1/auth/notifications/preferences', {
       method: 'PUT',
       body: JSON.stringify(prefs),
+    });
+  },
+};
+
+export interface FeedbackSubmitResponse {
+  ok: boolean;
+  email_sent: boolean;
+}
+
+export const feedbackApi = {
+  submit: async (payload: { type: 'idea' | 'bug' | 'other'; message: string }): Promise<FeedbackSubmitResponse> => {
+    return apiRequest<FeedbackSubmitResponse>('/api/v1/feedback', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
   },
 };

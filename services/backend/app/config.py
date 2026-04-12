@@ -66,6 +66,9 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = ""
 
+    # Product feedback: Brevo/SMTP sends submissions here (see POST /api/v1/feedback)
+    FEEDBACK_INBOX_EMAIL: str = ""
+
     # Redis (optional)
     REDIS_URL: str = ""
 

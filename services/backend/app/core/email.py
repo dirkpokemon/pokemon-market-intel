@@ -3,15 +3,17 @@ Email service for sending verification and notification emails.
 Supports Resend (HTTPS API) with SMTP fallback.
 """
 
+import html as html_module
 import logging
 import secrets
 import smtplib
 import json
+from typing import Optional
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta, timezone
 from urllib.request import Request, urlopen
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 
 from app.config import settings
 
@@ -121,7 +123,14 @@ def _build_verification_text(first_name: str, verify_url: str) -> str:
     )
 
 
-def _send_via_brevo(to_email: str, subject: str, html: str, text: str) -> bool:
+def _send_via_brevo(
+    to_email: str,
+    subject: str,
+    html: str,
+    text: str,
+    *,
+    reply_to_email: Optional[str] = None,
+) -> bool:
     """Send email via Brevo (Sendinblue) HTTPS API (free tier, no domain required)."""
     api_key = settings.BREVO_API_KEY
     if not api_key:
@@ -129,13 +138,20 @@ def _send_via_brevo(to_email: str, subject: str, html: str, text: str) -> bool:
 
     sender_email = settings.SMTP_FROM or settings.SMTP_USER or "pokemonmarketintel@gmail.com"
 
-    payload = json.dumps({
+    body: dict = {
         "sender": {"name": "TCG Pulse", "email": sender_email},
         "to": [{"email": to_email}],
         "subject": subject,
         "htmlContent": html,
         "textContent": text,
-    }).encode()
+    }
+    if reply_to_email and "@" in reply_to_email:
+        body["replyTo"] = {
+            "email": reply_to_email.strip(),
+            "name": reply_to_email.split("@", 1)[0][:78],
+        }
+
+    payload = json.dumps(body).encode()
 
     req = Request(
         "https://api.brevo.com/v3/smtp/email",
@@ -147,9 +163,21 @@ def _send_via_brevo(to_email: str, subject: str, html: str, text: str) -> bool:
     )
 
     try:
-        with urlopen(req, timeout=10) as resp:
+        with urlopen(req, timeout=15) as resp:
             logger.info("Email sent via Brevo to %s (status %d)", to_email, resp.status)
             return True
+    except HTTPError as exc:
+        try:
+            err_body = exc.read().decode(errors="replace")
+        except Exception:
+            err_body = str(exc)
+        logger.warning(
+            "Brevo HTTP %s for %s: %s",
+            exc.code,
+            to_email,
+            err_body[:2500],
+        )
+        return False
     except URLError as exc:
         logger.warning("Brevo API failed for %s: %s", to_email, exc)
         return False
@@ -283,5 +311,72 @@ def send_verification_email(to_email: str, first_name: str, token: str) -> bool:
     # 3) Fallback: print link to console
     logger.warning(
         "No email transport available. Verification link:\n  %s", verify_url,
+    )
+    return False
+
+
+def send_feedback_inbox_email(
+    submitter_email: Optional[str],
+    feedback_type: str,
+    message: str,
+) -> bool:
+    """Notify product inbox about user feedback (Brevo API, then SMTP)."""
+    to_addr = (settings.FEEDBACK_INBOX_EMAIL or "").strip()
+    if not to_addr:
+        logger.info(
+            "Feedback (set FEEDBACK_INBOX_EMAIL to receive by mail): type=%s from=%s — %s",
+            feedback_type,
+            submitter_email,
+            message[:2000],
+        )
+        return False
+
+    subject = f"[TCG Pulse Feedback] {feedback_type}"
+    safe_msg = message.strip()
+    esc = html_module.escape
+    text = (
+        f"Type: {feedback_type}\n"
+        f"From: {submitter_email or '(unknown)'}\n\n"
+        f"{safe_msg}\n"
+    )
+    html = f"""<!DOCTYPE html><html><body style="font-family:sans-serif;font-size:14px;color:#111827;">
+<p><strong>Type:</strong> {esc(feedback_type)}</p>
+<p><strong>From:</strong> {esc(submitter_email or "(unknown)")}</p>
+<pre style="white-space:pre-wrap;background:#f9fafb;padding:16px;border-radius:8px;">{esc(safe_msg)}</pre>
+</body></html>"""
+
+    if _send_via_brevo(
+        to_addr,
+        subject,
+        html,
+        text,
+        reply_to_email=submitter_email,
+    ):
+        logger.info("Feedback email sent via Brevo to inbox %s", to_addr)
+        return True
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
+    if not msg["From"]:
+        logger.error(
+            "Feedback email failed: no BREVO_API_KEY and no SMTP_FROM/SMTP_USER. "
+            "Set BREVO_API_KEY on the backend (same as verification emails), or configure SMTP.",
+        )
+        return False
+    msg["To"] = to_addr
+    if submitter_email and "@" in submitter_email:
+        msg["Reply-To"] = submitter_email.strip()
+    msg.attach(MIMEText(text, "plain"))
+    msg.attach(MIMEText(html, "html"))
+
+    if _send_via_smtp(to_addr, msg):
+        logger.info("Feedback email sent via SMTP to inbox %s", to_addr)
+        return True
+
+    logger.error(
+        "Feedback email NOT delivered to %s. Check Railway logs above for Brevo HTTP errors, "
+        "or SMTP failures. Confirm BREVO_API_KEY and a verified sender in Brevo.",
+        to_addr,
     )
     return False

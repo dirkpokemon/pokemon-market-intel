@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { marketApi, searchApi, DealScore, CardSearchResult } from '@/lib/api';
@@ -45,8 +45,16 @@ const loadFromStorage = <T,>(key: string): T[] => {
 };
 
 const saveToStorage = <T,>(key: string, data: T[]) => {
-  localStorage.setItem(key, JSON.stringify(data));
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch {
+    /* storage full or disabled */
+  }
 };
+
+function safeListingPrice(n: unknown): number {
+  return typeof n === 'number' && Number.isFinite(n) ? n : 0;
+}
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -73,6 +81,9 @@ export default function PortfolioPage() {
   const [watchSearchResults, setWatchSearchResults] = useState<CardSearchResult[]>([]);
   const [watchSearchLoading, setWatchSearchLoading] = useState(false);
 
+  const addCardSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const watchSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // ─── Load data ──────────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -84,6 +95,13 @@ export default function PortfolioPage() {
     
     loadMarketData();
   }, [router]);
+
+  useEffect(() => {
+    return () => {
+      if (addCardSearchTimerRef.current) clearTimeout(addCardSearchTimerRef.current);
+      if (watchSearchTimerRef.current) clearTimeout(watchSearchTimerRef.current);
+    };
+  }, []);
 
   const loadMarketData = async () => {
     try {
@@ -99,24 +117,24 @@ export default function PortfolioPage() {
 
   // ─── Collection logic ───────────────────────────────────────────────────────
 
-  const saveCollection = (cards: CollectionCard[]) => {
-    setCollection(cards);
-    saveToStorage(COLLECTION_KEY, cards);
-  };
-
   const addToCollection = () => {
     if (!newCard.name.trim()) return;
-    const card: CollectionCard = {
-      id: Date.now().toString(),
-      name: newCard.name.trim(),
-      set: newCard.set.trim() || undefined,
-      quantity: newCard.quantity,
-      purchasePrice: newCard.purchasePrice,
-      condition: newCard.condition,
-      addedAt: new Date().toISOString(),
-      notes: newCard.notes.trim() || undefined,
-    };
-    saveCollection([card, ...collection]);
+    const snapshot = { ...newCard };
+    setCollection((prev) => {
+      const card: CollectionCard = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        name: snapshot.name.trim(),
+        set: snapshot.set.trim() || undefined,
+        quantity: Math.max(1, snapshot.quantity),
+        purchasePrice: safeListingPrice(snapshot.purchasePrice),
+        condition: snapshot.condition,
+        addedAt: new Date().toISOString(),
+        notes: snapshot.notes.trim() || undefined,
+      };
+      const next = [card, ...prev];
+      saveToStorage(COLLECTION_KEY, next);
+      return next;
+    });
     setNewCard({ name: '', set: '', quantity: 1, purchasePrice: 0, condition: 'NM', notes: '' });
     setShowAddCard(false);
     setAddCardSearch('');
@@ -124,7 +142,11 @@ export default function PortfolioPage() {
   };
 
   const removeFromCollection = (id: string) => {
-    saveCollection(collection.filter(c => c.id !== id));
+    setCollection((prev) => {
+      const next = prev.filter((c) => c.id !== id);
+      saveToStorage(COLLECTION_KEY, next);
+      return next;
+    });
   };
 
   const selectCardFromSearch = (result: CardSearchResult) => {
@@ -132,53 +154,75 @@ export default function PortfolioPage() {
       ...prev,
       name: result.card_name,
       set: result.card_set || '',
-      purchasePrice: result.min_price,
+      purchasePrice: safeListingPrice(result.min_price),
     }));
     setAddCardResults([]);
     setAddCardSearch('');
   };
 
-  // Search for cards in collection add flow
-  const searchForCard = useCallback(async (query: string) => {
-    if (query.trim().length < 2) { setAddCardResults([]); return; }
-    try {
-      setAddCardLoading(true);
-      const res = await searchApi.search({ q: query, limit: 5 });
-      setAddCardResults(res.results);
-    } catch { setAddCardResults([]); }
-    finally { setAddCardLoading(false); }
+  // Search for cards in collection add flow (debounced — avoids races and UI glitches)
+  const searchForCard = useCallback((query: string) => {
+    if (addCardSearchTimerRef.current) clearTimeout(addCardSearchTimerRef.current);
+    const q = query.trim();
+    if (q.length < 2) {
+      setAddCardResults([]);
+      setAddCardLoading(false);
+      return;
+    }
+    addCardSearchTimerRef.current = setTimeout(async () => {
+      try {
+        setAddCardLoading(true);
+        const res = await searchApi.search({ q, limit: 8 });
+        setAddCardResults(res.results);
+      } catch {
+        setAddCardResults([]);
+      } finally {
+        setAddCardLoading(false);
+      }
+    }, 280);
   }, []);
 
   // Search for watchlist
-  const searchForWatchCard = useCallback(async (query: string) => {
-    if (query.trim().length < 2) { setWatchSearchResults([]); return; }
-    try {
-      setWatchSearchLoading(true);
-      const res = await searchApi.search({ q: query, limit: 5 });
-      setWatchSearchResults(res.results);
-    } catch { setWatchSearchResults([]); }
-    finally { setWatchSearchLoading(false); }
+  const searchForWatchCard = useCallback((query: string) => {
+    if (watchSearchTimerRef.current) clearTimeout(watchSearchTimerRef.current);
+    const q = query.trim();
+    if (q.length < 2) {
+      setWatchSearchResults([]);
+      setWatchSearchLoading(false);
+      return;
+    }
+    watchSearchTimerRef.current = setTimeout(async () => {
+      try {
+        setWatchSearchLoading(true);
+        const res = await searchApi.search({ q, limit: 8 });
+        setWatchSearchResults(res.results);
+      } catch {
+        setWatchSearchResults([]);
+      } finally {
+        setWatchSearchLoading(false);
+      }
+    }, 280);
   }, []);
 
   // ─── Watchlist logic ────────────────────────────────────────────────────────
 
-  const saveWatchlist = (cards: WatchlistCard[]) => {
-    setWatchlist(cards);
-    saveToStorage(WATCHLIST_KEY, cards);
-  };
-
   const addToWatchlist = () => {
     if (!newWatch.name.trim()) return;
-    const card: WatchlistCard = {
-      id: Date.now().toString(),
-      name: newWatch.name.trim(),
-      set: newWatch.set.trim() || undefined,
-      targetPrice: newWatch.targetPrice,
-      direction: newWatch.direction,
-      addedAt: new Date().toISOString(),
-      notes: newWatch.notes.trim() || undefined,
-    };
-    saveWatchlist([card, ...watchlist]);
+    const snapshot = { ...newWatch };
+    setWatchlist((prev) => {
+      const card: WatchlistCard = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        name: snapshot.name.trim(),
+        set: snapshot.set.trim() || undefined,
+        targetPrice: safeListingPrice(snapshot.targetPrice),
+        direction: snapshot.direction,
+        addedAt: new Date().toISOString(),
+        notes: snapshot.notes.trim() || undefined,
+      };
+      const next = [card, ...prev];
+      saveToStorage(WATCHLIST_KEY, next);
+      return next;
+    });
     setNewWatch({ name: '', set: '', targetPrice: 0, direction: 'below', notes: '' });
     setShowAddWatch(false);
     setWatchSearch('');
@@ -186,7 +230,11 @@ export default function PortfolioPage() {
   };
 
   const removeFromWatchlist = (id: string) => {
-    saveWatchlist(watchlist.filter(c => c.id !== id));
+    setWatchlist((prev) => {
+      const next = prev.filter((c) => c.id !== id);
+      saveToStorage(WATCHLIST_KEY, next);
+      return next;
+    });
   };
 
   const selectWatchCardFromSearch = (result: CardSearchResult) => {
@@ -194,7 +242,7 @@ export default function PortfolioPage() {
       ...prev,
       name: result.card_name,
       set: result.card_set || '',
-      targetPrice: result.min_price,
+      targetPrice: safeListingPrice(result.min_price),
     }));
     setWatchSearchResults([]);
     setWatchSearch('');
@@ -336,11 +384,11 @@ export default function PortfolioPage() {
 
             {/* Add Card Form */}
             {showAddCard && (
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-6">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-6 overflow-visible">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">Add a card to your collection</h3>
                 
                 {/* Search to find card */}
-                <div className="relative mb-4">
+                <div className="relative z-50 mb-4">
                   <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Search card</label>
                   <input
                     type="text"
@@ -355,10 +403,11 @@ export default function PortfolioPage() {
                     </div>
                   )}
                   {addCardResults.length > 0 && (
-                    <div className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                      {addCardResults.map((r, i) => (
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                      {addCardResults.map((r) => (
                         <button
-                          key={i}
+                          key={`${r.card_name}|${r.card_set ?? ''}|${r.last_seen}`}
+                          type="button"
                           onClick={() => selectCardFromSearch(r)}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition text-left border-b border-gray-50 dark:border-gray-800 last:border-0"
                         >
@@ -367,7 +416,7 @@ export default function PortfolioPage() {
                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{r.card_name}</p>
                             {r.card_set && <p className="text-[11px] text-gray-400 truncate">{r.card_set}</p>}
                           </div>
-                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">&euro;{r.min_price.toFixed(2)}</span>
+                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">&euro;{safeListingPrice(r.min_price).toFixed(2)}</span>
                         </button>
                       ))}
                     </div>
@@ -570,12 +619,12 @@ export default function PortfolioPage() {
 
             {/* Add Watch Form */}
             {showAddWatch && (
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-6">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-6 overflow-visible">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Set a price target</h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Get notified when the card reaches your target price</p>
                 
                 {/* Search to find card */}
-                <div className="relative mb-4">
+                <div className="relative z-50 mb-4">
                   <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Search card</label>
                   <input
                     type="text"
@@ -590,10 +639,11 @@ export default function PortfolioPage() {
                     </div>
                   )}
                   {watchSearchResults.length > 0 && (
-                    <div className="absolute z-20 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
-                      {watchSearchResults.map((r, i) => (
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                      {watchSearchResults.map((r) => (
                         <button
-                          key={i}
+                          key={`${r.card_name}|${r.card_set ?? ''}|${r.last_seen}`}
+                          type="button"
                           onClick={() => selectWatchCardFromSearch(r)}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition text-left border-b border-gray-50 dark:border-gray-800 last:border-0"
                         >
@@ -602,7 +652,7 @@ export default function PortfolioPage() {
                             <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{r.card_name}</p>
                             {r.card_set && <p className="text-[11px] text-gray-400 truncate">{r.card_set}</p>}
                           </div>
-                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">&euro;{r.min_price.toFixed(2)}</span>
+                          <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">&euro;{safeListingPrice(r.min_price).toFixed(2)}</span>
                         </button>
                       ))}
                     </div>

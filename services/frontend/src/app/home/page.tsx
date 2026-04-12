@@ -101,7 +101,9 @@ export default function HomePage() {
     }
   };
 
-  const topDeals = dealScores.slice(0, 5);
+  const isPremiumHome = user?.role === 'paid' || user?.role === 'pro' || user?.role === 'admin';
+  const topDealsLimit = isPremiumHome ? 5 : 3;
+  const topDeals = dealScores.slice(0, topDealsLimit);
   const recentSignals = signals.slice(0, 3);
   const excellentDeals = dealScores.filter(d => d.deal_score >= 80).length;
   const avgDealScore = dealScores.length > 0 
@@ -427,7 +429,7 @@ export default function HomePage() {
               </div>
             )}
 
-            {/* Top 5 Deals Preview */}
+            {/* Top deals preview (3 free / 5 premium — matches deals page gate) */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Today&apos;s Top Deals</h2>
