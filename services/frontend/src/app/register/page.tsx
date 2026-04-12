@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { authApi } from '@/lib/api';
+import BrandMark from '@/components/BrandMark';
 import SiteFooter from '@/components/SiteFooter';
 
 export default function RegisterPage() {
@@ -93,13 +94,7 @@ export default function RegisterPage() {
       <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-8">
         {/* Logo */}
         <div className="flex justify-center mb-6">
-          <div className="relative w-12 h-12 bg-white rounded-full border-[3px] border-gray-800 shadow-sm flex items-center justify-center overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1/2 bg-red-500 rounded-t-full" />
-            <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-gray-800 transform -translate-y-1/2 z-10" />
-            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full border-2 border-gray-800 z-20">
-              <div className="absolute inset-0.5 bg-gray-100 rounded-full" />
-            </div>
-          </div>
+          <BrandMark size={48} />
         </div>
 
         <div className="text-center mb-8">

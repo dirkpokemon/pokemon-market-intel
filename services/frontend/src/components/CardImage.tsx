@@ -8,25 +8,58 @@ interface CardImageProps {
   className?: string;
 }
 
-// Cache for card image URLs (avoids repeated API calls)
 const imageCache: Record<string, string | null> = {};
+const LS_PREFIX = 'card_img_v2_';
 
-// Clean card name for better API matching
-function cleanCardName(name: string): string {
+function normalizeListingTitle(name: string): string {
   return name
-    .replace(/\s*\(.*?\)\s*/g, '') // Remove parenthetical info like "(Special Illustration Rare)"
-    .replace(/\s*(ex|EX|V|VMAX|VSTAR|GX|Tag Team|Radiant|Full Art|Alt Art)\s*/gi, ' ')
+    .replace(/\[[^\]]*\]\s*/g, '')
+    .replace(/\s*\((?:NM|LP|MP|HP|DMG|Near Mint|Lightly Played|Moderately Played)\)\s*$/i, '')
     .replace(/\s+/g, ' ')
     .trim();
 }
 
-// Get cached image URL from localStorage
+function cleanCardName(name: string): string {
+  const base = normalizeListingTitle(name);
+  return base
+    .replace(/\s*\([^)]*\)\s*/g, ' ')
+    .replace(
+      /\s*(ex|EX|V|VMAX|VSTAR|GX|Tag Team|Radiant|Full Art|Alt Art|Illustration Rare|Special Illustration Rare|Ultra Rare|Hyper Rare)\s*/gi,
+      ' '
+    )
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildQueryAttempts(cardName: string): string[] {
+  const raw = normalizeListingTitle(cardName);
+  const cleaned = cleanCardName(cardName);
+  const beforeDelimiter = raw.split(/\s*[-–|]\s*/)[0]?.trim() || raw;
+  const beforeCleaned = cleanCardName(beforeDelimiter);
+  const attempts: string[] = [];
+  const add = (q: string) => {
+    if (q && !attempts.includes(q)) attempts.push(q);
+  };
+  if (cleaned.length >= 2) add(`name:"${cleaned}"`);
+  if (beforeCleaned.length >= 2 && beforeCleaned !== cleaned) add(`name:"${beforeCleaned}"`);
+  const words = beforeCleaned.split(/\s+/).filter((w) => w.length > 1);
+  if (words.length >= 1) {
+    const slice = words.slice(0, Math.min(4, words.length)).join(' ');
+    if (slice.length >= 3) add(`name:${slice}`);
+  }
+  if (words[0] && words[0].length >= 4) add(`name:${words[0]}`);
+  return attempts;
+}
+
+function cacheKeyFor(name: string): string {
+  return normalizeListingTitle(name).toLowerCase();
+}
+
 function getCachedImage(key: string): string | null {
   try {
-    const cached = localStorage.getItem(`card_img_${key}`);
+    const cached = localStorage.getItem(`${LS_PREFIX}${key}`);
     if (cached) {
       const { url, timestamp } = JSON.parse(cached);
-      // Cache for 7 days
       if (Date.now() - timestamp < 7 * 24 * 60 * 60 * 1000) {
         return url;
       }
@@ -35,11 +68,29 @@ function getCachedImage(key: string): string | null {
   return null;
 }
 
-// Save image URL to localStorage cache
 function setCachedImage(key: string, url: string | null) {
   try {
-    localStorage.setItem(`card_img_${key}`, JSON.stringify({ url, timestamp: Date.now() }));
+    localStorage.setItem(`${LS_PREFIX}${key}`, JSON.stringify({ url, timestamp: Date.now() }));
   } catch {}
+}
+
+async function fetchPokemonTcgImage(cardName: string): Promise<string | null> {
+  const queries = buildQueryAttempts(cardName);
+  for (const q of queries) {
+    try {
+      const res = await fetch(
+        `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}&pageSize=1&select=id,name,images`,
+        { signal: AbortSignal.timeout(6500) }
+      );
+      if (!res.ok) continue;
+      const data = await res.json();
+      const url = data.data?.[0]?.images?.small;
+      if (url) return url as string;
+    } catch {
+      /* try next query */
+    }
+  }
+  return null;
 }
 
 export default function CardImage({ cardName, size = 'sm', className = '' }: CardImageProps) {
@@ -54,60 +105,45 @@ export default function CardImage({ cardName, size = 'sm', className = '' }: Car
   };
 
   useEffect(() => {
-    const fetchCardImage = async () => {
-      const cacheKey = cleanCardName(cardName).toLowerCase();
+    const key = cacheKeyFor(cardName);
 
-      // Check memory cache first
-      if (imageCache[cacheKey] !== undefined) {
-        setImageUrl(imageCache[cacheKey]);
+    const run = async () => {
+      if (imageCache[key] !== undefined) {
+        setImageUrl(imageCache[key]);
         setLoading(false);
         return;
       }
 
-      // Check localStorage cache
-      const cached = getCachedImage(cacheKey);
+      const cached = getCachedImage(key);
       if (cached !== null) {
-        imageCache[cacheKey] = cached;
-        setImageUrl(cached);
+        imageCache[key] = cached;
+        setImageUrl(cached || null);
         setLoading(false);
         return;
       }
 
-      try {
-        const searchName = cleanCardName(cardName);
-        const res = await fetch(
-          `https://api.pokemontcg.io/v2/cards?q=name:"${encodeURIComponent(searchName)}"&pageSize=1&select=id,name,images`,
-          { signal: AbortSignal.timeout(5000) }
-        );
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.data && data.data.length > 0) {
-            const url = data.data[0].images.small;
-            imageCache[cacheKey] = url;
-            setCachedImage(cacheKey, url);
-            setImageUrl(url);
-          } else {
-            imageCache[cacheKey] = null;
-            setCachedImage(cacheKey, '');
-          }
-        }
-      } catch {
-        imageCache[cacheKey] = null;
-      }
+      const url = await fetchPokemonTcgImage(cardName);
+      imageCache[key] = url;
+      setCachedImage(key, url ?? '');
+      setImageUrl(url);
       setLoading(false);
     };
 
-    fetchCardImage();
+    if (!cardName?.trim()) {
+      setImageUrl(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    run();
   }, [cardName]);
 
   return (
     <div className={`${sizeClasses[size]} rounded-lg overflow-hidden flex-shrink-0 ${className}`}>
       {loading ? (
-        /* Shimmer loading placeholder */
         <div className="w-full h-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 animate-pulse rounded-lg" />
       ) : imageUrl ? (
-        /* Real card image */
         <img
           src={imageUrl}
           alt={cardName}
@@ -115,9 +151,10 @@ export default function CardImage({ cardName, size = 'sm', className = '' }: Car
           loading="lazy"
         />
       ) : (
-        /* Fallback: nice gradient placeholder */
         <div className="w-full h-full bg-gradient-to-br from-indigo-100 via-purple-50 to-blue-100 rounded-lg flex items-center justify-center border border-gray-200">
-          <span className="text-lg">🃏</span>
+          <span className="text-lg" title="Geen TCG-afbeelding gevonden">
+            🃏
+          </span>
         </div>
       )}
     </div>

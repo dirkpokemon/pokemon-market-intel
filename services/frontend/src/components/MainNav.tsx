@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
+import BrandMark from '@/components/BrandMark';
 import { SUBSCRIBER_BADGE, tierLabel, UPSELL_SUBSCRIBE } from '@/lib/plans';
 
 interface MainNavProps {
@@ -39,14 +40,7 @@ export default function MainNav({ user }: MainNavProps) {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/home" className="flex items-center gap-3 hover:opacity-80 transition">
-            {/* Poké Ball Logo */}
-            <div className="relative w-10 h-10 bg-white rounded-full border-[3px] border-gray-800 shadow-sm flex items-center justify-center overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1/2 bg-red-500 rounded-t-full" />
-              <div className="absolute top-1/2 left-0 right-0 h-[2px] bg-gray-800 transform -translate-y-1/2 z-10" />
-              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-white rounded-full border-2 border-gray-800 z-20">
-                <div className="absolute inset-0.5 bg-gray-100 rounded-full" />
-              </div>
-            </div>
+            <BrandMark size={40} />
             <div>
               <h1 className="text-lg font-bold text-gray-900">TCG Pulse</h1>
               <p className="text-xs text-gray-500">EU Price Intelligence</p>

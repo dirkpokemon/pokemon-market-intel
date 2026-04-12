@@ -302,19 +302,29 @@ export default function SettingsPage() {
               {/* Priority filter */}
               <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold mb-2">Minimum Priority</p>
               <div className="mb-4">
-                <div className="flex items-center gap-4 py-2">
+                <div className="space-y-2 py-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs text-gray-600">Drempel (1 = alles, 10 = alleen kritiek)</span>
+                    <span className="text-sm font-semibold tabular-nums text-indigo-700 min-w-[1.5rem] text-right">
+                      {prefs.min_priority}
+                    </span>
+                  </div>
                   <input
                     type="range"
                     min="1"
                     max="10"
+                    step="1"
                     value={prefs.min_priority}
-                    onChange={(e) => updatePref('min_priority', parseInt(e.target.value))}
-                    className="flex-1"
+                    onChange={(e) => updatePref('min_priority', parseInt(e.target.value, 10))}
+                    className="app-range-input block"
+                    aria-valuemin={1}
+                    aria-valuemax={10}
+                    aria-valuenow={prefs.min_priority}
+                    aria-label="Minimum signaal-prioriteit"
                   />
-                  <span className="text-sm font-medium text-gray-700 w-8 text-center">{prefs.min_priority}</span>
                 </div>
-                <p className="text-xs text-gray-400">
-                  Only send notifications for signals with priority {prefs.min_priority}+ (1 = everything, 10 = critical only)
+                <p className="text-xs text-gray-400 mt-2">
+                  Alleen meldingen met prioriteit {prefs.min_priority}+ (1 = alles, 10 = alleen kritiek)
                 </p>
               </div>
 

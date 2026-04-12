@@ -268,21 +268,53 @@ function DealsPageInner() {
                 </select>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-3 border-t border-gray-100">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Min Score: {filters.minScore}</label>
-                  <input type="range" min="0" max="100" value={filters.minScore}
-                    onChange={(e) => setFilters({ ...filters, minScore: parseInt(e.target.value) })} className="w-full" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-4 pt-4 border-t border-gray-100">
+                <div className="space-y-2 min-w-0">
+                  <div className="flex justify-between gap-2 text-xs text-gray-600">
+                    <span>Min. score</span>
+                    <span className="font-semibold tabular-nums text-gray-900">{filters.minScore}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={filters.minScore}
+                    onChange={(e) => setFilters({ ...filters, minScore: parseInt(e.target.value, 10) })}
+                    className="app-range-input"
+                    aria-label="Minimum deal score"
+                  />
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Min Price: €{filters.minPrice}</label>
-                  <input type="range" min="0" max="1000" step="10" value={filters.minPrice}
-                    onChange={(e) => setFilters({ ...filters, minPrice: parseInt(e.target.value) })} className="w-full" />
+                <div className="space-y-2 min-w-0">
+                  <div className="flex justify-between gap-2 text-xs text-gray-600">
+                    <span>Min. prijs</span>
+                    <span className="font-semibold tabular-nums text-gray-900">€{filters.minPrice}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1000"
+                    step="10"
+                    value={filters.minPrice}
+                    onChange={(e) => setFilters({ ...filters, minPrice: parseInt(e.target.value, 10) })}
+                    className="app-range-input"
+                    aria-label="Minimum price in euros"
+                  />
                 </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Max Price: €{filters.maxPrice}</label>
-                  <input type="range" min="0" max="1000" step="10" value={filters.maxPrice}
-                    onChange={(e) => setFilters({ ...filters, maxPrice: parseInt(e.target.value) })} className="w-full" />
+                <div className="space-y-2 min-w-0">
+                  <div className="flex justify-between gap-2 text-xs text-gray-600">
+                    <span>Max. prijs</span>
+                    <span className="font-semibold tabular-nums text-gray-900">€{filters.maxPrice}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1000"
+                    step="10"
+                    value={filters.maxPrice}
+                    onChange={(e) => setFilters({ ...filters, maxPrice: parseInt(e.target.value, 10) })}
+                    className="app-range-input"
+                    aria-label="Maximum price in euros"
+                  />
                 </div>
               </div>
             </div>

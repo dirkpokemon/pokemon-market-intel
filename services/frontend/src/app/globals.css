@@ -40,4 +40,56 @@ body {
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  /* Native range inputs — consistent track + thumb (Chrome / Firefox / Safari) */
+  .app-range-input {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border-radius: 9999px;
+    background: rgb(226 232 240);
+    cursor: pointer;
+  }
+
+  .app-range-input:focus {
+    outline: none;
+  }
+
+  .app-range-input:focus-visible {
+    box-shadow: 0 0 0 2px rgb(255 255 255), 0 0 0 4px rgb(99 102 241);
+  }
+
+  .app-range-input::-webkit-slider-runnable-track {
+    height: 8px;
+    border-radius: 9999px;
+    background: rgb(226 232 240);
+  }
+
+  .app-range-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: rgb(79 70 229);
+    border: 2px solid white;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+    margin-top: -5px;
+  }
+
+  .app-range-input::-moz-range-track {
+    height: 8px;
+    border-radius: 9999px;
+    background: rgb(226 232 240);
+  }
+
+  .app-range-input::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 9999px;
+    background: rgb(79 70 229);
+    border: 2px solid white;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+  }
 }

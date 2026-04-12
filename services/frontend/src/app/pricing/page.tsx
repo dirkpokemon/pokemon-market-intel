@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { subscriptionApi } from '@/lib/api';
 import SiteFooter from '@/components/SiteFooter';
 import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
+import BrandMark from '@/components/BrandMark';
 import { CTA_SUBSCRIBE_PLUS, PLAN_FEATURES } from '@/lib/plans';
 
 type PlanKey = 'free' | 'paid' | 'pro';
@@ -159,9 +160,7 @@ export default function PricingPage() {
       <header className="border-b border-gray-100 sticky top-0 z-50 bg-white/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-600 to-violet-700 flex items-center justify-center shadow-sm shrink-0">
-              <span className="text-white text-[10px] font-black tracking-tight">TCG</span>
-            </div>
+            <BrandMark size={32} />
             <span className="text-sm font-bold text-gray-900">TCG Pulse</span>
           </Link>
           <div className="flex gap-3 items-center">

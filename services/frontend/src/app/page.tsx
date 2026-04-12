@@ -4,22 +4,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import SiteFooter from '@/components/SiteFooter';
 import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
+import BrandMark from '@/components/BrandMark';
 import { CTA_SUBSCRIBE_PLUS, PLAN_FEATURES, SUBSCRIBER_BADGE } from '@/lib/plans';
-
-// ─── Brand mark (header) ────────────────────────────────────────
-function BrandMark({ size = 40 }: { size?: number }) {
-  const rounded = size >= 36 ? 'rounded-xl' : 'rounded-lg';
-  return (
-    <div
-      className={`bg-gradient-to-br from-indigo-600 to-violet-700 flex items-center justify-center flex-shrink-0 shadow-sm ${rounded}`}
-      style={{ width: size, height: size }}
-    >
-      <span className="text-white font-black tracking-tight" style={{ fontSize: size * 0.28 }}>
-        TCG
-      </span>
-    </div>
-  );
-}
 
 // ─── Mock Deal Card ───────────────────────────────────────────────
 function MockDealCard({ name, set, price, avg, score, savings }: {

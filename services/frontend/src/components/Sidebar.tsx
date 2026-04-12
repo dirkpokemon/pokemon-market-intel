@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import BrandMark from '@/components/BrandMark';
 import { SUBSCRIBER_BADGE, tierLabel } from '@/lib/plans';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -125,10 +126,7 @@ export default function Sidebar({ user }: SidebarProps) {
       `}>
         {/* Logo area */}
         <div className={`flex items-center h-16 border-b border-gray-100 px-4 ${collapsed ? 'justify-center' : 'gap-3'}`}>
-          {/* Brand mark */}
-          <div className="relative w-8 h-8 bg-gradient-to-br from-indigo-600 to-violet-700 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
-            <span className="text-white text-xs font-black tracking-tight">TCG</span>
-          </div>
+          <BrandMark size={32} className="flex-shrink-0" />
           {!collapsed && (
             <div className="min-w-0">
               <p className="text-sm font-bold text-gray-900 truncate">TCG Pulse</p>

@@ -120,22 +120,24 @@ export default function SearchFilter({ onFilterChange, onSortChange, currentSort
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Deal Score Range: {filters.minScore} - {filters.maxScore}
               </label>
-              <div className="flex gap-3 items-center">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <input
                   type="range"
                   min="60"
                   max="100"
                   value={filters.minScore}
-                  onChange={(e) => handleFilterUpdate({ minScore: parseInt(e.target.value) })}
-                  className="flex-1"
+                  onChange={(e) => handleFilterUpdate({ minScore: parseInt(e.target.value, 10) })}
+                  className="app-range-input flex-1 min-w-0"
+                  aria-label="Minimum deal score"
                 />
                 <input
                   type="range"
                   min="60"
                   max="100"
                   value={filters.maxScore}
-                  onChange={(e) => handleFilterUpdate({ maxScore: parseInt(e.target.value) })}
-                  className="flex-1"
+                  onChange={(e) => handleFilterUpdate({ maxScore: parseInt(e.target.value, 10) })}
+                  className="app-range-input flex-1 min-w-0"
+                  aria-label="Maximum deal score"
                 />
               </div>
             </div>

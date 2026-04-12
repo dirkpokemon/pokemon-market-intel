@@ -199,18 +199,21 @@ export default function ProfileModal({ user, onClose, onSave }: ProfileModalProp
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Deal Score Alert Threshold
                   </label>
-                  <div className="flex items-center gap-4">
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center gap-3">
+                      <span className="text-xs text-gray-500">Min. score voor melding</span>
+                      <span className="text-lg font-bold tabular-nums text-indigo-700">{dealScoreThreshold}</span>
+                    </div>
                     <input
                       type="range"
                       min="60"
                       max="100"
+                      step="1"
                       value={dealScoreThreshold}
-                      onChange={(e) => setDealScoreThreshold(parseInt(e.target.value))}
-                      className="flex-1"
+                      onChange={(e) => setDealScoreThreshold(parseInt(e.target.value, 10))}
+                      className="app-range-input w-full"
+                      aria-label="Deal score alert threshold"
                     />
-                    <span className="text-lg font-bold text-gray-900 w-12 text-right">
-                      {dealScoreThreshold}
-                    </span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
                     Get notified when deals have a score of {dealScoreThreshold} or higher
