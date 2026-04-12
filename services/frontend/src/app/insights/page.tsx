@@ -41,24 +41,15 @@ export default function MarketPulsePage() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const [scoresRes, digRes] = await Promise.allSettled([
-        marketApi.getDealScores({
-          limit: 100,
-          min_score: 40,
-        }),
-        marketApi.getMarketDigest(),
-      ]);
-
-      if (scoresRes.status === 'fulfilled') {
-        setDealScores(scoresRes.value);
-      } else {
-        setDealScores([]);
-      }
-
-      if (digRes.status === 'fulfilled') setDigest(digRes.value);
-      else setDigest(null);
+      marketApi.getMarketDigest().then(setDigest).catch(() => setDigest(null));
+      const scores = await marketApi.getDealScores({
+        limit: 100,
+        min_score: 40,
+      });
+      setDealScores(scores);
     } catch (err) {
       console.error('Error loading market pulse:', err);
+      setDealScores([]);
     } finally {
       setLoading(false);
     }

@@ -76,6 +76,58 @@ async def get_signals(
     return [SignalResponse.from_orm(signal) for signal in signals]
 
 
+def _approx_distinct_from_pg_stats(n_distinct_raw, n_live: int) -> int:
+    """
+    Turn pg_stats.n_distinct into an approximate count (PostgreSQL planner stats).
+    Positive = estimated distinct count; negative = -fraction * row estimate.
+    """
+    if n_live <= 0 or n_distinct_raw is None:
+        return 0
+    try:
+        nd = float(n_distinct_raw)
+    except (TypeError, ValueError):
+        return 0
+    if nd >= 0:
+        return int(nd)
+    return max(1, min(n_live, int(round(abs(nd) * n_live))))
+
+
+async def _raw_prices_digest_row(db: AsyncSession):
+    """
+    Fast raw_prices stats: catalog stats + MAX(scraped_at) only.
+    Avoids multiple full-table COUNT(*) / COUNT(DISTINCT) on large tables.
+    """
+    row = (
+        await db.execute(
+            text(
+                """
+        SELECT
+          COALESCE(
+            (SELECT n_live_tup::bigint FROM pg_stat_user_tables
+             WHERE schemaname = 'public' AND relname = 'raw_prices'),
+            0
+          ) AS n_live,
+          (SELECT MAX(scraped_at) FROM raw_prices) AS last_scrape,
+          (SELECT n_distinct FROM pg_stats
+             WHERE schemaname = 'public' AND tablename = 'raw_prices' AND attname = 'card_name'
+             LIMIT 1) AS nd_cards,
+          (SELECT n_distinct FROM pg_stats
+             WHERE schemaname = 'public' AND tablename = 'raw_prices' AND attname = 'card_set'
+             LIMIT 1) AS nd_sets
+        """
+            )
+        )
+    ).one()
+
+    n_live = int(row.n_live or 0)
+    last_scrape = row.last_scrape
+    cards = _approx_distinct_from_pg_stats(row.nd_cards, n_live)
+    sets = _approx_distinct_from_pg_stats(row.nd_sets, n_live)
+    # Sets with NULL card_set are not distinct "sets"; cap for display sanity
+    sets = min(sets, n_live) if n_live else 0
+    return n_live, cards, sets, last_scrape
+
+
 def _escape_ilike_pattern(value: str) -> str:
     """Escape % and _ for PostgreSQL ILIKE with ESCAPE '\\'."""
     return (
@@ -205,23 +257,13 @@ async def get_market_digest(
     from app.models.signal import Signal
     from app.models.market_stats import MarketStats
 
-    # Overview counts from raw_prices
-    raw_count = await db.execute(text("SELECT COUNT(*) FROM raw_prices"))
-    total_listings = raw_count.scalar() or 0
-
-    card_count = await db.execute(text("SELECT COUNT(DISTINCT card_name) FROM raw_prices"))
-    total_cards = card_count.scalar() or 0
-
-    set_count = await db.execute(text("SELECT COUNT(DISTINCT card_set) FROM raw_prices WHERE card_set IS NOT NULL"))
-    total_sets = set_count.scalar() or 0
+    # Overview counts: use planner stats + MAX(scraped_at) — full COUNT(*) on raw_prices is too slow at scale
+    total_listings, total_cards, total_sets, last_scrape_at = await _raw_prices_digest_row(db)
 
     last_analysis = await db.execute(
         select(func.max(MarketStats.calculated_at))
     )
     last_at = last_analysis.scalar()
-
-    last_scrape = await db.execute(text("SELECT MAX(scraped_at) FROM raw_prices"))
-    last_scrape_at = last_scrape.scalar()
 
     # Signal counts by type
     sig_counts_q = await db.execute(

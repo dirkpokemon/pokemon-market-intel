@@ -320,6 +320,7 @@ function SignalCard({ signal }: { signal: Signal }) {
 export default function PriceSignalsPage() {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [digest, setDigest] = useState<MarketDigest | null>(null);
+  const [digestLoaded, setDigestLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [filterType, setFilterType] = useState<string>('all');
@@ -340,22 +341,27 @@ export default function PriceSignalsPage() {
     try {
       setLoading(true);
       setAccessDenied(false);
-      const [signalsResult, digestResult] = await Promise.allSettled([
-        marketApi.getSignals({ limit: 100 }),
-        marketApi.getMarketDigest(),
-      ]);
-      if (signalsResult.status === 'fulfilled') setSignals(signalsResult.value);
-      else {
-        const err = signalsResult.reason;
-        if (err?.status === 401) {
+      setDigestLoaded(false);
+      // Digest hits heavy DB paths; load in background so signals UI is not blocked
+      marketApi
+        .getMarketDigest()
+        .then((d) => setDigest(d))
+        .catch(() => setDigest(null))
+        .finally(() => setDigestLoaded(true));
+
+      try {
+        const s = await marketApi.getSignals({ limit: 100 });
+        setSignals(s);
+      } catch (err: unknown) {
+        const status = (err as { status?: number })?.status;
+        if (status === 401) {
           localStorage.removeItem('access_token');
           localStorage.removeItem('user');
           window.location.href = '/login';
           return;
         }
-        if (err?.status === 403) setAccessDenied(true);
+        if (status === 403) setAccessDenied(true);
       }
-      if (digestResult.status === 'fulfilled') setDigest(digestResult.value);
     } finally {
       setLoading(false);
     }
@@ -421,6 +427,7 @@ export default function PriceSignalsPage() {
   }, [digest?.last_scrape_at]);
 
   const signalsAreStale =
+    digestLoaded &&
     newestSignalAge !== null &&
     newestSignalAge > STALE_HOURS &&
     !analysisIsFresh;
