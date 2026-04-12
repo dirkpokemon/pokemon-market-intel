@@ -132,6 +132,7 @@ class MarketDigestResponse(BaseModel):
     total_sets: int
     total_listings: int
     last_analysis_at: Optional[datetime] = None
+    last_scrape_at: Optional[datetime] = None
 
     signal_counts: dict
     signal_highlights: List[SignalResponse]

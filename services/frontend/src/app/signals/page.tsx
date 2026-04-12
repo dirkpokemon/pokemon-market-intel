@@ -413,10 +413,24 @@ export default function PriceSignalsPage() {
     return ageHours <= STALE_HOURS;
   }, [digest?.last_analysis_at]);
 
+  const scrapeIsFresh = useMemo(() => {
+    const at = digest?.last_scrape_at;
+    if (!at) return false;
+    const ageHours = (Date.now() - new Date(at).getTime()) / 3600000;
+    return ageHours <= STALE_HOURS;
+  }, [digest?.last_scrape_at]);
+
   const signalsAreStale =
     newestSignalAge !== null &&
     newestSignalAge > STALE_HOURS &&
     !analysisIsFresh;
+
+  const stalePipelineHint = useMemo(() => {
+    if (!scrapeIsFresh) {
+      return 'There is no recent data in raw_prices (scraper). On Railway, deploy the scraper service (root services/scraper), set DATABASE_URL to this same database, and your CardTrader/API env vars.';
+    }
+    return 'Listings are being scraped, but market_statistics are not updating. On Railway, run the analysis service with root services/analysis, start command python -m app.main, and DATABASE_URL pointing to this same database (postgresql://… from Postgres).';
+  }, [scrapeIsFresh]);
 
   return (
     <DashboardLayout>
@@ -456,7 +470,8 @@ export default function PriceSignalsPage() {
                 The newest signal is {newestSignalAge && newestSignalAge > 48
                   ? `${Math.round(newestSignalAge / 24)} days`
                   : `${Math.round(newestSignalAge ?? 0)} hours`} old, and market statistics have not been refreshed in the last {STALE_HOURS} hours.
-                Check that the analysis service is running on Railway (start command: <code className="text-[11px] bg-amber-100/80 dark:bg-amber-900/40 px-1 rounded">python -m app.main</code>) and has <code className="text-[11px] bg-amber-100/80 dark:bg-amber-900/40 px-1 rounded">DATABASE_URL</code> set.
+                {' '}
+                {stalePipelineHint}
               </p>
             </div>
           </div>

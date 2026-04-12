@@ -55,6 +55,8 @@ export interface MarketDigest {
   total_sets: number;
   total_listings: number;
   last_analysis_at?: string;
+  /** Max scraped_at from raw_prices — scraper health */
+  last_scrape_at?: string;
   signal_counts: Record<string, number>;
   signal_highlights: Signal[];
   top_rising_sets: SetTrend[];

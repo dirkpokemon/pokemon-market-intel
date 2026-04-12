@@ -220,6 +220,9 @@ async def get_market_digest(
     )
     last_at = last_analysis.scalar()
 
+    last_scrape = await db.execute(text("SELECT MAX(scraped_at) FROM raw_prices"))
+    last_scrape_at = last_scrape.scalar()
+
     # Signal counts by type
     sig_counts_q = await db.execute(
         select(Signal.signal_type, func.count(Signal.id))
@@ -273,6 +276,7 @@ async def get_market_digest(
         total_sets=total_sets,
         total_listings=total_listings,
         last_analysis_at=last_at,
+        last_scrape_at=last_scrape_at,
         signal_counts=signal_counts,
         signal_highlights=highlights,
         top_rising_sets=[to_set_trend(r) for r in rising],
