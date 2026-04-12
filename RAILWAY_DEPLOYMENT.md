@@ -109,7 +109,7 @@ Deploy these services separately:
 1. **"+ New"** → **"GitHub Repo"** → Select repo
 2. **Settings:**
    - Root Directory: `services/analysis`
-   - Start Command: `python run_analysis.py`
+   - Start Command: `python -m app.main` (long-running: runs analysis on startup, then every hour via scheduler — **not** `run_analysis.py`, which exits after one run)
 3. **Environment Variables:**
    ```
    DATABASE_URL=<from-postgres-service>
