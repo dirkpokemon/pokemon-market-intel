@@ -90,6 +90,16 @@ postgresql+asyncpg://postgres:password@host:port/railway
 - Settings → Root Directory: `services/backend`
 - Must match where your code is in the repo
 
+### Issue 5: Out of memory (build or deploy)
+
+**Symptoms:** Build fails with OOM, or the process is killed during `next build` / `pip install`.
+
+**What we changed in this repo:**
+- **Frontend Docker image:** `NEXT_BUILD_LOW_MEMORY=1` lowers webpack parallelism; `NEXT_TELEMETRY_DISABLED=1` and a Node heap cap are set during `npm run build` in `services/frontend/Dockerfile`.
+- **Backend Docker image:** installs `requirements-prod.txt` (no pytest/black/ruff/mypy) to reduce install size and peak memory.
+
+**If it still OOMs:** In Railway → your service → **Settings**, increase **Memory** (and redeploy). Next.js production builds often need **at least ~2 GB** RAM on the builder for comfortable headroom.
+
 ---
 
 ## 🧪 Testing Steps

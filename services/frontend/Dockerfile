@@ -26,7 +26,11 @@ ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_PUBLIC_STRIPE_PRICE_PAID=${NEXT_PUBLIC_STRIPE_PRICE_PAID}
 ENV NEXT_PUBLIC_STRIPE_PRICE_PRO=${NEXT_PUBLIC_STRIPE_PRICE_PRO}
 
-# Build Next.js application
+# Next.js builds are memory-heavy; limit webpack parallelism and cap V8 heap to reduce OOM on small builders.
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_BUILD_LOW_MEMORY=1
+ENV NODE_OPTIONS=--max-old-space-size=3072
+
 RUN npm run build
 
 # Production image, copy all the files and run next
