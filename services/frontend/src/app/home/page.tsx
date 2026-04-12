@@ -185,15 +185,15 @@ export default function HomePage() {
     <DashboardLayout>
       <div className="px-6 py-8 max-w-[1400px] mx-auto">
         {showSubSuccess && (
-          <div className="mb-6 rounded-xl border border-green-200 bg-green-50 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <p className="text-sm text-green-900">
+          <div className="mb-6 rounded-xl border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/40 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <p className="text-sm text-green-900 dark:text-green-100">
               <span className="font-semibold">Subscription active.</span>{' '}
               Your plan should appear in a few seconds once Stripe has finished syncing. If Signals still shows as locked, refresh the page or sign out and back in.
             </p>
             <button
               type="button"
               onClick={() => setShowSubSuccess(false)}
-              className="shrink-0 text-sm font-medium text-green-800 hover:text-green-950 underline underline-offset-2"
+              className="shrink-0 text-sm font-medium text-green-800 hover:text-green-950 dark:text-green-200 dark:hover:text-green-100 underline underline-offset-2"
             >
               Dismiss
             </button>
@@ -202,18 +202,18 @@ export default function HomePage() {
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
-              <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-800 rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-sm text-gray-500">Loading your dashboard...</p>
+              <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-800 dark:border-gray-600 dark:border-t-gray-200 rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-sm text-gray-500 dark:text-gray-400">Loading your dashboard...</p>
             </div>
           </div>
         ) : (
           <>
             {/* Welcome Banner */}
             <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Welcome back, {displayName}! 👋
               </h1>
-              <p className="text-sm text-gray-500 mt-1">Here&apos;s what&apos;s happening in the EU singles market today.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Here&apos;s what&apos;s happening in the EU singles market today.</p>
             </div>
 
             {/* ═══ Market Search (TOP) ═══ */}
@@ -377,7 +377,7 @@ export default function HomePage() {
 
             {/* Key Metrics */}
             <div className="mb-8">
-              <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Your Market at a Glance</h2>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-4">Your Market at a Glance</h2>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard title="Total Deals" value={dealScores.length} subtitle="Active opportunities" icon="🎴" color="blue" />
                 <StatCard title="Avg Deal Score" value={avgDealScore} subtitle="Market average" icon="📊" color="purple" trend={{ value: 12, label: 'vs last week', isPositive: true }} />
@@ -390,17 +390,17 @@ export default function HomePage() {
             {signals.length > 0 && (
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Priority Signals</h2>
-                  <Link href="/signals" className="text-xs text-gray-500 hover:text-gray-700 font-medium">View all →</Link>
+                  <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Priority Signals</h2>
+                  <Link href="/signals" className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium">View all →</Link>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {recentSignals.map((signal) => (
-                    <div key={signal.id} className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition">
+                    <div key={signal.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition">
                       <div className="flex items-start justify-between mb-3">
                         <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
-                          signal.signal_level === 'high' ? 'bg-red-100 text-red-800' :
-                          signal.signal_level === 'medium' ? 'bg-amber-100 text-amber-800' :
-                          'bg-blue-100 text-blue-800'
+                          signal.signal_level === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200' :
+                          signal.signal_level === 'medium' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200' :
+                          'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-200'
                         }`}>
                           {signal.signal_level.toUpperCase()}
                         </span>
@@ -411,12 +411,12 @@ export default function HomePage() {
                       <div className="flex items-start gap-3">
                         <CardImage cardName={signal.product_name} size="sm" />
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-gray-900 mb-1 line-clamp-2">{signal.product_name}</h3>
-                          <p className="text-xs text-gray-500 mb-2">{signal.signal_type.replace(/_/g, ' ')}</p>
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1 line-clamp-2">{signal.product_name}</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{signal.signal_type.replace(/_/g, ' ')}</p>
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-500">€{signal.current_price?.toFixed(2) || 'N/A'}</span>
+                            <span className="text-gray-500 dark:text-gray-400">€{signal.current_price?.toFixed(2) || 'N/A'}</span>
                             {signal.deal_score && (
-                              <span className="font-bold text-green-700">Score: {signal.deal_score}</span>
+                              <span className="font-bold text-green-700 dark:text-green-400">Score: {signal.deal_score}</span>
                             )}
                           </div>
                         </div>
@@ -430,39 +430,39 @@ export default function HomePage() {
             {/* Top 5 Deals Preview */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Today&apos;s Top Deals</h2>
-                <Link href="/deals" className="text-xs text-gray-500 hover:text-gray-700 font-medium">View all →</Link>
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Today&apos;s Top Deals</h2>
+                <Link href="/deals" className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium">View all →</Link>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {topDeals.map((deal) => (
                   <div 
                     key={deal.id} 
                     onClick={() => setSelectedDeal(deal)}
-                    className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 hover:shadow-sm transition cursor-pointer group"
+                    className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition cursor-pointer group"
                   >
                     <div className="flex items-start gap-3 mb-3">
                       <CardImage cardName={deal.product_name} size="md" />
                       <div className="flex-1 min-w-0">
                         <div className="flex justify-between items-start">
-                          <h3 className="text-sm font-semibold text-gray-900 flex-1 line-clamp-2 pr-2 group-hover:text-gray-700 transition">{deal.product_name}</h3>
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white flex-1 line-clamp-2 pr-2 group-hover:text-gray-700 dark:group-hover:text-gray-200 transition">{deal.product_name}</h3>
                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                            deal.deal_score >= 80 ? 'bg-green-50' : deal.deal_score >= 70 ? 'bg-amber-50' : 'bg-gray-50'
+                            deal.deal_score >= 80 ? 'bg-green-50 dark:bg-green-950/40' : deal.deal_score >= 70 ? 'bg-amber-50 dark:bg-amber-950/40' : 'bg-gray-50 dark:bg-gray-800'
                           }`}>
                             <span className={`text-sm font-bold ${
-                              deal.deal_score >= 80 ? 'text-green-700' : deal.deal_score >= 70 ? 'text-amber-700' : 'text-gray-600'
+                              deal.deal_score >= 80 ? 'text-green-700 dark:text-green-400' : deal.deal_score >= 70 ? 'text-amber-700 dark:text-amber-400' : 'text-gray-600 dark:text-gray-300'
                             }`}>
                               {deal.deal_score}
                             </span>
                           </div>
                         </div>
                         {deal.product_set && (
-                          <p className="text-xs text-gray-500 mt-1 truncate">{deal.product_set}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">{deal.product_set}</p>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
                       <div>
-                        <p className="text-lg font-bold text-gray-900">€{deal.current_price.toFixed(2)}</p>
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">€{deal.current_price.toFixed(2)}</p>
                       </div>
                       {deal.market_avg_price && (
                         <div className="text-right">
@@ -479,20 +479,20 @@ export default function HomePage() {
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Latest TCG news</h2>
-                  <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase">Hourly</span>
+                  <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Latest TCG news</h2>
+                  <span className="px-2 py-0.5 bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300 text-[10px] font-bold rounded-full uppercase">Hourly</span>
                 </div>
               </div>
 
               {newsLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {[...Array(4)].map((_, i) => (
-                    <div key={i} className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
+                    <div key={i} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 animate-pulse">
                       <div className="flex gap-3">
-                        <div className="w-20 h-14 bg-gray-100 rounded-lg flex-shrink-0" />
+                        <div className="w-20 h-14 bg-gray-100 dark:bg-gray-800 rounded-lg flex-shrink-0" />
                         <div className="flex-1 space-y-2">
-                          <div className="h-3 bg-gray-100 rounded w-3/4" />
-                          <div className="h-3 bg-gray-100 rounded w-1/2" />
+                          <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-3/4" />
+                          <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/2" />
                         </div>
                       </div>
                     </div>
@@ -506,23 +506,23 @@ export default function HomePage() {
                       href={article.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 hover:shadow-sm transition group"
+                      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition group"
                     >
                       <div className="flex items-start gap-3">
                         {article.image_url ? (
                           <img
                             src={article.image_url}
                             alt=""
-                            className="w-20 h-14 object-cover rounded-lg flex-shrink-0 bg-gray-100"
+                            className="w-20 h-14 object-cover rounded-lg flex-shrink-0 bg-gray-100 dark:bg-gray-800"
                             loading="lazy"
                           />
                         ) : (
-                          <div className="w-20 h-14 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <div className="w-20 h-14 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 rounded-lg flex items-center justify-center flex-shrink-0">
                             <span className="text-lg">📰</span>
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-700 transition">
+                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition">
                             {article.title}
                           </h3>
                           <div className="flex items-center gap-2 mt-1.5">
@@ -549,7 +549,7 @@ export default function HomePage() {
                             )}
                           </div>
                         </div>
-                        <svg className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg>
                       </div>
@@ -557,39 +557,39 @@ export default function HomePage() {
                   ))}
                 </div>
               ) : (
-                <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
-                  <p className="text-sm text-gray-500">No news articles available right now.</p>
-                  <p className="text-xs text-gray-400 mt-1">Check back soon for the latest TCG updates.</p>
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-8 text-center">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No news articles available right now.</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Check back soon for the latest TCG updates.</p>
                 </div>
               )}
             </div>
 
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Link href="/portfolio" className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition group">
+              <Link href="/portfolio" className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition group">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-xl">📦</div>
+                  <div className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-xl">📦</div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-gray-700 transition">My Portfolio</h3>
-                    <p className="text-xs text-gray-500">Collection & watchlist</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition">My Portfolio</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Collection & watchlist</p>
                   </div>
                 </div>
               </Link>
-              <Link href="/signals" className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition group">
+              <Link href="/signals" className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition group">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-xl">⚡</div>
+                  <div className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-xl">⚡</div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-gray-700 transition">Price Signals</h3>
-                    <p className="text-xs text-gray-500">AI-powered market intel</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition">Price Signals</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">AI-powered market intel</p>
                   </div>
                 </div>
               </Link>
-              <Link href="/settings" className="bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition group">
+              <Link href="/settings" className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition group">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-50 rounded-lg flex items-center justify-center text-xl">⚙️</div>
+                  <div className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-xl">⚙️</div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-gray-700 transition">Settings</h3>
-                    <p className="text-xs text-gray-500">Preferences & account</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition">Settings</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Preferences & account</p>
                   </div>
                 </div>
               </Link>

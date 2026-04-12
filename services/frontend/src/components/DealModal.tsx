@@ -56,8 +56,8 @@ function buildInsight(deal: DealScore) {
   if (deal.deal_score >= 80) {
     return {
       verdict: 'Strong buy',
-      label: 'bg-green-100 text-green-800',
-      border: 'border-green-200 bg-green-50',
+      label: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200',
+      border: 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/40',
       text: pctText
         ? `Listed ${pctText} with a deal score of ${deal.deal_score}, one of the stronger opportunities in the current catalog.`
         : `Deal score of ${deal.deal_score} is well above average. Price data suggests a solid buying opportunity.`,
@@ -66,8 +66,8 @@ function buildInsight(deal: DealScore) {
   if (deal.deal_score >= 65) {
     return {
       verdict: 'Good deal',
-      label: 'bg-blue-100 text-blue-800',
-      border: 'border-blue-100 bg-blue-50',
+      label: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200',
+      border: 'border-blue-100 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/40',
       text: pctText
         ? `Listed ${pctText}. A good deal with competitive pricing relative to the EU market.`
         : `Deal score of ${deal.deal_score} indicates good value at the current price.`,
@@ -76,8 +76,8 @@ function buildInsight(deal: DealScore) {
   if (deal.deal_score >= 50) {
     return {
       verdict: 'Fair price',
-      label: 'bg-gray-100 text-gray-700',
-      border: 'border-gray-200 bg-gray-50',
+      label: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200',
+      border: 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/60',
       text: pctText
         ? `Listed ${pctText}. Score of ${deal.deal_score} is moderate: not a standout deal, but a fair price.`
         : `Score of ${deal.deal_score} is around average. Priced reasonably, nothing exceptional.`,
@@ -85,8 +85,8 @@ function buildInsight(deal: DealScore) {
   }
   return {
     verdict: 'Skip for now',
-    label: 'bg-amber-100 text-amber-800',
-    border: 'border-amber-100 bg-amber-50',
+    label: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
+    border: 'border-amber-100 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40',
     text: pctText
       ? `Price is ${pctText}. Score of ${deal.deal_score} suggests better deals may be available elsewhere.`
       : `Score of ${deal.deal_score} is below average. Consider other deals in this set.`,
@@ -192,9 +192,9 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
     ? Math.round((1 - deal.current_price / deal.market_avg_price) * 100)
     : null;
   const scoreColor =
-    deal.deal_score >= 80 ? 'text-green-700' :
-    deal.deal_score >= 65 ? 'text-blue-700' :
-    deal.deal_score >= 50 ? 'text-gray-700' : 'text-amber-700';
+    deal.deal_score >= 80 ? 'text-green-700 dark:text-green-400' :
+    deal.deal_score >= 65 ? 'text-blue-700 dark:text-blue-400' :
+    deal.deal_score >= 50 ? 'text-gray-700 dark:text-gray-200' : 'text-amber-700 dark:text-amber-400';
 
   const searchName = cleanSearchName(deal.product_name);
   const cardMarketUrl = `https://www.cardmarket.com/en/Pokemon/Products/Singles?searchString=${encodeURIComponent(searchName)}&sortBy=price_asc&minCondition=2`;
@@ -205,11 +205,11 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-auto overflow-hidden">
+      <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto overflow-hidden border border-gray-200 dark:border-gray-800">
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 hover:bg-gray-100 shadow-sm transition text-gray-500 hover:text-gray-900"
+          className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm transition text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
           aria-label="Close"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -231,28 +231,28 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                   {verdict}
                 </span>
                 {deal.product_set && (
-                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                     {deal.product_set}
                   </span>
                 )}
               </div>
 
-              <h2 className="text-xl font-bold text-gray-900 leading-tight mb-3 pr-8">{deal.product_name}</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight mb-3 pr-8">{deal.product_name}</h2>
 
               <div className="flex items-end gap-4 flex-wrap mb-3">
                 <div>
                   <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Current price</p>
-                  <p className="text-4xl font-bold text-gray-900 leading-none">€{deal.current_price.toFixed(2)}</p>
+                  <p className="text-4xl font-bold text-gray-900 dark:text-white leading-none">€{deal.current_price.toFixed(2)}</p>
                 </div>
                 {deal.market_avg_price && deal.market_avg_price > 0 && (
                   <div className="pb-1">
                     <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Market avg</p>
-                    <p className="text-xl font-semibold text-gray-500">€{deal.market_avg_price.toFixed(2)}</p>
+                    <p className="text-xl font-semibold text-gray-500 dark:text-gray-400">€{deal.market_avg_price.toFixed(2)}</p>
                   </div>
                 )}
                 {savings !== null && savings !== 0 && (
                   <div className="pb-1">
-                    <span className={`text-sm font-bold px-2.5 py-1 rounded-lg ${savings > 0 ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                    <span className={`text-sm font-bold px-2.5 py-1 rounded-lg ${savings > 0 ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'}`}>
                       {savings > 0 ? `${savings}% below avg` : `${Math.abs(savings)}% above avg`}
                     </span>
                   </div>
@@ -265,9 +265,9 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                     <span>Est. low €{bar.low.toFixed(2)}</span>
                     <span>Est. high €{bar.high.toFixed(2)}</span>
                   </div>
-                  <div className="relative h-2 bg-gray-100 rounded-full">
+                  <div className="relative h-2 bg-gray-100 dark:bg-gray-800 rounded-full">
                     <div className="absolute h-2 rounded-full bg-gradient-to-r from-green-400 to-green-300" style={{ width: `${bar.pct}%` }} />
-                    <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white border-2 border-gray-800 rounded-full shadow" style={{ left: `${bar.pct}%` }} />
+                    <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white dark:bg-gray-900 border-2 border-gray-800 dark:border-gray-300 rounded-full shadow" style={{ left: `${bar.pct}%` }} />
                   </div>
                   <p className="text-[10px] text-gray-400 mt-1">Price position relative to market average</p>
                 </div>
@@ -277,33 +277,33 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
 
           {/* ── Insight ── */}
           <div className={`mx-6 mt-4 rounded-xl border p-4 ${border}`}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 mb-1">What this means</p>
-            <p className="text-sm text-gray-800 leading-relaxed">{text}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">What this means</p>
+            <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">{text}</p>
           </div>
 
           {/* ── Stats ── */}
           <div className="grid grid-cols-3 gap-3 mx-6 mt-4">
-            <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <div className="bg-gray-50 dark:bg-gray-800/80 rounded-xl p-3 text-center">
               <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Deal score</p>
               <p className={`text-2xl font-bold ${scoreColor}`}>{deal.deal_score}</p>
             </div>
-            <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <div className="bg-gray-50 dark:bg-gray-800/80 rounded-xl p-3 text-center">
               <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Confidence</p>
               <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{deal.confidence != null ? `${deal.confidence}%` : 'n.v.t.'}</p>
             </div>
-            <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <div className="bg-gray-50 dark:bg-gray-800/80 rounded-xl p-3 text-center">
               <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Last updated</p>
-              <p className="text-xs font-semibold text-gray-700 leading-tight mt-1">{formatDate(deal.calculated_at)}</p>
+              <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 leading-tight mt-1">{formatDate(deal.calculated_at)}</p>
             </div>
           </div>
 
           {/* ── Price history (collapsible) ── */}
-          <div className="mx-6 mt-4 border border-gray-200 rounded-xl overflow-hidden">
+          <div className="mx-6 mt-4 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
             <button
               onClick={() => setHistoryOpen(v => !v)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition text-left"
+              className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800/80 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left"
             >
-              <span className="text-sm font-semibold text-gray-900">Price history</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">Price history</span>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-400">Based on hourly EU data</span>
                 <svg className={`w-4 h-4 text-gray-400 transition-transform ${historyOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,7 +320,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                     <button
                       key={d}
                       onClick={() => setHistoryDays(d)}
-                      className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${historyDays === d ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                      className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${historyDays === d ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}`}
                     >
                       {d}D
                     </button>
@@ -329,8 +329,8 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
 
                 <div style={{ height: 200 }}>
                   {historyLoading ? (
-                    <div className="flex items-center justify-center h-full text-sm text-gray-400">
-                      <div className="w-5 h-5 border-2 border-gray-200 border-t-gray-600 rounded-full animate-spin mr-2" />
+                    <div className="flex items-center justify-center h-full text-sm text-gray-400 dark:text-gray-500">
+                      <div className="w-5 h-5 border-2 border-gray-200 border-t-gray-600 dark:border-gray-700 dark:border-t-gray-300 rounded-full animate-spin mr-2" />
                       Loading...
                     </div>
                   ) : (
@@ -340,16 +340,16 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
 
                 {/* Condition breakdown */}
                 {conditions.length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-100">
+                  <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">
                       Condition breakdown (EU listings)
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {conditions.map(c => (
-                        <div key={c.condition} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-50 border border-gray-200 rounded-lg">
-                          <span className="text-xs font-semibold text-gray-700">{c.condition}</span>
+                        <div key={c.condition} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-lg">
+                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{c.condition}</span>
                           <span className="text-xs text-gray-400">·</span>
-                          <span className="text-xs text-gray-600">€{c.avg_price.toFixed(2)} avg</span>
+                          <span className="text-xs text-gray-600 dark:text-gray-300">€{c.avg_price.toFixed(2)} avg</span>
                           <span className="text-xs text-gray-400">·</span>
                           <span className="text-xs text-gray-400">{c.count} listings</span>
                         </div>
@@ -406,8 +406,8 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
 
           {/* ── Add to portfolio (collapsible form) ── */}
           {portfolioOpen && (
-            <div className="mx-6 mt-4 border border-gray-200 rounded-xl p-4 bg-gray-50">
-              <p className="text-sm font-semibold text-gray-900 mb-3">Add to portfolio</p>
+            <div className="mx-6 mt-4 border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-800/60">
+              <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Add to portfolio</p>
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Quantity</label>
@@ -416,7 +416,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                     min={1}
                     value={portForm.quantity}
                     onChange={e => setPortForm(f => ({ ...f, quantity: Math.max(1, parseInt(e.target.value) || 1) }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -427,7 +427,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                     min={0}
                     value={portForm.purchasePrice}
                     onChange={e => setPortForm(f => ({ ...f, purchasePrice: parseFloat(e.target.value) || 0 }))}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-transparent"
                   />
                 </div>
               </div>
@@ -436,7 +436,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                 <select
                   value={portForm.condition}
                   onChange={e => setPortForm(f => ({ ...f, condition: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-transparent"
                 >
                   {['NM', 'LP', 'MP', 'HP', 'DMG'].map(c => <option key={c}>{c}</option>)}
                 </select>
@@ -448,7 +448,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                   placeholder="e.g. bought at GP Amsterdam"
                   value={portForm.notes}
                   onChange={e => setPortForm(f => ({ ...f, notes: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-transparent"
+                  className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-transparent"
                 />
               </div>
               <div className="flex gap-2">
@@ -461,7 +461,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                 </button>
                 <button
                   onClick={() => setPortfolioOpen(false)}
-                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 transition"
+                  className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition"
                 >
                   Cancel
                 </button>
@@ -470,14 +470,14 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
           )}
 
           {/* ── Footer ── */}
-          <div className="flex items-center justify-between px-6 py-4 mt-4 border-t border-gray-100">
+          <div className="flex items-center justify-between px-6 py-4 mt-4 border-t border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-2">
               <button
                 onClick={toggleWatchlist}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition ${
                   inWatchlist
-                    ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
-                    : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
+                    ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800 dark:hover:bg-amber-950/60'
+                    : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700'
                 }`}
               >
                 <svg className="w-4 h-4" fill={inWatchlist ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
@@ -490,8 +490,8 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                 onClick={() => setPortfolioOpen(v => !v)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition ${
                   portfolioOpen
-                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                    : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100'
+                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-200 dark:border-indigo-800'
+                    : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700'
                 }`}
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -501,7 +501,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
               </button>
             </div>
 
-            <button onClick={onClose} className="px-5 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition">
+            <button onClick={onClose} className="px-5 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
               Close
             </button>
           </div>
