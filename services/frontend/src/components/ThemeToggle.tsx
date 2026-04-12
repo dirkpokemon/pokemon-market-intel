@@ -79,14 +79,14 @@ export default function ThemeToggle({
     <button
       type="button"
       onClick={toggle}
-      className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors w-full ${collapsed ? 'justify-center px-1.5' : ''} ${className}`}
+      className={`flex items-center gap-2 py-1.5 rounded-md text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors w-full max-w-full min-w-0 ${collapsed ? 'justify-center px-1.5' : 'px-2'} ${className}`}
       aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
       aria-pressed={isDark}
     >
       <span className="flex-shrink-0 opacity-80" aria-hidden>
         {isDark ? <SunIcon className="w-4 h-4" /> : <MoonIcon className="w-4 h-4" />}
       </span>
-      {!collapsed && <span className="truncate">{isDark ? 'Licht' : 'Donker'}</span>}
+      {!collapsed && <span className="truncate">{isDark ? 'Light' : 'Dark'}</span>}
     </button>
   );
 }
