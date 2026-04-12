@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { marketApi, MarketDigest, Signal } from '@/lib/api';
+import { marketApi, DealScore, MarketDigest, Signal } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import dynamic from 'next/dynamic';
 import { isSubscriberRole } from '@/lib/plans';

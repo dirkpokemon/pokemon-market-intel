@@ -80,7 +80,6 @@ function DealsPageInner() {
   const searchParams = useSearchParams();
   const presetSet = (searchParams.get('set') || '').trim();
   const presetCard = (searchParams.get('card') || '').trim();
-  const queryKey = searchParams.toString();
 
   const [loading, setLoading] = useState(true);
   const [dealScores, setDealScores] = useState<DealScore[]>([]);
@@ -134,7 +133,7 @@ function DealsPageInner() {
         setLoading(false);
       }
     })();
-  }, [queryKey]);
+  }, [searchParams]);
 
   const toggleWatchlist = (dealId: number) => {
     const newWatchlist = watchlist.includes(dealId)
