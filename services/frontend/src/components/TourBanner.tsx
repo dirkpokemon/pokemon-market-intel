@@ -96,7 +96,7 @@ export default function TourBanner() {
           animating ? 'opacity-0' : 'opacity-100'
         }`}
       >
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 dark:border dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden">
 
           {/* Header */}
           <div className="bg-gray-900 px-6 pt-5 pb-4 text-white">
@@ -138,7 +138,7 @@ export default function TourBanner() {
 
           {/* Body */}
           <div className="px-6 pt-5 pb-4">
-            <p className="text-gray-700 text-sm leading-relaxed">{currentStep.body}</p>
+            <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{currentStep.body}</p>
 
             {!isOnCorrectPage && (
               <p className="mt-3 text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2">

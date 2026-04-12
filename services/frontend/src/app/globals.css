@@ -6,10 +6,26 @@
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  :where(a, button, input, select, textarea, summary):focus {
+    outline: none;
+  }
+  :where(a, button, input, select, textarea, summary):focus-visible {
+    @apply outline-2 outline-offset-2 outline-indigo-600 dark:outline-indigo-400;
+  }
 }
 
 @layer utilities {
@@ -41,7 +57,7 @@ body {
     overflow: hidden;
   }
 
-  /* Native range inputs — consistent track + thumb (Chrome / Firefox / Safari) */
+  /* Native range inputs: consistent track + thumb (Chrome / Firefox / Safari) */
   .app-range-input {
     -webkit-appearance: none;
     appearance: none;
@@ -58,6 +74,30 @@ body {
 
   .app-range-input:focus-visible {
     box-shadow: 0 0 0 2px rgb(255 255 255), 0 0 0 4px rgb(99 102 241);
+  }
+
+  .dark .app-range-input {
+    background: rgb(51 65 85);
+  }
+
+  .dark .app-range-input:focus-visible {
+    box-shadow: 0 0 0 2px rgb(15 23 42), 0 0 0 4px rgb(129 140 248);
+  }
+
+  .dark .app-range-input::-webkit-slider-runnable-track {
+    background: rgb(51 65 85);
+  }
+
+  .dark .app-range-input::-moz-range-track {
+    background: rgb(51 65 85);
+  }
+
+  .dark .app-range-input::-webkit-slider-thumb {
+    border-color: rgb(30 41 59);
+  }
+
+  .dark .app-range-input::-moz-range-thumb {
+    border-color: rgb(30 41 59);
   }
 
   .app-range-input::-webkit-slider-runnable-track {

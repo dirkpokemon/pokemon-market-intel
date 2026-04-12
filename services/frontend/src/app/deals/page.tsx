@@ -35,7 +35,7 @@ function DealCard({ deal, watchlist, toggleWatchlist, setSelectedDeal, getScoreC
   return (
     <div
       onClick={() => setSelectedDeal(deal)}
-      className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition cursor-pointer group relative overflow-hidden"
+      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition cursor-pointer group relative overflow-hidden"
     >
       {savingsPercent > 5 && (
         <div className="absolute top-3 left-3 z-10 px-2 py-0.5 bg-green-600 text-white text-[11px] font-bold rounded-md shadow-sm">
@@ -53,7 +53,7 @@ function DealCard({ deal, watchlist, toggleWatchlist, setSelectedDeal, getScoreC
       </div>
       <div className="p-4">
         <div className="flex justify-between items-start mb-1">
-          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 flex-1 pr-2">{deal.product_name}</h3>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 flex-1 pr-2">{deal.product_name}</h3>
           <div className={`w-10 h-10 rounded-lg ${getScoreBg(deal.deal_score)} flex items-center justify-center flex-shrink-0`}>
             <span className={`text-sm font-bold ${getScoreColor(deal.deal_score)}`}>{deal.deal_score}</span>
           </div>
@@ -189,11 +189,11 @@ function DealsPageInner() {
 
   return (
     <DashboardLayout>
-      <div className="px-6 py-8 max-w-[1400px] mx-auto">
+      <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-[1400px] mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
               Top Deals
               {presetSet && (
                 <span className="ml-2 text-base font-normal text-gray-500">· set: {presetSet}</span>
@@ -211,7 +211,7 @@ function DealsPageInner() {
               ) : isSubscriberRole(userRole) ? (
                 `${dealScores.length} deals met AI-scoring, elk uur vernieuwd`
               ) : (
-                `${FREE_VISIBLE} deals zichtbaar — upgrade voor volledige toegang`
+                `${FREE_VISIBLE} deals zichtbaar. Upgrade voor volledige toegang.`
               )}
             </p>
           </div>
@@ -242,7 +242,7 @@ function DealsPageInner() {
         ) : (
           <>
             {/* Filters */}
-            <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 mb-6">
               <div className="flex flex-wrap items-center gap-3">
                 <div className="flex-1 min-w-[200px] relative">
                   <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * App mark: Pokéball on brand gradient — use in sidebar, landing, auth, and match favicon (app/icon.svg).
+ * App mark: Pokéball on brand gradient (sidebar, landing, auth; pairs with app/icon.svg).
  */
 export default function BrandMark({
   size = 32,

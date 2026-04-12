@@ -5,6 +5,7 @@ import Link from 'next/link';
 import SiteFooter from '@/components/SiteFooter';
 import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
 import BrandMark from '@/components/BrandMark';
+import { ThemeIconButton } from '@/components/ThemeToggle';
 import { CTA_SUBSCRIBE_PLUS, PLAN_FEATURES, SUBSCRIBER_BADGE } from '@/lib/plans';
 
 // ─── Mock Deal Card ───────────────────────────────────────────────
@@ -12,15 +13,15 @@ function MockDealCard({ name, set, price, avg, score, savings }: {
   name: string; set: string; price: string; avg: string; score: number; savings: number;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 w-[220px] flex-shrink-0 shadow-sm">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 w-[220px] flex-shrink-0 shadow-sm">
       {savings > 5 && (
         <div className="inline-block px-2 py-0.5 bg-green-600 text-white text-[11px] font-bold rounded-md mb-2">-{savings}%</div>
       )}
-      <h4 className="text-sm font-semibold text-gray-900 mb-0.5 truncate">{name}</h4>
+      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5 truncate">{name}</h4>
       <p className="text-[11px] text-gray-400 mb-2">{set}</p>
-      <div className="flex items-end justify-between pt-2 border-t border-gray-100">
+      <div className="flex items-end justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
         <div>
-          <p className="text-lg font-bold text-gray-900">{price}</p>
+          <p className="text-lg font-bold text-gray-900 dark:text-white">{price}</p>
           <p className="text-[11px] text-gray-400 line-through">{avg} avg</p>
         </div>
         <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${score >= 80 ? 'bg-green-50' : 'bg-amber-50'}`}>
@@ -36,10 +37,10 @@ function MockSignalRow({ icon, label, color, description, time }: {
   icon: string; label: string; color: string; description: string; time: string;
 }) {
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-gray-50 last:border-0">
+    <div className="flex items-start gap-3 py-3 border-b border-gray-50 dark:border-gray-800 last:border-0">
       <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${color}`}>{icon} {label}</span>
-      <p className="text-xs text-gray-600 flex-1">{description}</p>
-      <span className="text-[11px] text-gray-400 flex-shrink-0">{time}</span>
+      <p className="text-xs text-gray-600 dark:text-gray-300 flex-1">{description}</p>
+      <span className="text-[11px] text-gray-400 dark:text-gray-500 flex-shrink-0">{time}</span>
     </div>
   );
 }
@@ -49,24 +50,27 @@ export default function LandingPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-white">
-      {/* ═══ Header ═══ */}
-      <header className="border-b border-gray-100 sticky top-0 z-50 bg-white/90 backdrop-blur-sm">
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+      <header className="border-b border-gray-100 dark:border-gray-800 sticky top-0 z-50 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <BrandMark size={40} />
             <div>
-              <h1 className="text-lg font-bold text-gray-900 leading-tight">TCG Pulse</h1>
-              <p className="text-[10px] text-gray-400 font-medium leading-tight max-w-[200px] sm:max-w-none hidden sm:block">
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">TCG Pulse</h1>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium leading-tight max-w-[200px] sm:max-w-none hidden sm:block">
                 EU market intelligence for trading card singles
               </p>
             </div>
           </div>
-          <div className="flex gap-3 items-center">
-            <Link href="/login" className="text-gray-600 hover:text-gray-900 px-4 py-2 text-sm font-medium">
+          <div className="flex gap-2 sm:gap-3 items-center">
+            <ThemeIconButton />
+            <Link href="/login" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 sm:px-4 py-2 text-sm font-medium rounded-lg">
               Login
             </Link>
-            <Link href="/register" className="bg-gray-900 text-white px-5 py-2 rounded-lg hover:bg-gray-800 transition text-sm font-medium">
+            <Link
+              href="/register"
+              className="bg-gray-900 dark:bg-indigo-600 text-white px-4 sm:px-5 py-2 rounded-lg hover:bg-gray-800 dark:hover:bg-indigo-500 transition text-sm font-medium"
+            >
               Start Free
             </Link>
           </div>
@@ -75,20 +79,20 @@ export default function LandingPage() {
 
       {/* ═══ Hero ═══ */}
       <section className="max-w-7xl mx-auto px-4 pt-20 pb-16 sm:px-6 lg:px-8 text-center">
-        <div className="inline-block px-3 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full mb-6 border border-green-200">
+        <div className="inline-block px-3 py-1 bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full mb-6 border border-green-200 dark:border-green-800">
           EU-Focused &middot; 170K+ Listings &middot; Updated Every Hour
         </div>
-        <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6 leading-tight max-w-3xl mx-auto">
+        <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight max-w-3xl mx-auto">
           Stop guessing.<br />
-          Start buying <span className="text-green-600">below market price.</span>
+          Start buying <span className="text-green-600 dark:text-green-400">below market price.</span>
         </h2>
-        <p className="text-lg text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">
+        <p className="text-lg text-gray-500 dark:text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
           AI-powered deal scoring, hourly market signals, and portfolio tracking for European trading card singles. See what others miss.
         </p>
         <div className="flex gap-4 justify-center">
           <button
             onClick={() => router.push('/register')}
-            className="bg-gray-900 text-white px-8 py-3.5 rounded-lg font-medium hover:bg-gray-800 transition text-sm"
+            className="bg-gray-900 dark:bg-indigo-600 text-white px-8 py-3.5 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-indigo-500 transition text-sm"
           >
             Start free
           </button>
@@ -96,7 +100,7 @@ export default function LandingPage() {
             onClick={() => {
               document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="bg-white text-gray-700 px-8 py-3.5 rounded-lg font-medium hover:bg-gray-50 transition border border-gray-200 text-sm"
+            className="bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 px-8 py-3.5 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition border border-gray-200 dark:border-gray-700 text-sm"
           >
             See How It Works
           </button>
@@ -114,7 +118,7 @@ export default function LandingPage() {
               Top Deals
             </div>
             <h3 className="text-3xl font-bold text-gray-900 mb-4">
-              Find cards below market price — instantly
+              Find cards below market price, instantly
             </h3>
             <p className="text-gray-500 mb-6 leading-relaxed">
               Every listing gets an AI Deal Score (0-100) based on how far below market average it is, seller volume, market liquidity, and set popularity. Filter, sort, and buy with confidence.
@@ -147,31 +151,31 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Feature 2: Signals (Plus+) ─── */}
-      <section className="bg-gray-50 border-y border-gray-100">
+      <section className="bg-gray-50 dark:bg-gray-900 border-y border-gray-100 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Visual */}
             <div className="order-2 lg:order-1">
-              <div className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-                <h4 className="text-sm font-semibold text-gray-900 mb-3">Signals (hourly scan)</h4>
+              <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Signals (hourly scan)</h4>
                 <MockSignalRow icon="🚀" label="Momentum" color="text-green-700 bg-green-50 border-green-200" description="Charizard ex 151: price +18.5% and volume +32% in 7 days" time="2h ago" />
                 <MockSignalRow icon="📉" label="Price Drop" color="text-orange-700 bg-orange-50 border-orange-200" description="Mewtwo VSTAR dropped -22% in 7 days (avg was €45.00)" time="4h ago" />
-                <MockSignalRow icon="🔒" label="Supply Drop" color="text-purple-700 bg-purple-50 border-purple-200" description="Umbreon VMAX: -40% fewer listings — price may rise" time="5h ago" />
+                <MockSignalRow icon="🔒" label="Supply Drop" color="text-purple-700 bg-purple-50 border-purple-200" description="Umbreon VMAX: 40% fewer listings, price may rise" time="5h ago" />
                 <MockSignalRow icon="📈" label="Set Rising" color="text-emerald-700 bg-emerald-50 border-emerald-200" description="Paldean Fates is trending up: avg +12.3% across 48 cards" time="1h ago" />
               </div>
               <div className="grid grid-cols-2 gap-3 mt-3">
-                <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-green-600">📈</span>
-                    <p className="text-xs font-semibold text-gray-900">Rising Sets</p>
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">Rising Sets</p>
                   </div>
                   <p className="text-[11px] text-gray-500">Paldean Fates +12.3%</p>
                   <p className="text-[11px] text-gray-500">151 +8.7%</p>
                 </div>
-                <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+                <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-red-600">📉</span>
-                    <p className="text-xs font-semibold text-gray-900">Declining Sets</p>
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">Declining Sets</p>
                   </div>
                   <p className="text-[11px] text-gray-500">Paradox Rift -6.2%</p>
                   <p className="text-[11px] text-gray-500">Obsidian Flames -4.1%</p>
@@ -180,14 +184,14 @@ export default function LandingPage() {
             </div>
             {/* Text */}
             <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[11px] font-semibold rounded-md uppercase tracking-wide mb-4">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 text-[11px] font-semibold rounded-md uppercase tracking-wide mb-4">
                 Signals
                 <span className="px-1 py-0 bg-indigo-100 rounded text-[9px]">{SUBSCRIBER_BADGE}</span>
               </div>
-              <h3 className="text-3xl font-bold text-gray-900 mb-4">
-                See what&apos;s changing — before prices move
+              <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                See what&apos;s changing before prices move
               </h3>
-              <p className="text-gray-500 mb-6 leading-relaxed">
+              <p className="text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
                 Your market command center. Every hour we analyze 170K+ listings and detect momentum shifts, supply changes, volatility spikes, and set-level trends. No more scrolling through marketplaces.
               </p>
               <ul className="space-y-3">
@@ -286,9 +290,9 @@ export default function LandingPage() {
             {/* Visual */}
             <div className="order-2 lg:order-1 space-y-3">
               {[
-                { channel: 'Email', icon: '📧', msg: 'Momentum Alert: Charizard ex 151 — price +18% and volume +32%. View on dashboard.' },
+                { channel: 'Email', icon: '📧', msg: 'Momentum Alert: Charizard ex 151. Price +18% and volume +32%. View on dashboard.' },
                 { channel: 'Telegram', icon: '💬', msg: 'Supply Drop: Umbreon VMAX has 40% fewer listings. Price may rise.' },
-                { channel: 'Email', icon: '📧', msg: 'Watchlist: Pikachu VMAX dropped below your target of €20.00 — now €18.90!' },
+                { channel: 'Email', icon: '📧', msg: 'Watchlist: Pikachu VMAX dropped below your target of €20.00. Now €18.90.' },
               ].map((n, i) => (
                 <div key={i} className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
                   <div className="flex items-center gap-2 mb-1.5">
@@ -306,10 +310,10 @@ export default function LandingPage() {
                 Notifications
               </div>
               <h3 className="text-3xl font-bold mb-4">
-                Never miss a market move — even offline
+                Never miss a market move, even offline
               </h3>
               <p className="text-white/60 mb-6 leading-relaxed">
-                Choose exactly which signals matter to you. We send them to your email or Telegram bot — so you can act fast without checking the dashboard every hour.
+                Choose exactly which signals matter to you. We send them to your email or Telegram bot so you can act fast without checking the dashboard every hour.
               </p>
               <ul className="space-y-3">
                 {[
@@ -406,7 +410,7 @@ export default function LandingPage() {
               </Link>
             </div>
 
-            {/* Business (waitlist — no checkout yet) */}
+            {/* Business waitlist, no checkout yet */}
             <div className="bg-white rounded-xl border border-gray-200 p-6 relative">
               <div className="absolute top-4 right-4 px-2 py-0.5 bg-violet-100 text-violet-800 text-[10px] font-bold rounded-full uppercase">
                 Waitlist

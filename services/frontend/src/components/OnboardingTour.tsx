@@ -42,12 +42,12 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
           {/* Body */}
           <div className="p-6">
             <p className="text-gray-700 text-sm leading-relaxed mb-4">
-              Wil je een rondleiding? We nemen je stap voor stap mee langs alle pagina&apos;s — van
-              de zoekbalk op Home tot je Portfolio — en leggen uit wat je per pagina kan verwachten.
+              Wil je een rondleiding? We nemen je stap voor stap mee langs alle pagina&apos;s, van de
+              zoekbalk op Home tot je Portfolio, en leggen uit wat je per pagina kan verwachten.
             </p>
 
             <ul className="space-y-2 mb-6">
-              {['Home — zoeken & dashboard', 'Top Deals — Deal Score uitgelegd', 'Market Pulse — marktoverzicht', 'Signals — momentum & alerts', 'Portfolio — collectie beheren'].map(
+              {['Home: zoeken en dashboard', 'Top Deals: Deal Score uitgelegd', 'Market Pulse: marktoverzicht', 'Signals: momentum en alerts', 'Portfolio: collectie beheren'].map(
                 (item) => (
                   <li key={item} className="flex items-center gap-2 text-sm text-gray-600">
                     <span className="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs shrink-0">

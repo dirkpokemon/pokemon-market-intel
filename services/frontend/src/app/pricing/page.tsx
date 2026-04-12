@@ -7,6 +7,7 @@ import { subscriptionApi } from '@/lib/api';
 import SiteFooter from '@/components/SiteFooter';
 import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
 import BrandMark from '@/components/BrandMark';
+import { ThemeIconButton } from '@/components/ThemeToggle';
 import { CTA_SUBSCRIBE_PLUS, PLAN_FEATURES } from '@/lib/plans';
 
 type PlanKey = 'free' | 'paid' | 'pro';
@@ -92,7 +93,7 @@ export default function PricingPage() {
           name: 'Business',
           price: 'Coming soon',
           period: '',
-          description: 'API, exports, and advanced rules — join the waitlist',
+          description: 'API, exports, and advanced rules. Join the waitlist.',
           features: [...PLAN_FEATURES.pro],
           highlighted: false,
           priceId: null as string | null,
@@ -104,12 +105,12 @@ export default function PricingPage() {
   const resolveButton = (planKey: PlanKey) => {
     const r = (accountRole || 'free').toLowerCase();
     if (r === 'admin') {
-      if (planKey === 'free') return { disabled: true as const, label: '—', mode: 'idle' as const };
+      if (planKey === 'free') return { disabled: true as const, label: '…', mode: 'idle' as const };
       return { disabled: true as const, label: 'Admin access', mode: 'idle' as const };
     }
     if (planKey === 'free') {
       if (r === 'free') return { disabled: true as const, label: 'Current plan', mode: 'idle' as const };
-      return { disabled: true as const, label: '—', mode: 'idle' as const };
+      return { disabled: true as const, label: '…', mode: 'idle' as const };
     }
     if (planKey === 'paid') {
       if (r === 'free') return { disabled: false as const, label: CTA_SUBSCRIBE_PLUS, mode: 'checkout' as const };
@@ -156,29 +157,37 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <header className="border-b border-gray-100 sticky top-0 z-50 bg-white/90 backdrop-blur-sm">
+    <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col text-gray-900 dark:text-gray-100">
+      <header className="border-b border-gray-100 dark:border-gray-800 sticky top-0 z-50 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-3">
             <BrandMark size={32} />
-            <span className="text-sm font-bold text-gray-900">TCG Pulse</span>
+            <span className="text-sm font-bold text-gray-900 dark:text-white">TCG Pulse</span>
           </Link>
-          <div className="flex gap-3 items-center">
-            <Link href="/login" className="text-gray-600 hover:text-gray-900 px-4 py-2 text-sm font-medium">Login</Link>
-            <Link href="/register" className="bg-gray-900 text-white px-5 py-2 rounded-lg hover:bg-gray-800 transition text-sm font-medium">Start free</Link>
+          <div className="flex gap-2 sm:gap-3 items-center">
+            <ThemeIconButton />
+            <Link href="/login" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 sm:px-4 py-2 text-sm font-medium rounded-lg">
+              Login
+            </Link>
+            <Link
+              href="/register"
+              className="bg-gray-900 dark:bg-indigo-600 text-white px-4 sm:px-5 py-2 rounded-lg hover:bg-gray-800 dark:hover:bg-indigo-500 transition text-sm font-medium"
+            >
+              Start free
+            </Link>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 max-w-5xl mx-auto px-4 py-20 sm:px-6 lg:px-8 w-full">
+      <main className="flex-1 max-w-5xl mx-auto px-4 py-16 sm:py-20 sm:px-6 lg:px-8 w-full">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-3">Simple, transparent pricing</h2>
-          <p className="text-gray-500">Start free. Move to Plus when you want full Signals and unlimited deals.</p>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Simple, transparent pricing</h2>
+          <p className="text-gray-500 dark:text-gray-400">Start free. Move to Plus when you want full Signals and unlimited deals.</p>
         </div>
 
         {canceledNotice && (
           <div className="mb-6 p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg text-sm max-w-2xl mx-auto flex justify-between gap-3 items-start">
-            <span>No worries — checkout was canceled. You can choose a plan again whenever you&apos;re ready.</span>
+            <span>No worries: checkout was canceled. You can pick a plan again whenever you&apos;re ready.</span>
             <button
               type="button"
               onClick={() => setCanceledNotice(false)}
@@ -279,7 +288,7 @@ export default function PricingPage() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-8">
-          30-day money-back guarantee on Plus. Cancel anytime. Business is waitlist-only until we launch API and data export — same email as in the waitlist button.
+          30-day money-back guarantee on Plus. Cancel anytime. Business is waitlist-only until we launch API and data export (same email as in the waitlist button).
         </p>
       </main>
 

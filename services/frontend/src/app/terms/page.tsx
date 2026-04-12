@@ -2,7 +2,7 @@ import Link from 'next/link';
 import SiteFooter from '@/components/SiteFooter';
 
 export const metadata = {
-  title: 'Terms of Service — TCG Pulse',
+  title: 'Terms of Service · TCG Pulse',
   description: 'Terms of service for TCG Pulse',
 };
 

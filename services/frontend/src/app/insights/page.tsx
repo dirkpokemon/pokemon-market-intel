@@ -147,9 +147,9 @@ export default function MarketPulsePage() {
     <DashboardLayout>
       <div className="px-4 sm:px-6 py-6 max-w-4xl mx-auto w-full flex flex-col min-h-[calc(100dvh-10rem)]">
         <div className="mb-4 shrink-0">
-          <h1 className="text-2xl font-bold text-gray-900">Pulse</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Markt-assistent — kies een suggestie voor antwoorden uit live data.{' '}
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pulse</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            Markt-assistent: kies een suggestie voor antwoorden uit live data.{' '}
             {isSubscriber
               ? `${dealScores.length} listings · uurlijks ververst${lastUpdated ? ` · ${lastUpdated}` : ''}`
               : `Free: top 20 (score ≥65)${lastUpdated ? ` · ${lastUpdated}` : ''}`}
@@ -157,9 +157,9 @@ export default function MarketPulsePage() {
         </div>
 
         {!loading && !isSubscriber && (
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4 shrink-0">
-            <p className="text-xs text-amber-900">
-              Free: beperkte steekproef — <span className="font-medium">Plus</span> gebruikt de volledige catalogus in Pulse.
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg px-3 py-2 mb-4 shrink-0">
+            <p className="text-xs text-amber-900 dark:text-amber-100">
+              Free: beperkte steekproef. <span className="font-medium">Plus</span> gebruikt de volledige catalogus in Pulse.
             </p>
             <Link
               href="/pricing"

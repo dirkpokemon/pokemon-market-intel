@@ -7,6 +7,7 @@ import ProfileModal from '@/components/ProfileModal';
 import { activateTour } from '@/lib/tour';
 import { authApi, notificationApi, subscriptionApi } from '@/lib/api';
 import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
+import ThemeToggle from '@/components/ThemeToggle';
 import { tierLabel, UPSELL_SUBSCRIBE } from '@/lib/plans';
 
 const NOTIF_PREFS_KEY = 'notification_preferences';
@@ -136,20 +137,20 @@ export default function SettingsPage() {
 
   return (
     <DashboardLayout>
-      <div className="px-6 py-8 max-w-3xl mx-auto">
+      <div className="px-4 sm:px-6 py-8 max-w-3xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage your account, notifications, and preferences</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your account, notifications, and preferences</p>
         </div>
 
         {/* Account */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Account</h2>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-6">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-4">Account</h2>
           <div className="space-y-4">
             <div className="flex items-center justify-between py-3 border-b border-gray-100">
               <div>
                 <p className="text-sm font-medium text-gray-900">Email</p>
-                <p className="text-xs text-gray-500">{user?.email || '—'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email || 'Onbekend'}</p>
               </div>
             </div>
             <div className="flex items-center justify-between py-3 border-b border-gray-100">
@@ -176,10 +177,10 @@ export default function SettingsPage() {
         </div>
 
         {user?.role === 'paid' && (
-          <div className="bg-gradient-to-r from-indigo-50 to-violet-50 rounded-xl border border-indigo-100 p-6 mb-6">
-            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-2">Business (coming soon)</h2>
+          <div className="bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-950/40 dark:to-violet-950/40 rounded-xl border border-indigo-100 dark:border-indigo-900/50 p-6 mb-6">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-2">Business (coming soon)</h2>
             <p className="text-sm text-gray-600 mb-4">
-              We are not selling Business yet — it will add API access, bulk export, and advanced alerts when ready. Join the
+              We are not selling Business yet. It will add API access, bulk export, and advanced alerts when ready. Join the
               waitlist and we will email you when checkout opens. You keep Plus until then.
             </p>
             <BusinessWaitlistActions variant="settings" />
@@ -190,8 +191,8 @@ export default function SettingsPage() {
         )}
 
         {canManageStripeBilling && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-2">Subscription &amp; billing</h2>
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-6">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-2">Subscription &amp; billing</h2>
             <p className="text-sm text-gray-600 mb-4">
               Cancel your subscription, update your payment method, or download invoices through Stripe&apos;s secure portal.
               If you cancel, you keep access until the end of your current billing period; then your account returns to the free tier.
@@ -219,9 +220,9 @@ export default function SettingsPage() {
         )}
 
         {/* Notifications */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Notifications</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Notifications</h2>
             {isPaid && (
               <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded uppercase tracking-wide">
                 {tierLabel(user?.role)}
@@ -343,9 +344,18 @@ export default function SettingsPage() {
         </div>
 
         {/* Preferences */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-          <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">Preferences</h2>
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-6">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-4">Preferences</h2>
           <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 border-b border-gray-100 dark:border-gray-800">
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">Appearance</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Light or dark interface. Saved on this device.</p>
+              </div>
+              <div className="sm:w-56">
+                <ThemeToggle />
+              </div>
+            </div>
             <div className="flex items-center justify-between py-3 border-b border-gray-100">
               <div>
                 <p className="text-sm font-medium text-gray-900">Onboarding Tour</p>
@@ -383,11 +393,11 @@ export default function SettingsPage() {
         </div>
 
         {/* About */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">About</h2>
-          <div className="space-y-2 text-xs text-gray-500">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-4">About</h2>
+          <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
             <p><strong className="text-gray-700">Version:</strong> 1.0.0</p>
-            <p><strong className="text-gray-700">Platform:</strong> TCG Pulse — EU market intelligence for trading card singles</p>
+            <p><strong className="text-gray-700 dark:text-gray-300">Platform:</strong> TCG Pulse, EU market intelligence for trading card singles</p>
             <p><strong className="text-gray-700">Support:</strong> support@pokemontel.eu</p>
           </div>
         </div>

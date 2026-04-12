@@ -21,14 +21,18 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .header {
-            border-bottom: 3px solid #2563eb;
+            border-bottom: 3px solid #4f46e5;
             padding-bottom: 20px;
             margin-bottom: 30px;
         }
         .logo {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
-            color: #2563eb;
+            color: #1f2937;
+            letter-spacing: -0.02em;
+        }
+        .logo span.accent {
+            color: #4f46e5;
         }
         .alert-badge {
             display: inline-block;
@@ -49,7 +53,7 @@
         }
         .product-card {
             background-color: #f9fafb;
-            border-left: 4px solid #2563eb;
+            border-left: 4px solid #4f46e5;
             padding: 20px;
             margin: 20px 0;
             border-radius: 4px;
@@ -87,7 +91,7 @@
             color: #6b7280;
         }
         .deal-score {
-            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            background: linear-gradient(135deg, #4f46e5 0%, #6d28d9 100%);
             color: white;
             padding: 15px;
             border-radius: 8px;
@@ -128,7 +132,7 @@
             text-align: center;
         }
         .footer a {
-            color: #2563eb;
+            color: #4338ca;
             text-decoration: none;
         }
     </style>
@@ -136,7 +140,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">TCG Pulse</div>
+            <div class="logo">TCG <span class="accent">Pulse</span></div>
         </div>
         
         <span class="alert-badge badge-{{ severity }}">{{ severity }} Priority</span>
@@ -180,7 +184,7 @@
         </div>
         
         <center>
-            <a href="{{ dashboard_url }}" class="cta-button">View Full Details →</a>
+            <a href="{{ dashboard_url }}" class="cta-button">View full details</a>
         </center>
         
         <div class="footer">

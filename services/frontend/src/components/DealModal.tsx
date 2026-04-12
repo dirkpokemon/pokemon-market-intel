@@ -59,7 +59,7 @@ function buildInsight(deal: DealScore) {
       label: 'bg-green-100 text-green-800',
       border: 'border-green-200 bg-green-50',
       text: pctText
-        ? `Listed ${pctText} with a deal score of ${deal.deal_score} — one of the stronger opportunities in the current catalog.`
+        ? `Listed ${pctText} with a deal score of ${deal.deal_score}, one of the stronger opportunities in the current catalog.`
         : `Deal score of ${deal.deal_score} is well above average. Price data suggests a solid buying opportunity.`,
     };
   }
@@ -69,7 +69,7 @@ function buildInsight(deal: DealScore) {
       label: 'bg-blue-100 text-blue-800',
       border: 'border-blue-100 bg-blue-50',
       text: pctText
-        ? `Listed ${pctText}. A good deal — competitive pricing relative to the EU market.`
+        ? `Listed ${pctText}. A good deal with competitive pricing relative to the EU market.`
         : `Deal score of ${deal.deal_score} indicates good value at the current price.`,
     };
   }
@@ -79,7 +79,7 @@ function buildInsight(deal: DealScore) {
       label: 'bg-gray-100 text-gray-700',
       border: 'border-gray-200 bg-gray-50',
       text: pctText
-        ? `Listed ${pctText}. Score of ${deal.deal_score} is moderate — not a standout deal, but a fair price.`
+        ? `Listed ${pctText}. Score of ${deal.deal_score} is moderate: not a standout deal, but a fair price.`
         : `Score of ${deal.deal_score} is around average. Priced reasonably, nothing exceptional.`,
     };
   }
@@ -289,7 +289,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
             </div>
             <div className="bg-gray-50 rounded-xl p-3 text-center">
               <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Confidence</p>
-              <p className="text-2xl font-bold text-gray-800">{deal.confidence != null ? `${deal.confidence}%` : '—'}</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{deal.confidence != null ? `${deal.confidence}%` : 'n.v.t.'}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-3 text-center">
               <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Last updated</p>
@@ -400,7 +400,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
               </a>
             </div>
             <p className="text-[10px] text-gray-400 mt-2 text-center">
-              Opens a search on the respective platform — eBay filtered to Buy It Now, lowest price first.
+              Opens a search on each platform. On eBay we filter to Buy It Now and sort by lowest price first.
             </p>
           </div>
 

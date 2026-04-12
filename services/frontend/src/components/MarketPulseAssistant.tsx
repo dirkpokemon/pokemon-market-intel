@@ -124,7 +124,7 @@ function renderAssistantBody(
             </div>
             <div className="rounded-lg bg-gray-50 p-2 text-center">
               <p className="text-lg font-bold text-gray-900">
-                {digest?.total_sets != null ? digest.total_sets.toLocaleString() : '—'}
+                {digest?.total_sets != null ? digest.total_sets.toLocaleString() : 'n.v.t.'}
               </p>
               <p className="text-[10px] text-gray-500">Sets (catalogus)</p>
             </div>
@@ -135,7 +135,7 @@ function renderAssistantBody(
       return (
         <AssistantCard title="Onder / boven marktgemiddelde" footer={sourceFooter}>
           <p className="text-xs text-gray-600 mb-2">
-            Sterste kortingen (listing onder eigen marktgemiddelde) in deze slice — tik voor Deals.
+            Sterste kortingen (listing onder eigen marktgemiddelde) in deze slice. Tik voor Deals.
           </p>
           <ul className="space-y-1.5 max-h-48 overflow-y-auto">
             {marketData.buying.slice(0, 6).map((d) => (
@@ -232,8 +232,8 @@ function renderAssistantBody(
           <div className="space-y-2">
             {[
               { label: '80+', count: marketData.scoreDistribution.excellent, color: 'bg-green-500' },
-              { label: '65–79', count: marketData.scoreDistribution.good, color: 'bg-blue-500' },
-              { label: '50–64', count: marketData.scoreDistribution.fair, color: 'bg-gray-400' },
+              { label: '65 tot 79', count: marketData.scoreDistribution.good, color: 'bg-blue-500' },
+              { label: '50 tot 64', count: marketData.scoreDistribution.fair, color: 'bg-gray-400' },
               { label: '<50', count: marketData.scoreDistribution.low, color: 'bg-gray-300' },
             ].map((row) => (
               <div key={row.label}>
@@ -279,8 +279,8 @@ function renderAssistantBody(
           <div className="grid grid-cols-2 gap-2 text-center text-xs">
             {[
               { label: '< €5', n: marketData.ranges.under5 },
-              { label: '€5–20', n: marketData.ranges.range5to20 },
-              { label: '€20–50', n: marketData.ranges.range20to50 },
+              { label: '€5 tot €20', n: marketData.ranges.range5to20 },
+              { label: '€20 tot €50', n: marketData.ranges.range20to50 },
               { label: '> €50', n: marketData.ranges.over50 },
             ].map((b) => (
               <div key={b.label} className="rounded-lg bg-gray-50 py-2">
@@ -358,7 +358,7 @@ export default function MarketPulseAssistant({
         id: `a-${Date.now()}`,
         role: 'assistant',
         hint:
-          'Ik gebruik nog vaste data-blokken (geen vrije AI). Kies een suggestie hierboven voor prijzen, sets of trends — dan krijg je antwoord uit de live feed.',
+          'Ik gebruik nog vaste data-blokken (geen vrije AI). Kies een suggestie hierboven voor prijzen, sets of trends. Dan krijg je antwoord uit de live feed.',
       },
     ]);
   };
@@ -369,7 +369,7 @@ export default function MarketPulseAssistant({
 
   return (
     <div
-      className={`flex flex-col h-full min-h-[420px] rounded-2xl border border-indigo-200/80 bg-gradient-to-b from-white to-indigo-50/40 shadow-sm overflow-hidden ${className ?? ''}`}
+      className={`flex flex-col h-full min-h-[420px] rounded-2xl border border-indigo-200/80 dark:border-indigo-900/50 bg-gradient-to-b from-white to-indigo-50/40 dark:from-gray-900 dark:to-indigo-950/30 shadow-sm overflow-hidden ${className ?? ''}`}
     >
       <div className="flex items-center gap-3 px-4 py-3 border-b border-indigo-100 bg-white/80">
         <PulseAvatar busy={busy} />

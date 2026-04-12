@@ -20,7 +20,7 @@ export function getTourSteps(role: TourRole): TourStep[] {
       page: '/deals',
       pageLabel: 'Top Deals',
       title: 'Deal Score uitgelegd',
-      body: 'Elke kaart krijgt een Deal Score van 0–100. Hoe hoger de score, hoe beter de prijs ten opzichte van het EU-marktgemiddelde. Klik een kaart aan voor kooplinks op CardMarket, CardTrader en eBay.',
+      body: 'Elke kaart krijgt een Deal Score van 0 tot 100. Hoe hoger de score, hoe beter de prijs ten opzichte van het EU-marktgemiddelde. Klik een kaart aan voor kooplinks op CardMarket, CardTrader en eBay.',
     },
     {
       page: '/insights',
@@ -28,7 +28,7 @@ export function getTourSteps(role: TourRole): TourStep[] {
       title: role === 'subscriber' ? 'Volledig marktoverzicht' : 'Marktoverzicht (gratis sample)',
       body:
         role === 'subscriber'
-          ? "Zie de EU-markt in één oogopslag — koper's- of verkopersmarkt, meest actieve sets, dealkwaliteitsverdeling en signaaloverzicht. Alle data elk uur vernieuwd."
+          ? 'Zie de EU-markt in één oogopslag: kopers- of verkopersmarkt, meest actieve sets, dealkwaliteit en signalen. Alle data wordt elk uur vernieuwd.'
           : 'Je ziet een gratis sample van het marktoverzicht. Upgrade naar Plus voor alle sets, de dealkwaliteitsverdeling en het volledige signaaloverzicht.',
       actionLink:
         role === 'free' ? { href: '/pricing', label: 'Bekijk Plus plannen' } : undefined,
@@ -40,7 +40,7 @@ export function getTourSteps(role: TourRole): TourStep[] {
       body:
         role === 'subscriber'
           ? 'Signals detecteren elk uur prijsbewegingen, aanbodverschuivingen en momentum. Klik een signaal uit voor aanbevolen acties en directe kooplinks. Filter op type of zoek op kaartnaam.'
-          : 'Signals detecteren elk uur prijsbewegingen en momentumverschuivingen. De volledige feed is inbegrepen bij Plus en Business — hier zie je een preview.',
+          : 'Signals detecteren elk uur prijsbewegingen en momentum. De volledige feed zit in Plus en Business. Hier zie je een preview.',
       actionLink:
         role === 'free'
           ? { href: '/pricing', label: 'Signals ontgrendelen met Plus' }
@@ -50,7 +50,7 @@ export function getTourSteps(role: TourRole): TourStep[] {
       page: '/portfolio',
       pageLabel: 'Portfolio',
       title: 'Beheer je collectie',
-      body: 'Voeg kaarten toe die je bezit met aankoopprijzen. Wij vergelijken ze met live marktdata zodat je altijd je winst/verlies weet. Kaarten op je watchlist verschijnen hier ook.',
+      body: 'Voeg kaarten toe die je bezit met aankoopprijzen. Wij vergelijken ze met live marktdata zodat je altijd je winst of verlies weet. Kaarten op je watchlist verschijnen hier ook.',
     },
   ];
 }
@@ -72,7 +72,6 @@ export function activateTour(): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem('tour_active', 'true');
   localStorage.setItem('tour_step', '0');
-  // Mark onboarding as seen so the welcome modal won't reappear mid-tour
   localStorage.setItem('onboarding_completed', 'true');
   window.dispatchEvent(new Event('tour-started'));
 }

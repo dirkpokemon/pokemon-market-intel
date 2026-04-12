@@ -26,13 +26,13 @@ function getActionConfig(type: string): { label: string; hint: string; cta: stri
     case 'momentum':
       return { label: 'Buying signal', hint: 'Price momentum is accelerating. Consider acting before the market adjusts upward.', cta: 'Find & buy', ctaColor: 'bg-green-600 hover:bg-green-700' };
     case 'price_drop':
-      return { label: 'Price drop', hint: 'This card dropped in price — could be a temporary dip or a correction. Good moment to buy if you believe in the card.', cta: 'Find & buy', ctaColor: 'bg-blue-600 hover:bg-blue-700' };
+      return { label: 'Price drop', hint: 'This card dropped in price. It could be a temporary dip or a correction. Good moment to buy if you believe in the card.', cta: 'Find & buy', ctaColor: 'bg-blue-600 hover:bg-blue-700' };
     case 'supply_drop':
       return { label: 'Supply tightening', hint: 'Fewer listings available. If demand holds, price will likely rise. Act quickly or add to watchlist.', cta: 'Check listings', ctaColor: 'bg-purple-600 hover:bg-purple-700' };
     case 'supply_surge':
-      return { label: 'Supply surge', hint: 'Many new listings appeared. Price pressure may push values down — good to wait or negotiate.', cta: 'Monitor', ctaColor: 'bg-gray-600 hover:bg-gray-700' };
+      return { label: 'Supply surge', hint: 'Many new listings appeared. Price pressure may push values down, so waiting or negotiating can make sense.', cta: 'Monitor', ctaColor: 'bg-gray-600 hover:bg-gray-700' };
     case 'volatility':
-      return { label: 'High volatility', hint: 'Unstable price movements. High risk — only buy if you have a short-term strategy.', cta: 'Check price', ctaColor: 'bg-amber-600 hover:bg-amber-700' };
+      return { label: 'High volatility', hint: 'Unstable price movements. High risk: only buy if you have a short-term strategy.', cta: 'Check price', ctaColor: 'bg-amber-600 hover:bg-amber-700' };
     case 'risk':
       return { label: 'Risk alert', hint: 'Negative signals detected. Avoid buying now unless you have specific intel.', cta: 'Monitor', ctaColor: 'bg-red-600 hover:bg-red-700' };
     case 'set_rising':
@@ -41,9 +41,9 @@ function getActionConfig(type: string): { label: string; hint: string; cta: stri
       return { label: 'Set losing value', hint: 'This set is trending downward. Wait for stabilisation before buying.', cta: 'Monitor set', ctaColor: 'bg-rose-600 hover:bg-rose-700' };
     // Legacy types
     case 'high_deal':
-      return { label: 'Strong deal', hint: 'Detected as a strong buying opportunity — price is significantly below market average.', cta: 'Find & buy', ctaColor: 'bg-green-600 hover:bg-green-700' };
+      return { label: 'Strong deal', hint: 'Strong buying opportunity: price is clearly below market average.', cta: 'Find & buy', ctaColor: 'bg-green-600 hover:bg-green-700' };
     case 'medium_deal':
-      return { label: 'Good deal', hint: 'A solid deal — price is below market average. Worth checking if you need this card.', cta: 'Find & buy', ctaColor: 'bg-blue-600 hover:bg-blue-700' };
+      return { label: 'Good deal', hint: 'Solid deal with price below market average. Worth checking if you need this card.', cta: 'Find & buy', ctaColor: 'bg-blue-600 hover:bg-blue-700' };
     case 'undervalued':
       return { label: 'Undervalued', hint: 'Card appears undervalued relative to comparable listings. Good potential buy.', cta: 'Find & buy', ctaColor: 'bg-indigo-600 hover:bg-indigo-700' };
     case 'arbitrage':
@@ -132,7 +132,7 @@ function SignalCard({ signal }: { signal: Signal }) {
   };
 
   return (
-    <div className={`bg-white rounded-xl border transition ${expanded ? 'border-gray-300 shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'}`}>
+    <div className={`bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 transition ${expanded ? 'border-gray-300 dark:border-gray-600 shadow-sm' : 'hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'}`}>
       {/* ── Summary row (always visible, clickable) ── */}
       <button
         className="w-full text-left p-5"
@@ -165,7 +165,7 @@ function SignalCard({ signal }: { signal: Signal }) {
             )}
             {isSetSignal && (
               <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-md px-2 py-1 mt-1 inline-block">
-                Set-signaal — gemiddelde trend over meerdere kaarten in deze set
+                Set-signaal: gemiddelde trend over meerdere kaarten in deze set
               </p>
             )}
             {signal.description && <p className="text-xs text-gray-600 leading-relaxed mt-1.5">{signal.description}</p>}
@@ -407,21 +407,22 @@ export default function PriceSignalsPage() {
 
   return (
     <DashboardLayout>
-      <div className="px-6 py-8 max-w-[1400px] mx-auto">
+      <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-[1400px] mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">Signals</h1>
-              <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[11px] font-bold rounded-md uppercase tracking-wide">{SUBSCRIBER_BADGE}</span>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Signals</h1>
+              <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-200 text-[11px] font-bold rounded-md uppercase tracking-wide">{SUBSCRIBER_BADGE}</span>
             </div>
-            <p className="text-sm text-gray-500 mt-1">
-              Real-time market signals — momentum shifts, supply changes, set trends, and risk patterns.
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Real-time market signals: momentum shifts, supply changes, set trends, and risk patterns.
             </p>
           </div>
           <button
+            type="button"
             onClick={loadData}
-            className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition flex items-center gap-2"
+            className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -460,7 +461,7 @@ export default function PriceSignalsPage() {
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-gray-900 mb-1">Unlock Signals</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  Track momentum shifts, supply changes, volatility spikes, and set-level trends — updated every hour.
+                  Track momentum shifts, supply changes, volatility spikes, and set-level trends. Updated every hour.
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
                   {[

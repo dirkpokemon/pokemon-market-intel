@@ -61,22 +61,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (!authChecked) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-800 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Loading...</p>
+          <div className="w-8 h-8 border-2 border-gray-300 dark:border-slate-600 border-t-gray-800 dark:border-t-gray-200 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col text-gray-900 dark:text-gray-100">
       <Sidebar user={user} />
-      {/* Main content — offset by sidebar width */}
       <div className="lg:ml-[240px] flex flex-col flex-1 min-h-0 transition-all duration-200">
         <TourBanner />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 min-w-0">{children}</main>
         <SiteFooter />
       </div>
     </div>

@@ -37,8 +37,8 @@ def _build_verification_html(first_name: str, verify_url: str) -> str:
 
         <!-- Header -->
         <tr><td style="background:linear-gradient(135deg,#111827 0%,#1f2937 100%);padding:36px 40px;text-align:center;">
-          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 16px;"><tr><td style="width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#4f46e5,#6d28d9);text-align:center;vertical-align:middle;">
-            <span style="color:#ffffff;font-size:14px;font-weight:800;letter-spacing:-0.5px;">TCG</span>
+          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 16px;"><tr><td style="width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#4f46e5,#6d28d9);text-align:center;vertical-align:middle;padding:8px;">
+            <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23fafafa'/%3E%3Cpath d='M20 2c9.94 0 18 8.06 18 18H2c0-9.94 8.06-18 18-18z' fill='%23dc2626'/%3E%3Crect x='2' y='19' width='36' height='2' fill='%23111827'/%3E%3Ccircle cx='20' cy='20' r='7' fill='%23fff' stroke='%23111827' stroke-width='2'/%3E%3Ccircle cx='20' cy='20' r='3' fill='%23111827'/%3E%3C/svg%3E" width="40" height="40" alt="" style="display:block;margin:0 auto;" />
           </td></tr></table>
           <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;letter-spacing:-0.3px;">TCG Pulse</h1>
           <p style="color:#9ca3af;font-size:13px;margin:6px 0 0;">EU market intelligence for trading card singles</p>
@@ -74,19 +74,19 @@ def _build_verification_html(first_name: str, verify_url: str) -> str:
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td style="padding:6px 0;color:#111827;font-size:14px;" width="28">&#9889;</td>
-                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Top Deals</strong> &mdash; Best prices below market average</td>
+                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Top Deals:</strong> best prices below market average</td>
                 </tr>
                 <tr>
                   <td style="padding:6px 0;color:#111827;font-size:14px;">&#128200;</td>
-                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Market signals</strong> &mdash; Price trends &amp; supply shifts</td>
+                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Market signals:</strong> price trends and supply shifts</td>
                 </tr>
                 <tr>
                   <td style="padding:6px 0;color:#111827;font-size:14px;">&#127919;</td>
-                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Portfolio Tracker</strong> &mdash; Watch your collection&rsquo;s value</td>
+                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Portfolio tracker:</strong> watch your collection&rsquo;s value</td>
                 </tr>
                 <tr>
                   <td style="padding:6px 0;color:#111827;font-size:14px;">&#128276;</td>
-                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Smart Alerts</strong> &mdash; Get notified when prices drop</td>
+                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Smart alerts:</strong> get notified when prices drop</td>
                 </tr>
               </table>
             </td></tr>
@@ -122,7 +122,7 @@ def _build_verification_text(first_name: str, verify_url: str) -> str:
 
 
 def _send_via_brevo(to_email: str, subject: str, html: str, text: str) -> bool:
-    """Send email via Brevo (Sendinblue) HTTPS API — free, no domain needed."""
+    """Send email via Brevo (Sendinblue) HTTPS API (free tier, no domain required)."""
     api_key = settings.BREVO_API_KEY
     if not api_key:
         return False
@@ -156,7 +156,7 @@ def _send_via_brevo(to_email: str, subject: str, html: str, text: str) -> bool:
 
 
 def _send_via_smtp(to_email: str, msg: MIMEMultipart) -> bool:
-    """Send email via SMTP — works locally, often blocked on cloud."""
+    """Send email via SMTP (works locally; often blocked on cloud)."""
     if not settings.SMTP_HOST or not settings.SMTP_USER:
         return False
 
@@ -233,7 +233,7 @@ def _build_subscription_success_text(first_name: str, plan_label: str, app_url: 
 def send_subscription_success_email(to_email: str, first_name: str, plan_label: str) -> bool:
     """Send confirmation after a successful subscription checkout."""
     app_url = settings.FRONTEND_URL.rstrip("/") + "/home"
-    subject = f"You are subscribed - {plan_label} | TCG Pulse"
+    subject = f"Your {plan_label} subscription is active · TCG Pulse"
     html = _build_subscription_success_html(first_name, plan_label, app_url)
     text = _build_subscription_success_text(first_name, plan_label, app_url)
 
@@ -261,11 +261,11 @@ def send_verification_email(to_email: str, first_name: str, token: str) -> bool:
     frontend_url = settings.FRONTEND_URL.rstrip("/")
     verify_url = f"{frontend_url}/verify?token={token}"
 
-    subject = "Verify your email — TCG Pulse"
+    subject = "Verify your email for TCG Pulse"
     html = _build_verification_html(first_name, verify_url)
     text = _build_verification_text(first_name, verify_url)
 
-    # 1) Try Brevo API (HTTPS — free, no domain needed, works on cloud)
+    # 1) Try Brevo API (HTTPS, works on cloud)
     if _send_via_brevo(to_email, subject, html, text):
         return True
 
@@ -282,6 +282,6 @@ def send_verification_email(to_email: str, first_name: str, token: str) -> bool:
 
     # 3) Fallback: print link to console
     logger.warning(
-        "No email transport available — verification link:\n  ➜  %s", verify_url,
+        "No email transport available. Verification link:\n  %s", verify_url,
     )
     return False

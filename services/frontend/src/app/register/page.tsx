@@ -39,9 +39,9 @@ export default function RegisterPage() {
 
   if (registered) {
     return (
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
         <div className="flex-1 flex items-center justify-center px-4 py-10">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
+        <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-8 text-center">
           {/* Envelope icon */}
           <div className="mx-auto mb-6 w-16 h-16 rounded-full bg-gray-900 flex items-center justify-center">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -89,9 +89,9 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
       <div className="flex-1 flex items-center justify-center px-4 py-10">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+      <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-8">
         {/* Logo */}
         <div className="flex justify-center mb-6">
           <BrandMark size={48} />

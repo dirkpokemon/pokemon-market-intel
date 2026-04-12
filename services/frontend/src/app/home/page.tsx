@@ -357,7 +357,7 @@ export default function HomePage() {
                                   </div>
                                 ) : (
                                   <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-gray-700/30">
-                                    <span className="text-[10px] text-gray-600">—</span>
+                                    <span className="text-[10px] text-gray-500 dark:text-gray-400">·</span>
                                   </div>
                                 )}
                                 <svg className="w-4 h-4 text-gray-600 group-hover:text-gray-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,15 +1,14 @@
 /**
  * Subscription tiers: internal roles stay `paid` | `pro` (API/DB).
  * Display names: Plus / Business.
- *
- * Business is not sold via Stripe until API/export features ship — use the waitlist mailto.
+ * Business: waitlist only until API/export ships (mailto flow).
  */
 
 import { SITE_CONTACT_EMAIL } from './site';
 
 export type AppTier = 'free' | 'paid' | 'pro';
 
-const WAITLIST_SUBJECT = 'TCG Pulse — Business waitlist';
+const WAITLIST_SUBJECT = 'TCG Pulse: Business waitlist';
 const WAITLIST_BODY =
   "Hi,\n\nI'd like to join the waitlist for Business (API, data export, advanced alerts).\n\nThanks,\n";
 
@@ -28,7 +27,7 @@ export function businessWaitlistMailto(): string {
   return `mailto:${email}?subject=${subject}&body=${body}`;
 }
 
-/** Gmail in the browser — works when no desktop mail app is configured (common on Windows). */
+/** Gmail in the browser when no desktop mail app is set (common on Windows). */
 export function businessWaitlistGmailUrl(): string {
   const email = businessWaitlistEmail();
   return `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(email)}&su=${encodeURIComponent(WAITLIST_SUBJECT)}&body=${encodeURIComponent(WAITLIST_BODY)}`;
@@ -66,31 +65,31 @@ export const PLAN_FEATURES = {
   ],
   paid: [
     'Unlimited deal scores (all scores, no cap)',
-    'Full Signals feed — momentum, supply, set trends',
+    'Full Signals feed: momentum, supply, set trends',
     'Full Market Pulse (all sets, signal breakdown)',
     'Email & Telegram alerts',
     'Data refreshed every hour from EU marketplaces',
     'Priority support',
   ],
   pro: [
-    'Everything in Plus today — same app access until extras launch',
+    'Everything in Plus today, same app access until extras launch',
     'Planned: read-only API & bulk data export',
     'Planned: advanced alert rules for shops',
-    'Join the waitlist — we email you when Business checkout opens',
+    'Join the waitlist: we email you when Business checkout opens',
     'Built for shops and power users',
   ],
 } as const;
 
 /** CTA for free users upgrading to the first paid tier. */
-export const CTA_SUBSCRIBE_PLUS = 'Subscribe — Plus';
+export const CTA_SUBSCRIBE_PLUS = 'Subscribe to Plus';
 
 /** Business is waitlist-only until API/export ships; opens email. */
 export const CTA_BUSINESS_WAITLIST = 'Join Business waitlist';
 
-/** @deprecated alias — use CTA_BUSINESS_WAITLIST */
+/** @deprecated use CTA_BUSINESS_WAITLIST */
 export const CTA_GET_BUSINESS = CTA_BUSINESS_WAITLIST;
 
-/** @deprecated alias — use CTA_BUSINESS_WAITLIST */
+/** @deprecated use CTA_BUSINESS_WAITLIST */
 export const CTA_UPGRADE_BUSINESS = CTA_BUSINESS_WAITLIST;
 
 /** Free-user upsell lines (replace vague “Premium”). */

@@ -54,9 +54,9 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
       <div className="flex-1 flex items-center justify-center px-4 py-10">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+      <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-8">
         {/* Logo */}
         <div className="flex justify-center mb-6">
           <BrandMark size={48} />

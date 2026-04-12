@@ -21,15 +21,17 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .header {
-            border-bottom: 3px solid #2563eb;
+            border-bottom: 3px solid #4f46e5;
             padding-bottom: 20px;
             margin-bottom: 30px;
         }
         .logo {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
-            color: #2563eb;
+            color: #1f2937;
+            letter-spacing: -0.02em;
         }
+        .logo span.accent { color: #4f46e5; }
         .date {
             color: #6b7280;
             font-size: 14px;
@@ -88,7 +90,7 @@
         }
         .cta-button {
             display: inline-block;
-            background-color: #2563eb;
+            background-color: #4f46e5;
             color: white;
             padding: 12px 30px;
             text-decoration: none;
@@ -105,7 +107,7 @@
             text-align: center;
         }
         .footer a {
-            color: #2563eb;
+            color: #4338ca;
             text-decoration: none;
         }
     </style>
@@ -113,11 +115,11 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">TCG Pulse</div>
+            <div class="logo">TCG <span class="accent">Pulse</span></div>
             <div class="date">{{ date }}</div>
         </div>
         
-        <h1>📊 Daily Market Digest</h1>
+        <h1>Daily market digest</h1>
         
         <div class="summary">
             <strong>{{ signal_count }}</strong> new market signals detected in the last 24 hours.
@@ -147,7 +149,7 @@
         {% endfor %}
         
         <center>
-            <a href="{{ dashboard_url }}" class="cta-button">View Full Dashboard →</a>
+            <a href="{{ dashboard_url }}" class="cta-button">Open dashboard</a>
         </center>
         
         <div class="footer">

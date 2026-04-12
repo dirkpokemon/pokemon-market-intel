@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import BrandMark from '@/components/BrandMark';
+import ThemeToggle from '@/components/ThemeToggle';
 import { SUBSCRIBER_BADGE, tierLabel } from '@/lib/plans';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -78,8 +79,8 @@ export default function Sidebar({ user }: SidebarProps) {
         onClick={() => setMobileOpen(false)}
         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all relative group ${
           isActive
-            ? 'bg-gray-900 text-white'
-            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+            ? 'bg-gray-900 text-white dark:bg-indigo-600 dark:text-white'
+            : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white'
         } ${compact ? 'justify-center' : ''}`}
       >
         <span className="flex-shrink-0">{item.icon}</span>
@@ -105,7 +106,7 @@ export default function Sidebar({ user }: SidebarProps) {
       {/* Mobile hamburger */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-md border border-gray-200"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
       >
         <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -119,18 +120,19 @@ export default function Sidebar({ user }: SidebarProps) {
 
       {/* Sidebar */}
       <aside className={`
-        fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-40 flex flex-col
+        fixed top-0 left-0 h-full bg-white dark:bg-gray-950 border-r border-gray-200 dark:border-gray-800 z-40 flex flex-col
         transition-all duration-200 ease-in-out
         ${collapsed ? 'w-[68px]' : 'w-[240px]'}
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
-        {/* Logo area */}
-        <div className={`flex items-center h-16 border-b border-gray-100 px-4 ${collapsed ? 'justify-center' : 'gap-3'}`}>
+        <div className={`flex items-center h-16 border-b border-gray-100 dark:border-gray-800 px-4 ${collapsed ? 'justify-center' : 'gap-3'}`}>
           <BrandMark size={32} className="flex-shrink-0" />
           {!collapsed && (
             <div className="min-w-0">
-              <p className="text-sm font-bold text-gray-900 truncate">TCG Pulse</p>
-              <p className="text-[9px] text-gray-400 font-medium leading-tight">EU market intelligence for trading card singles</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white truncate">TCG Pulse</p>
+              <p className="text-[9px] text-gray-400 dark:text-gray-500 font-medium leading-tight">
+                EU trading card market data
+              </p>
             </div>
           )}
         </div>
@@ -143,11 +145,12 @@ export default function Sidebar({ user }: SidebarProps) {
         </nav>
 
         {/* Bottom section */}
-        <div className="border-t border-gray-100 px-3 py-3 space-y-1">
-          {/* Feedback button */}
+        <div className="border-t border-gray-100 dark:border-gray-800 px-3 py-3 space-y-1">
+          <ThemeToggle collapsed={collapsed} />
           <button
+            type="button"
             onClick={() => { setShowFeedback(true); setFeedbackSent(false); setFeedbackText(''); }}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all w-full text-gray-600 hover:bg-gray-100 hover:text-gray-900 ${collapsed ? 'justify-center' : ''}`}
+            className={`relative group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all w-full text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white ${collapsed ? 'justify-center' : ''}`}
           >
             <span className="flex-shrink-0">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
@@ -166,20 +169,21 @@ export default function Sidebar({ user }: SidebarProps) {
           
           {/* User profile */}
           <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg ${collapsed ? 'justify-center' : ''}`}>
-            <div className="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+            <div className="w-8 h-8 rounded-full bg-gray-900 dark:bg-indigo-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
               {displayName.charAt(0).toUpperCase()}
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{displayName}</p>
-                <p className="text-[11px] text-gray-400">{tierLabel(user?.role)}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{displayName}</p>
+                <p className="text-[11px] text-gray-400 dark:text-gray-500">{tierLabel(user?.role)}</p>
               </div>
             )}
             {!collapsed && (
               <button 
                 onClick={handleLogout}
-                className="p-1.5 text-gray-400 hover:text-gray-600 rounded transition"
+                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded transition"
                 title="Logout"
+                type="button"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -191,8 +195,9 @@ export default function Sidebar({ user }: SidebarProps) {
 
         {/* Collapse toggle (desktop only) */}
         <button 
+          type="button"
           onClick={() => setCollapsed(!collapsed)}
-          className="hidden lg:flex items-center justify-center h-10 border-t border-gray-100 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition"
+          className="hidden lg:flex items-center justify-center h-10 border-t border-gray-100 dark:border-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition"
         >
           <svg className={`w-4 h-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
@@ -202,8 +207,8 @@ export default function Sidebar({ user }: SidebarProps) {
 
       {/* Feedback Modal */}
       {showFeedback && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setShowFeedback(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/40 dark:bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowFeedback(false)}>
+          <div className="bg-white dark:bg-gray-900 dark:border dark:border-gray-800 rounded-2xl shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
             {feedbackSent ? (
               /* Success state */
               <div className="p-8 text-center">
@@ -212,11 +217,12 @@ export default function Sidebar({ user }: SidebarProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">Thanks for your feedback!</h3>
-                <p className="text-sm text-gray-500 mb-6">We appreciate you helping us improve TCG Pulse.</p>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Thanks for your feedback!</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">We appreciate you helping us improve TCG Pulse.</p>
                 <button
+                  type="button"
                   onClick={() => setShowFeedback(false)}
-                  className="px-5 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition"
+                  className="px-5 py-2 bg-gray-900 dark:bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-indigo-500 transition"
                 >
                   Close
                 </button>
@@ -226,14 +232,14 @@ export default function Sidebar({ user }: SidebarProps) {
               <>
                 <div className="px-6 pt-6 pb-4">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="text-lg font-bold text-gray-900">Send Feedback</h3>
-                    <button onClick={() => setShowFeedback(false)} className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Send Feedback</h3>
+                    <button type="button" onClick={() => setShowFeedback(false)} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
                   </div>
-                  <p className="text-sm text-gray-500">Help us improve TCG Pulse</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Help us improve TCG Pulse</p>
                 </div>
 
                 <div className="px-6 pb-6">
@@ -249,8 +255,8 @@ export default function Sidebar({ user }: SidebarProps) {
                         onClick={() => setFeedbackType(t.value)}
                         className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition border ${
                           feedbackType === t.value
-                            ? 'bg-gray-900 text-white border-gray-900'
-                            : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                            ? 'bg-gray-900 dark:bg-indigo-600 text-white border-gray-900 dark:border-indigo-600'
+                            : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                         }`}
                       >
                         {t.label}
@@ -267,7 +273,7 @@ export default function Sidebar({ user }: SidebarProps) {
                       feedbackType === 'bug' ? 'I found an issue with...' :
                       'Tell us what you think...'
                     }
-                    className="w-full h-32 px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 resize-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-300 outline-none transition"
+                    className="w-full h-32 px-4 py-3 bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:ring-2 focus:ring-indigo-500/30 dark:focus:ring-indigo-400/30 focus:border-indigo-400 dark:focus:border-indigo-500 outline-none transition"
                     autoFocus
                   />
 
@@ -277,6 +283,7 @@ export default function Sidebar({ user }: SidebarProps) {
                       {user?.email && `Sending as ${user.email}`}
                     </p>
                     <button
+                      type="button"
                       onClick={() => {
                         if (!feedbackText.trim()) return;
                         // Store feedback locally (could be sent to API later)
@@ -295,8 +302,8 @@ export default function Sidebar({ user }: SidebarProps) {
                       disabled={!feedbackText.trim()}
                       className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
                         feedbackText.trim()
-                          ? 'bg-gray-900 text-white hover:bg-gray-800'
-                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          ? 'bg-gray-900 dark:bg-indigo-600 text-white hover:bg-gray-800 dark:hover:bg-indigo-500'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
                       }`}
                     >
                       Send Feedback

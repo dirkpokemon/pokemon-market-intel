@@ -3,7 +3,7 @@ import SiteFooter from '@/components/SiteFooter';
 import { SITE_CONTACT_EMAIL } from '@/lib/site';
 
 export const metadata = {
-  title: 'Privacy — TCG Pulse',
+  title: 'Privacy · TCG Pulse',
   description: 'Privacy policy for TCG Pulse',
 };
 
