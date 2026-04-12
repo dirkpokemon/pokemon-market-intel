@@ -42,42 +42,53 @@ export default function RegisterPage() {
       <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
         <div className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-8 text-center">
+          <div className="text-left mb-4">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to home
+            </Link>
+          </div>
           {/* Envelope icon */}
-          <div className="mx-auto mb-6 w-16 h-16 rounded-full bg-gray-900 flex items-center justify-center">
+          <div className="mx-auto mb-6 w-16 h-16 rounded-full bg-gray-900 dark:bg-indigo-600 flex items-center justify-center">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="4" width="20" height="16" rx="2" />
               <path d="M22 4L12 13L2 4" />
             </svg>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Check your email</h1>
-          <p className="text-gray-500 text-sm mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Check your email</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
             We&apos;ve sent a verification link to<br />
-            <span className="font-medium text-gray-900">{email}</span>
+            <span className="font-medium text-gray-900 dark:text-white">{email}</span>
           </p>
 
           {verifyUrl ? (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-left">
-              <p className="text-sm text-amber-800 font-medium mb-2">Email could not be sent</p>
-              <p className="text-sm text-amber-700 mb-3">Click the button below to verify your account directly:</p>
+            <div className="bg-amber-50 dark:bg-amber-950/35 border border-amber-200 dark:border-amber-800/60 rounded-lg p-4 mb-6 text-left">
+              <p className="text-sm text-amber-800 dark:text-amber-200 font-medium mb-2">Email could not be sent</p>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">Click the button below to verify your account directly:</p>
               <a
                 href={verifyUrl}
-                className="inline-block bg-gray-900 text-white py-2 px-6 rounded-lg hover:bg-gray-800 transition text-sm font-medium"
+                className="inline-block bg-gray-900 dark:bg-indigo-600 text-white py-2 px-6 rounded-lg hover:bg-gray-800 dark:hover:bg-indigo-500 transition text-sm font-medium"
               >
                 Verify My Account
               </a>
             </div>
           ) : (
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 text-left">
-              <p className="text-sm text-gray-600 leading-relaxed">
+            <div className="bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 text-left">
+              <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
                 Click the link in your email to activate your account. The link expires in 48 hours. Check your spam folder if you don&apos;t see it within a few minutes.
               </p>
             </div>
           )}
 
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             Already verified?{' '}
-            <Link href="/login" className="text-gray-900 hover:underline font-medium">
+            <Link href="/login" className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
               Sign in
             </Link>
           </div>
@@ -92,18 +103,30 @@ export default function RegisterPage() {
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
       <div className="flex-1 flex items-center justify-center px-4 py-10">
       <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-8">
+        <div className="mb-4">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to home
+          </Link>
+        </div>
+
         {/* Logo */}
         <div className="flex justify-center mb-6">
           <BrandMark size={48} />
         </div>
 
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900">Create Account</h1>
-          <p className="text-gray-500 mt-1 text-sm">Join TCG Pulse</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create Account</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Join TCG Pulse</p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 rounded-lg text-sm">
             {error}
           </div>
         )}
@@ -111,7 +134,7 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 First Name
               </label>
               <input
@@ -121,12 +144,12 @@ export default function RegisterPage() {
                 onChange={(e) => setFirstName(e.target.value)}
                 required
                 disabled={loading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-900 dark:focus:ring-indigo-500 focus:border-transparent text-sm disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500"
                 placeholder="John"
               />
             </div>
             <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Last Name
               </label>
               <input
@@ -136,14 +159,14 @@ export default function RegisterPage() {
                 onChange={(e) => setLastName(e.target.value)}
                 required
                 disabled={loading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm disabled:bg-gray-50 disabled:text-gray-500"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-900 dark:focus:ring-indigo-500 focus:border-transparent text-sm disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500"
                 placeholder="Doe"
               />
             </div>
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Email Address
             </label>
             <input
@@ -153,13 +176,13 @@ export default function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={loading}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-900 dark:focus:ring-indigo-500 focus:border-transparent text-sm disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Password
             </label>
             <input
@@ -170,17 +193,17 @@ export default function RegisterPage() {
               required
               minLength={8}
               disabled={loading}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent text-sm disabled:bg-gray-50 disabled:text-gray-500"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-900 dark:focus:ring-indigo-500 focus:border-transparent text-sm disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500"
               placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
             />
-            <p className="mt-1 text-xs text-gray-400">At least 8 characters</p>
+            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">At least 8 characters</p>
           </div>
 
           <button
             type="submit"
             disabled={loading}
             aria-busy={loading}
-            className="w-full bg-gray-900 text-white py-2.5 px-4 rounded-lg hover:bg-gray-800 transition text-sm font-medium flex items-center justify-center gap-2 min-h-[42px] disabled:opacity-90 disabled:cursor-wait disabled:hover:bg-gray-900"
+            className="w-full bg-gray-900 dark:bg-indigo-600 text-white py-2.5 px-4 rounded-lg hover:bg-gray-800 dark:hover:bg-indigo-500 transition text-sm font-medium flex items-center justify-center gap-2 min-h-[42px] disabled:opacity-90 disabled:cursor-wait disabled:hover:bg-gray-900 dark:disabled:hover:bg-indigo-600 dark:disabled:bg-gray-700 dark:disabled:text-gray-400"
           >
             {loading && (
               <span
@@ -193,8 +216,8 @@ export default function RegisterPage() {
         </form>
 
         <div className="mt-6 text-center text-sm">
-          <span className="text-gray-500">Already have an account? </span>
-          <Link href="/login" className="text-gray-900 hover:underline font-medium">
+          <span className="text-gray-500 dark:text-gray-400">Already have an account? </span>
+          <Link href="/login" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:underline font-medium">
             Sign in
           </Link>
         </div>
