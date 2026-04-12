@@ -303,6 +303,7 @@ export default function MarketPulseAssistant({
   isSubscriber,
   lastUpdatedLine,
   selectedSetLabel,
+  className,
 }: {
   marketData: PulseMarketSnapshot;
   visibleDeals: DealScore[];
@@ -310,6 +311,7 @@ export default function MarketPulseAssistant({
   isSubscriber: boolean;
   lastUpdatedLine: string | null;
   selectedSetLabel: string;
+  className?: string;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -366,12 +368,14 @@ export default function MarketPulseAssistant({
   const visiblePills = PILLS.filter((p) => !p.subscriberOnly || isSubscriber);
 
   return (
-    <div className="flex flex-col h-full min-h-[420px] max-h-[calc(100vh-8rem)] lg:max-h-[calc(100vh-6rem)] rounded-2xl border border-indigo-200/80 bg-gradient-to-b from-white to-indigo-50/40 shadow-sm overflow-hidden">
+    <div
+      className={`flex flex-col h-full min-h-[420px] rounded-2xl border border-indigo-200/80 bg-gradient-to-b from-white to-indigo-50/40 shadow-sm overflow-hidden ${className ?? ''}`}
+    >
       <div className="flex items-center gap-3 px-4 py-3 border-b border-indigo-100 bg-white/80">
         <PulseAvatar busy={busy} />
         <div className="min-w-0">
           <p className="text-sm font-bold text-gray-900">Pulse</p>
-          <p className="text-[11px] text-gray-500 leading-snug">Markt-assistent · antwoorden uit live data</p>
+          <p className="text-[11px] text-gray-500 leading-snug">Antwoorden uit live marktdata</p>
         </div>
       </div>
 
@@ -391,7 +395,7 @@ export default function MarketPulseAssistant({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3">
         {messages.map((msg) => {
           if (msg.role === 'user') {
             return (
