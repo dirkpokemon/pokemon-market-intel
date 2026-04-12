@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { marketApi, DealScore } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import DealModal from '@/components/DealModal';
@@ -18,7 +19,67 @@ interface FilterOptions {
   maxPrice: number;
 }
 
+const FREE_VISIBLE = 3;
+
+function DealCard({ deal, watchlist, toggleWatchlist, setSelectedDeal, getScoreColor, getScoreBg }: {
+  deal: DealScore;
+  watchlist: number[];
+  toggleWatchlist: (id: number) => void;
+  setSelectedDeal: (d: DealScore) => void;
+  getScoreColor: (s: number) => string;
+  getScoreBg: (s: number) => string;
+}) {
+  const savingsPercent = deal.market_avg_price
+    ? Math.round((1 - deal.current_price / deal.market_avg_price) * 100)
+    : 0;
+  return (
+    <div
+      onClick={() => setSelectedDeal(deal)}
+      className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition cursor-pointer group relative overflow-hidden"
+    >
+      {savingsPercent > 5 && (
+        <div className="absolute top-3 left-3 z-10 px-2 py-0.5 bg-green-600 text-white text-[11px] font-bold rounded-md shadow-sm">
+          -{savingsPercent}%
+        </div>
+      )}
+      <button
+        onClick={(e) => { e.stopPropagation(); toggleWatchlist(deal.id); }}
+        className="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm hover:bg-white transition text-sm shadow-sm"
+      >
+        {watchlist.includes(deal.id) ? '⭐' : '☆'}
+      </button>
+      <div className="px-4 pt-4 flex justify-center">
+        <CardImage cardName={deal.product_name} size="md" />
+      </div>
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-1">
+          <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 flex-1 pr-2">{deal.product_name}</h3>
+          <div className={`w-10 h-10 rounded-lg ${getScoreBg(deal.deal_score)} flex items-center justify-center flex-shrink-0`}>
+            <span className={`text-sm font-bold ${getScoreColor(deal.deal_score)}`}>{deal.deal_score}</span>
+          </div>
+        </div>
+        {deal.product_set && <p className="text-xs text-gray-500 mb-3 truncate">{deal.product_set}</p>}
+        <div className="flex items-end justify-between pt-2 border-t border-gray-100">
+          <div>
+            <p className="text-lg font-bold text-gray-900">&euro;{deal.current_price.toFixed(2)}</p>
+            {deal.market_avg_price && (
+              <p className="text-[11px] text-gray-400 line-through">&euro;{deal.market_avg_price.toFixed(2)} avg</p>
+            )}
+          </div>
+          {savingsPercent > 0 && (
+            <p className="text-xs font-medium text-green-600">Save &euro;{((deal.market_avg_price || 0) - deal.current_price).toFixed(2)}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DealsPage() {
+  const searchParams = useSearchParams();
+  const presetSet = searchParams.get('set') || '';
+  const presetCard = searchParams.get('card') || '';
+
   const [loading, setLoading] = useState(true);
   const [dealScores, setDealScores] = useState<DealScore[]>([]);
   const [watchlist, setWatchlist] = useState<number[]>([]);
@@ -28,7 +89,7 @@ export default function DealsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('all');
   const [userRole, setUserRole] = useState<string>('free');
   const [filters, setFilters] = useState<FilterOptions>({
-    search: '',
+    search: presetSet || presetCard,
     minScore: 50,
     maxScore: 100,
     minPrice: 0,
@@ -115,43 +176,32 @@ export default function DealsPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Top Deals</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Top Deals
+              {presetSet && <span className="ml-2 text-base font-normal text-gray-500">· {presetSet}</span>}
+            </h1>
             <p className="text-sm text-gray-500 mt-1">
               {isSubscriberRole(userRole)
-                ? `Browse ${dealScores.length} deals with AI-powered scoring`
-                : `Showing top 20 deals (score ≥ 65) — your free plan`}
+                ? `${dealScores.length} deals met AI-scoring, elk uur vernieuwd`
+                : `${FREE_VISIBLE} deals zichtbaar — upgrade voor volledige toegang`}
             </p>
           </div>
-          <button
-            onClick={() => { setViewMode(prev => prev === 'all' ? 'watchlist' : 'all'); setCurrentPage(1); }}
-            className={`px-4 py-2 text-sm rounded-lg font-medium transition ${
-              viewMode === 'watchlist'
-                ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-            }`}
-          >
-            {viewMode === 'watchlist' ? '⭐ Watchlist' : '📋 All Deals'}
-            {viewMode === 'watchlist' && watchlist.length > 0 && (
-              <span className="ml-2 px-1.5 py-0.5 bg-amber-600 text-white rounded text-xs">{watchlist.length}</span>
-            )}
-          </button>
-        </div>
-
-        {/* Free-tier limit banner */}
-        {!isSubscriberRole(userRole) && (
-          <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-5">
-            <p className="text-sm text-amber-800">
-              <span className="font-semibold">Free plan:</span> showing top 20 deals with score ≥ 65.{' '}
-              Upgrade to Plus for unlimited access.
-            </p>
-            <Link
-              href="/pricing"
-              className="ml-4 flex-shrink-0 px-3 py-1.5 bg-amber-600 text-white text-xs font-semibold rounded-lg hover:bg-amber-700 transition"
+          {isSubscriberRole(userRole) && (
+            <button
+              onClick={() => { setViewMode(prev => prev === 'all' ? 'watchlist' : 'all'); setCurrentPage(1); }}
+              className={`px-4 py-2 text-sm rounded-lg font-medium transition ${
+                viewMode === 'watchlist'
+                  ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+              }`}
             >
-              Upgrade to Plus
-            </Link>
-          </div>
-        )}
+              {viewMode === 'watchlist' ? '⭐ Watchlist' : '📋 All Deals'}
+              {viewMode === 'watchlist' && watchlist.length > 0 && (
+                <span className="ml-2 px-1.5 py-0.5 bg-amber-600 text-white rounded text-xs">{watchlist.length}</span>
+              )}
+            </button>
+          )}
+        </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
@@ -221,111 +271,74 @@ export default function DealsPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <p className="text-sm font-medium text-gray-900 mb-1">
-                  {viewMode === 'watchlist' ? 'Your watchlist is empty' : 'No deals match your filters'}
+                  {viewMode === 'watchlist' ? 'Je watchlist is leeg' : 'Geen deals gevonden'}
                 </p>
                 <p className="text-xs text-gray-500 mb-4">
-                  {viewMode === 'watchlist' ? 'Click the star on any deal to save it' : 'Try adjusting your search or filters'}
+                  {viewMode === 'watchlist' ? 'Klik de ster op een deal om hem op te slaan' : 'Pas je zoekterm of filters aan'}
                 </p>
                 <button
                   onClick={() => { setFilters({ search: '', minScore: 50, maxScore: 100, minPrice: 0, maxPrice: 1000 }); setViewMode('all'); }}
                   className="px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition"
                 >
-                  {viewMode === 'watchlist' ? 'Browse All Deals' : 'Reset Filters'}
+                  {viewMode === 'watchlist' ? 'Alle deals bekijken' : 'Filters resetten'}
                 </button>
               </div>
-            ) : (
+            ) : isSubscriberRole(userRole) ? (
+              /* ── Subscribers: full paginated grid ── */
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-8">
-                  {paginatedDeals.map((deal) => {
-                    const savingsPercent = deal.market_avg_price
-                      ? Math.round((1 - deal.current_price / deal.market_avg_price) * 100)
-                      : 0;
-                    return (
-                      <div 
-                        key={deal.id}
-                        onClick={() => setSelectedDeal(deal)}
-                        className="bg-white rounded-xl border border-gray-200 hover:border-gray-300 hover:shadow-sm transition cursor-pointer group relative overflow-hidden"
-                      >
-                        {/* Savings badge */}
-                        {savingsPercent > 5 && (
-                          <div className="absolute top-3 left-3 z-10 px-2 py-0.5 bg-green-600 text-white text-[11px] font-bold rounded-md shadow-sm">
-                            -{savingsPercent}%
-                          </div>
-                        )}
-
-                        {/* Watchlist button */}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); toggleWatchlist(deal.id); }}
-                          className="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm hover:bg-white transition text-sm shadow-sm"
-                        >
-                          {watchlist.includes(deal.id) ? '⭐' : '☆'}
-                        </button>
-
-                        {/* Card image */}
-                        <div className="px-4 pt-4 flex justify-center">
-                          <CardImage cardName={deal.product_name} size="md" />
-                        </div>
-
-                        <div className="p-4">
-                          <div className="flex justify-between items-start mb-1">
-                            <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 flex-1 pr-2">{deal.product_name}</h3>
-                            <div className={`w-10 h-10 rounded-lg ${getScoreBg(deal.deal_score)} flex items-center justify-center flex-shrink-0`}>
-                              <span className={`text-sm font-bold ${getScoreColor(deal.deal_score)}`}>{deal.deal_score}</span>
-                            </div>
-                          </div>
-                          
-                          {deal.product_set && (
-                            <p className="text-xs text-gray-500 mb-3 truncate">{deal.product_set}</p>
-                          )}
-                          
-                          <div className="flex items-end justify-between pt-2 border-t border-gray-100">
-                            <div>
-                              <p className="text-lg font-bold text-gray-900">&euro;{deal.current_price.toFixed(2)}</p>
-                              {deal.market_avg_price && (
-                                <p className="text-[11px] text-gray-400 line-through">&euro;{deal.market_avg_price.toFixed(2)} avg</p>
-                              )}
-                            </div>
-                            {savingsPercent > 0 && (
-                              <p className="text-xs font-medium text-green-600">Save &euro;{((deal.market_avg_price || 0) - deal.current_price).toFixed(2)}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  {paginatedDeals.map((deal) => <DealCard key={deal.id} deal={deal} watchlist={watchlist} toggleWatchlist={toggleWatchlist} setSelectedDeal={setSelectedDeal} getScoreColor={getScoreColor} getScoreBg={getScoreBg} />)}
                 </div>
-
-                {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="flex justify-center gap-1">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                    >
-                      Previous
-                    </button>
+                    <button onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1} className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40">Previous</button>
                     {[...Array(Math.min(totalPages, 5))].map((_, i) => (
-                      <button
-                        key={i + 1}
-                        onClick={() => setCurrentPage(i + 1)}
-                        className={`px-3 py-1.5 text-sm border rounded-lg ${
-                          currentPage === i + 1 ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
-                        }`}
-                      >
-                        {i + 1}
-                      </button>
+                      <button key={i + 1} onClick={() => setCurrentPage(i + 1)} className={`px-3 py-1.5 text-sm border rounded-lg ${currentPage === i + 1 ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}>{i + 1}</button>
                     ))}
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
-                    >
-                      Next
-                    </button>
+                    <button onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40">Next</button>
                   </div>
                 )}
               </>
+            ) : (
+              /* ── Free users: 3 visible + blur/lock ── */
+              <div className="relative">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-2">
+                  {filteredAndSortedDeals.slice(0, FREE_VISIBLE).map((deal) => (
+                    <DealCard key={deal.id} deal={deal} watchlist={watchlist} toggleWatchlist={toggleWatchlist} setSelectedDeal={setSelectedDeal} getScoreColor={getScoreColor} getScoreBg={getScoreBg} />
+                  ))}
+                  {/* Blurred preview cards */}
+                  {filteredAndSortedDeals.slice(FREE_VISIBLE, FREE_VISIBLE + 5).map((deal) => (
+                    <div key={deal.id} className="select-none pointer-events-none blur-sm opacity-60">
+                      <DealCard deal={deal} watchlist={[]} toggleWatchlist={() => {}} setSelectedDeal={() => {}} getScoreColor={getScoreColor} getScoreBg={getScoreBg} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Lock overlay */}
+                {filteredAndSortedDeals.length > FREE_VISIBLE && (
+                  <div className="absolute bottom-0 left-0 right-0 h-96 bg-gradient-to-t from-gray-50 via-gray-50/90 to-transparent flex items-end justify-center pb-8">
+                    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 px-8 py-6 text-center max-w-sm w-full">
+                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                      </div>
+                      <h3 className="text-base font-bold text-gray-900 mb-1">
+                        {filteredAndSortedDeals.length - FREE_VISIBLE} deals verborgen
+                      </h3>
+                      <p className="text-sm text-gray-500 mb-4">
+                        Upgrade naar Plus voor alle {filteredAndSortedDeals.length} deals, elk uur vernieuwd.
+                      </p>
+                      <Link
+                        href="/pricing"
+                        className="block w-full py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-xl hover:bg-gray-700 transition"
+                      >
+                        Upgrade naar Plus
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </>
         )}
