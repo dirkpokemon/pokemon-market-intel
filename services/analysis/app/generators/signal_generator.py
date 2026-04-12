@@ -38,9 +38,6 @@ class SignalGenerator:
         """
         logger.info("Starting signal generation")
         
-        # Deactivate old signals before generating new ones
-        await self._deactivate_expired_signals()
-        
         signals: List[Signal] = []
         
         signals.extend(await self._generate_momentum_signals())
@@ -50,11 +47,16 @@ class SignalGenerator:
         signals.extend(await self._generate_volatility_signals())
         signals.extend(await self._generate_set_trend_signals())
         
-        if signals:
-            async with AsyncSessionLocal() as session:
-                session.add_all(signals)
-                await session.commit()
-                logger.info(f"Generated {len(signals)} signals total")
+        if not signals:
+            logger.info("No signals matched criteria; keeping existing active signals unchanged")
+            return 0
+        
+        await self._deactivate_expired_signals()
+        
+        async with AsyncSessionLocal() as session:
+            session.add_all(signals)
+            await session.commit()
+            logger.info(f"Generated {len(signals)} signals total")
         
         return len(signals)
     

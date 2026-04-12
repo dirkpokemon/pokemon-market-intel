@@ -93,9 +93,9 @@ class AnalysisService:
         if stats_count > 0:
             deal_count = await self.calculate_deal_scores()
         
-        # Step 3: Signals (depends on deal scores + market stats)
+        # Step 3: Signals (reads MarketStats only; deal scores feed Top Deals, not this gate)
         signal_count = 0
-        if deal_count > 0:
+        if stats_count > 0:
             signal_count = await self.detect_signals()
         
         logger.info("=" * 60)
