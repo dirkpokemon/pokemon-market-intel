@@ -110,10 +110,16 @@ Deploy these services separately:
 2. **Settings:**
    - Root Directory: `services/analysis`
    - Start Command: `python -m app.main` (long-running: runs analysis on startup, then every hour via scheduler — **not** `run_analysis.py`, which exits after one run)
+   - **Health check:** The service listens on **`PORT`** with HTTP `GET /` → `200 ok` (required so Railway does not restart the container every minute while the pipeline runs).
 3. **Environment Variables:**
    ```
    DATABASE_URL=<from-postgres-service>
    ```
+   Optional if the job is killed with **out-of-memory** or very slow on huge `raw_prices`:
+   ```
+   ANALYSIS_LONG_WINDOW_DAYS=14
+   ```
+   (default is 30; lower = less RAM and faster runs, slightly less history for stats.)
 
 #### Alerts Worker:
 1. **"+ New"** → **"GitHub Repo"** → Select repo

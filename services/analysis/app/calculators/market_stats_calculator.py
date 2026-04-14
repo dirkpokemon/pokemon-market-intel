@@ -48,7 +48,10 @@ class MarketStatsCalculator:
             query = select(RawPrice).where(
                 RawPrice.scraped_at >= cutoff_date
             )
-            
+
+            logger.info(
+                "Loading raw_prices into memory (large tables need RAM; set env ANALYSIS_LONG_WINDOW_DAYS lower to reduce load)..."
+            )
             result = await session.execute(query)
             raw_prices = result.scalars().all()
             

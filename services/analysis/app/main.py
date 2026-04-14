@@ -4,8 +4,10 @@ Analysis Service Entry Point
 
 import asyncio
 import logging
+import os
 import signal
-import sys
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -19,6 +21,38 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+class _HealthHandler(BaseHTTPRequestHandler):
+    """Minimal handler so Railway (and similar) health checks on $PORT succeed."""
+
+    def do_GET(self) -> None:  # noqa: N802
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"ok")
+
+    def log_message(self, fmt: str, *args: Any) -> None:  # noqa: A003
+        pass
+
+
+def start_health_server_thread() -> None:
+    port_s = os.environ.get("PORT", "8080")
+    try:
+        port = int(port_s)
+    except ValueError:
+        port = 8080
+
+    def serve() -> None:
+        try:
+            server = HTTPServer(("0.0.0.0", port), _HealthHandler)
+            logger.info(f"Health check HTTP listening on 0.0.0.0:{port}")
+            server.serve_forever()
+        except OSError as e:
+            logger.error(f"Could not bind health server on port {port}: {e}")
+
+    thread = threading.Thread(target=serve, name="health-http", daemon=True)
+    thread.start()
 
 
 class AnalysisService:
@@ -48,18 +82,14 @@ class AnalysisService:
             name='Full Analysis Pipeline',
             max_instances=1,
         )
-        
-        # Run immediately on startup
-        logger.info("Running initial analysis...")
-        try:
-            await self.run_full_analysis()
-        except Exception as e:
-            logger.error(f"Initial analysis failed: {e}", exc_info=True)
-        
+
         self.scheduler.start()
         self.running = True
-        
+
         logger.info("Analysis service started successfully")
+        # Long-running pipeline: do not block startup (Railway health / scheduler must be "up" first)
+        logger.info("Scheduling initial full analysis in background...")
+        asyncio.create_task(self._run_initial_analysis_safe())
         logger.info("Next analysis scheduled at the top of the next hour")
         
         try:
@@ -67,6 +97,12 @@ class AnalysisService:
                 await asyncio.sleep(1)
         except asyncio.CancelledError:
             pass
+
+    async def _run_initial_analysis_safe(self) -> None:
+        try:
+            await self.run_full_analysis()
+        except Exception as e:
+            logger.error(f"Initial analysis failed: {e}", exc_info=True)
 
     async def stop(self):
         """
@@ -152,6 +188,7 @@ async def main():
     """
     Main entry point
     """
+    start_health_server_thread()
     service = AnalysisService()
     
     # Handle shutdown signals

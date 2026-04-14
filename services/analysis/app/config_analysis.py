@@ -4,14 +4,16 @@ Thresholds and parameters for market analysis and deal scoring
 """
 
 from typing import Dict
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class AnalysisConfig(BaseSettings):
     """
     Configuration for analysis engine
     """
-    
+
+    model_config = SettingsConfigDict(env_prefix="ANALYSIS_", env_file=".env", extra="ignore")
+
     # Time windows (days)
     SHORT_WINDOW_DAYS: int = 7
     LONG_WINDOW_DAYS: int = 30
@@ -95,9 +97,6 @@ class AnalysisConfig(BaseSettings):
     
     # Logging
     LOG_LEVEL: str = "INFO"
-    
-    class Config:
-        env_prefix = "ANALYSIS_"
 
 
 # Singleton instance
