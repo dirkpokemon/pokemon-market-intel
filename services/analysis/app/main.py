@@ -63,6 +63,7 @@ class AnalysisService:
     def __init__(self):
         self.scheduler = AsyncIOScheduler()
         self.running = False
+        self._pipeline_lock = asyncio.Lock()
 
     async def start(self):
         """
@@ -117,10 +118,14 @@ class AnalysisService:
         """
         Run the complete analysis pipeline: stats -> deal scores -> signals
         """
+        async with self._pipeline_lock:
+            await self._run_full_analysis_locked()
+
+    async def _run_full_analysis_locked(self):
         logger.info("=" * 60)
         logger.info("Starting full analysis pipeline")
         logger.info("=" * 60)
-        
+
         # Step 1: Market statistics
         stats_count = await self.calculate_market_stats()
         

@@ -3,14 +3,16 @@ Market Statistics Calculator
 Calculates market metrics per product from raw price data
 """
 
+import gc
 import logging
-from typing import Dict, List, Optional
+from collections import defaultdict
+from typing import Any, DefaultDict, Dict, List, Optional, Tuple
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pandas as pd
 import numpy as np
-from sqlalchemy import select, and_, func
+from sqlalchemy import select
 
 from app.config_analysis import analysis_config
 from app.database import AsyncSessionLocal
@@ -38,57 +40,110 @@ class MarketStatsCalculator:
             Number of products processed
         """
         logger.info("Starting market statistics calculation")
-        
-        async with AsyncSessionLocal() as session:
-            # Fetch raw price data from last 30 days
-            cutoff_date = datetime.now(timezone.utc) - timedelta(days=self.config.LONG_WINDOW_DAYS)
-            
-            # Query raw prices
-            from app.models import RawPrice  # Assuming raw_prices table exists
-            query = select(RawPrice).where(
-                RawPrice.scraped_at >= cutoff_date
-            )
 
-            logger.info(
-                "Loading raw_prices into memory (large tables need RAM; set env ANALYSIS_LONG_WINDOW_DAYS lower to reduce load)..."
-            )
-            result = await session.execute(query)
-            raw_prices = result.scalars().all()
-            
-            if not raw_prices:
-                logger.warning("No raw price data found")
+        async with AsyncSessionLocal() as session:
+            cutoff_date = datetime.now(timezone.utc) - timedelta(days=self.config.LONG_WINDOW_DAYS)
+
+            buckets = await self._stream_raw_prices_into_buckets(session, cutoff_date)
+            if not buckets:
+                logger.warning("No raw price data found in lookback window")
                 return 0
-            
-            logger.info(f"Processing {len(raw_prices)} raw price records")
-            
-            # Convert to DataFrame for analysis
-            df = self._to_dataframe(raw_prices)
-            
-            # Normalize data
-            df = self._normalize_data(df)
-            
-            # Group by product
-            stats_records = []
-            grouped = df.groupby(['product_name', 'product_set', 'category'])
-            
-            for (product_name, product_set, category), group in grouped:
+
+            logger.info(f"Computing stats for {len(buckets)} products (streamed aggregates)")
+
+            stats_records: List[MarketStats] = []
+            flush_every = 250
+            saved_total = 0
+
+            for (product_name, product_set, category), pairs in buckets.items():
                 try:
+                    df = pd.DataFrame(pairs, columns=["price_eur", "scraped_at"])
                     stats = await self._calculate_product_stats(
-                        product_name, product_set, category, group
+                        product_name, product_set, category, df
                     )
                     if stats:
                         stats_records.append(stats)
                 except Exception as e:
                     logger.error(f"Error calculating stats for {product_name}: {e}")
                     continue
-            
-            # Save to database
+
+                if len(stats_records) >= flush_every:
+                    session.add_all(stats_records)
+                    await session.commit()
+                    saved_total += len(stats_records)
+                    stats_records = []
+
             if stats_records:
                 session.add_all(stats_records)
                 await session.commit()
-                logger.info(f"Saved {len(stats_records)} market stat records")
-            
-            return len(stats_records)
+                saved_total += len(stats_records)
+
+            logger.info(f"Saved {saved_total} market stat records")
+            return saved_total
+
+    async def _stream_raw_prices_into_buckets(
+        self, session: Any, cutoff_date: datetime
+    ) -> DefaultDict[Tuple[str, str, str], List[Tuple[float, Any]]]:
+        """
+        Load raw_prices in ID batches to avoid OOM (single .all() on large tables).
+        """
+        from app.models import RawPrice
+
+        batch_size = max(500, int(self.config.RAW_FETCH_BATCH_SIZE))
+        last_id = 0
+        total_rows = 0
+        buckets: DefaultDict[Tuple[str, str, str], List[Tuple[float, Any]]] = defaultdict(list)
+
+        logger.info(
+            f"Streaming raw_prices (batch={batch_size}, lookback={self.config.LONG_WINDOW_DAYS}d). "
+            "Set ANALYSIS_LONG_WINDOW_DAYS or ANALYSIS_RAW_FETCH_BATCH_SIZE if needed."
+        )
+
+        batch_idx = 0
+        while True:
+            stmt = (
+                select(RawPrice)
+                .where(
+                    RawPrice.scraped_at >= cutoff_date,
+                    RawPrice.id > last_id,
+                )
+                .order_by(RawPrice.id.asc())
+                .limit(batch_size)
+            )
+            result = await session.execute(stmt)
+            rows = result.scalars().all()
+            if not rows:
+                break
+
+            last_id = rows[-1].id
+            total_rows += len(rows)
+            batch_idx += 1
+
+            df_batch = self._normalize_data(self._to_dataframe(rows))
+            pn = df_batch["product_name"].to_numpy()
+            ps = df_batch["product_set"].to_numpy()
+            cat = df_batch["category"].to_numpy()
+            pe = df_batch["price_eur"].to_numpy()
+            sa = df_batch["scraped_at"].to_numpy()
+
+            for i in range(len(df_batch)):
+                pset_raw = ps[i]
+                if pset_raw is None or pd.isna(pset_raw):
+                    pset_s = ""
+                else:
+                    pset_s = str(pset_raw)
+                key = (str(pn[i]), pset_s, str(cat[i]))
+                buckets[key].append((float(pe[i]), sa[i]))
+
+            del df_batch, rows, result
+            if batch_idx % 10 == 0:
+                gc.collect()
+                logger.info(
+                    f"… streamed {total_rows} rows, ~{len(buckets)} products (last id={last_id})"
+                )
+
+        logger.info(f"Stream complete: {total_rows} rows, {len(buckets)} product keys")
+        return buckets
     
     def _to_dataframe(self, raw_prices: List) -> pd.DataFrame:
         """

@@ -94,6 +94,8 @@ class AnalysisConfig(BaseSettings):
     # Performance
     BATCH_SIZE: int = 1000
     MAX_CONCURRENT_TASKS: int = 4
+    # Stream raw_prices in chunks (ORM .all() on huge tables OOMs on Railway)
+    RAW_FETCH_BATCH_SIZE: int = 6000
     
     # Logging
     LOG_LEVEL: str = "INFO"

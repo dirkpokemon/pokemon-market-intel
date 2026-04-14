@@ -118,8 +118,9 @@ Deploy these services separately:
    Optional if the job is killed with **out-of-memory** or very slow on huge `raw_prices`:
    ```
    ANALYSIS_LONG_WINDOW_DAYS=14
+   ANALYSIS_RAW_FETCH_BATCH_SIZE=4000
    ```
-   (default is 30; lower = less RAM and faster runs, slightly less history for stats.)
+   (`LONG_WINDOW` default 30 — lower = less RAM; `RAW_FETCH_BATCH_SIZE` defaults to 6000 row ORM chunks.)
 
 #### Alerts Worker:
 1. **"+ New"** → **"GitHub Repo"** → Select repo
