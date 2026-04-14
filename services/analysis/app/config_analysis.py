@@ -16,7 +16,9 @@ class AnalysisConfig(BaseSettings):
 
     # Time windows (days)
     SHORT_WINDOW_DAYS: int = 7
-    LONG_WINDOW_DAYS: int = 14
+    # Must stay aligned with volume_trend baseline in market_stats (_calculate_volume_trend divides by this).
+    # Shorter windows shrink volume_trend % and starve strict signal rules (e.g. momentum +30% volume).
+    LONG_WINDOW_DAYS: int = 30
     
     # Data quality thresholds
     MIN_SAMPLES_EXCELLENT: int = 50

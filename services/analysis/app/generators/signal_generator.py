@@ -46,6 +46,9 @@ class SignalGenerator:
         signals.extend(await self._generate_supply_signals())
         signals.extend(await self._generate_volatility_signals())
         signals.extend(await self._generate_set_trend_signals())
+
+        if not signals:
+            signals.extend(await self._generate_market_mover_fallback())
         
         if not signals:
             logger.info("No signals matched criteria; keeping existing active signals unchanged")
@@ -288,7 +291,7 @@ class SignalGenerator:
                     MarketStats.product_set.isnot(None),
                 ))
                 .group_by(MarketStats.product_set)
-                .having(func.count(MarketStats.id) >= 5)
+                .having(func.count(MarketStats.id) >= 3)
             )
             set_stats = result.all()
             
@@ -337,6 +340,57 @@ class SignalGenerator:
                     ))
         
         logger.info(f"Generated {len(signals)} set trend signals")
+        return signals
+
+    async def _generate_market_mover_fallback(self) -> List[Signal]:
+        """
+        When strict thresholds match nothing, still publish top absolute 7d price movers
+        so the Signals feed is not empty (Railway users saw zero rows after LONG_WINDOW shrink).
+        """
+        signals: List[Signal] = []
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
+        min_abs = 6.0
+        limit_n = 60
+
+        async with AsyncSessionLocal() as session:
+            pt = MarketStats.price_trend_7d
+            abs_pt = func.abs(pt)
+            result = await session.execute(
+                select(MarketStats)
+                .where(
+                    and_(
+                        MarketStats.calculated_at >= cutoff,
+                        abs_pt >= min_abs,
+                        MarketStats.avg_price_7d >= self.MIN_SIGNAL_PRICE,
+                    )
+                )
+                .order_by(abs_pt.desc())
+                .limit(limit_n)
+            )
+            for stats in result.scalars().all():
+                price_trend = float(stats.price_trend_7d or 0)
+                signals.append(
+                    self._create_signal(
+                        signal_type="market_mover",
+                        signal_level="low",
+                        product_name=stats.product_name,
+                        product_set=stats.product_set or "",
+                        category=stats.category or "single",
+                        current_price=stats.avg_price_7d,
+                        market_avg_price=stats.avg_price_30d,
+                        description=(
+                            f"{stats.product_name}: 7d price {price_trend:+.1f}% "
+                            f"— notable move vs week start (watchlist / due diligence)"
+                        ),
+                        metadata={
+                            "price_trend_7d": round(price_trend, 2),
+                            "signal_mode": "fallback_mover",
+                        },
+                        priority=4,
+                    )
+                )
+
+        logger.info(f"Generated {len(signals)} market_mover fallback signals")
         return signals
     
     # ─── Helper ─────────────────────────────────────────────────

@@ -39,6 +39,8 @@ function getActionConfig(type: string): { label: string; hint: string; cta: stri
       return { label: 'Set gaining value', hint: 'This set is trending upward. Look for deals within it before prices move higher.', cta: 'Browse set deals', ctaColor: 'bg-emerald-600 hover:bg-emerald-700' };
     case 'set_declining':
       return { label: 'Set losing value', hint: 'This set is trending downward. Wait for stabilisation before buying.', cta: 'Monitor set', ctaColor: 'bg-rose-600 hover:bg-rose-700' };
+    case 'market_mover':
+      return { label: 'Price movement', hint: 'Meaningful 7-day price change vs the start of the window. Not a full momentum/supply signal — use for watchlists and context.', cta: 'Check price', ctaColor: 'bg-slate-600 hover:bg-slate-700' };
     // Legacy types
     case 'high_deal':
       return { label: 'Strong deal', hint: 'Strong buying opportunity: price is clearly below market average.', cta: 'Find & buy', ctaColor: 'bg-green-600 hover:bg-green-700' };
@@ -72,6 +74,7 @@ const SIGNAL_TYPE_META: Record<string, { label: string; icon: string; color: str
   volatility:     { label: 'Volatile',       icon: '🎢', color: 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-950/40 dark:border-amber-800' },
   set_rising:     { label: 'Set Rising',     icon: '📈', color: 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-800' },
   set_declining:  { label: 'Set Declining',  icon: '📉', color: 'text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-300 dark:bg-rose-950/40 dark:border-rose-800' },
+  market_mover:   { label: 'Market mover',   icon: '〰️', color: 'text-slate-700 bg-slate-50 border-slate-200 dark:text-slate-300 dark:bg-slate-950/40 dark:border-slate-700' },
   // Legacy signal types (still in DB from older analysis runs)
   high_deal:      { label: 'Strong Deal',    icon: '⭐', color: 'text-green-700 bg-green-50 border-green-200 dark:text-green-300 dark:bg-green-950/40 dark:border-green-800' },
   medium_deal:    { label: 'Good Deal',      icon: '✅', color: 'text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-300 dark:bg-blue-950/40 dark:border-blue-800' },
