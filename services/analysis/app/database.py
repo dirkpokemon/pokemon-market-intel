@@ -16,10 +16,13 @@ def _make_async_url(url: str) -> str:
     return url
 
 # Create async engine
+# pool_pre_ping: avoid using connections dropped by PgBouncer / idle timeouts during long jobs.
 engine = create_async_engine(
     _make_async_url(settings.DATABASE_URL),
     pool_size=10,
     max_overflow=5,
+    pool_pre_ping=True,
+    pool_recycle=1800,
     echo=False,
     future=True,
 )

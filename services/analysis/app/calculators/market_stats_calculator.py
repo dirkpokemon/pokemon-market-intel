@@ -41,14 +41,14 @@ class MarketStatsCalculator:
         """
         logger.info("Starting market statistics calculation")
 
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=self.config.LONG_WINDOW_DAYS)
+
+        buckets = await self._stream_raw_prices_into_buckets(cutoff_date)
+        if not buckets:
+            logger.warning("No raw price data found in lookback window")
+            return 0
+
         async with AsyncSessionLocal() as session:
-            cutoff_date = datetime.now(timezone.utc) - timedelta(days=self.config.LONG_WINDOW_DAYS)
-
-            buckets = await self._stream_raw_prices_into_buckets(session, cutoff_date)
-            if not buckets:
-                logger.warning("No raw price data found in lookback window")
-                return 0
-
             # Replace snapshot only after we know we have data (avoid empty table on failed runs).
             await session.execute(delete(MarketStats))
             await session.commit()
@@ -87,11 +87,14 @@ class MarketStatsCalculator:
             return saved_total
 
     async def _stream_raw_prices_into_buckets(
-        self, session: Any, cutoff_date: datetime
+        self, cutoff_date: datetime
     ) -> DefaultDict[Tuple[str, str, str], Deque[Tuple[float, Any]]]:
         """
         Load raw_prices in ID batches to avoid OOM (single .all() on large tables).
         Each product keeps at most MAX_LISTINGS_PER_PRODUCT samples (stream ends with higher ids ≈ newer scrapes).
+
+        Uses a fresh DB session per batch so one connection is not held open for tens of minutes
+        (avoids asyncpg "connection is closed" behind PgBouncer / idle timeouts).
         """
         from app.models import RawPrice
 
@@ -105,7 +108,8 @@ class MarketStatsCalculator:
 
         logger.info(
             f"Streaming raw_prices (batch={batch_size}, lookback={self.config.LONG_WINDOW_DAYS}d, "
-            f"max {cap} rows/product). Tune ANALYSIS_LONG_WINDOW_DAYS / ANALYSIS_MAX_LISTINGS_PER_PRODUCT."
+            f"max {cap} rows/product, fresh session per batch). "
+            f"Tune ANALYSIS_LONG_WINDOW_DAYS / ANALYSIS_MAX_LISTINGS_PER_PRODUCT."
         )
 
         batch_idx = 0
@@ -119,8 +123,9 @@ class MarketStatsCalculator:
                 .order_by(RawPrice.id.asc())
                 .limit(batch_size)
             )
-            result = await session.execute(stmt)
-            rows = result.scalars().all()
+            async with AsyncSessionLocal() as session:
+                result = await session.execute(stmt)
+                rows = result.scalars().all()
             if not rows:
                 break
 
