@@ -171,17 +171,6 @@ async function apiRequest<T>(
   return response.json();
 }
 
-/** Concurrent identical GETs share one fetch (faster navigation, React Strict Mode). */
-const inFlightGet = new Map<string, Promise<unknown>>();
-
-async function apiRequestGet<T>(endpoint: string): Promise<T> {
-  const hit = inFlightGet.get(endpoint);
-  if (hit) return hit as Promise<T>;
-  const p = apiRequest<T>(endpoint).finally(() => inFlightGet.delete(endpoint));
-  inFlightGet.set(endpoint, p);
-  return p;
-}
-
 // Authentication
 export const authApi = {
   register: async (email: string, password: string, full_name?: string): Promise<{ message: string; email: string; email_sent?: boolean; verify_url?: string }> => {
@@ -210,7 +199,7 @@ export const authApi = {
   },
   
   getMe: async (): Promise<User> => {
-    return apiRequestGet<User>('/api/v1/auth/me');
+    return apiRequest<User>('/api/v1/auth/me');
   },
 };
 
@@ -221,8 +210,11 @@ export const marketApi = {
     signal_type?: string;
     signal_level?: string;
   }): Promise<Signal[]> => {
-    const query = new URLSearchParams(params as any).toString();
-    return apiRequestGet<Signal[]>(`/api/v1/signals?${query}`);
+    const entries = Object.entries(params || {})
+      .filter(([, v]) => v !== undefined && v !== null && v !== '')
+      .map(([k, v]) => [k, String(v)] as [string, string]);
+    const q = new URLSearchParams(entries).toString();
+    return apiRequest<Signal[]>(q ? `/api/v1/signals?${q}` : '/api/v1/signals');
   },
   
   getDealScores: async (params?: {
@@ -236,16 +228,16 @@ export const marketApi = {
       .filter(([, v]) => v !== undefined && v !== null && v !== '')
       .map(([k, v]) => [k, String(v)] as [string, string]);
     const query = new URLSearchParams(entries).toString();
-    return apiRequestGet<DealScore[]>(`/api/v1/deal_scores?${query}`);
+    return apiRequest<DealScore[]>(`/api/v1/deal_scores?${query}`);
   },
 
   getMarketDigest: async (): Promise<MarketDigest> => {
-    return apiRequestGet<MarketDigest>('/api/v1/market_digest');
+    return apiRequest<MarketDigest>('/api/v1/market_digest');
   },
 
   getPriceHistory: async (cardName: string, days = 30): Promise<PriceHistoryResponse> => {
     const query = new URLSearchParams({ card_name: cardName, days: String(days) }).toString();
-    return apiRequestGet<PriceHistoryResponse>(`/api/v1/price_history?${query}`);
+    return apiRequest<PriceHistoryResponse>(`/api/v1/price_history?${query}`);
   },
 };
 
@@ -257,7 +249,7 @@ export const searchApi = {
     sort_by?: 'relevance' | 'price_asc' | 'price_desc' | 'listings';
   }): Promise<SearchResponse> => {
     const query = new URLSearchParams(params as any).toString();
-    return apiRequestGet<SearchResponse>(`/api/v1/search?${query}`);
+    return apiRequest<SearchResponse>(`/api/v1/search?${query}`);
   },
 };
 
@@ -273,7 +265,7 @@ export interface NewsArticle {
 
 export const newsApi = {
   getNews: async (limit: number = 10): Promise<NewsArticle[]> => {
-    return apiRequestGet<NewsArticle[]>(`/api/v1/news?limit=${limit}`);
+    return apiRequest<NewsArticle[]>(`/api/v1/news?limit=${limit}`);
   },
 };
 
@@ -286,7 +278,7 @@ export interface NotificationPrefs {
 
 export const notificationApi = {
   getPrefs: async (): Promise<NotificationPrefs> => {
-    return apiRequestGet<NotificationPrefs>('/api/v1/auth/notifications/preferences');
+    return apiRequest<NotificationPrefs>('/api/v1/auth/notifications/preferences');
   },
   updatePrefs: async (prefs: Partial<NotificationPrefs>): Promise<NotificationPrefs> => {
     return apiRequest<NotificationPrefs>('/api/v1/auth/notifications/preferences', {
@@ -343,7 +335,7 @@ export interface AdminStatsResponse {
 
 export const adminApi = {
   getStats: async (): Promise<AdminStatsResponse> => {
-    return apiRequestGet<AdminStatsResponse>('/api/v1/admin/stats');
+    return apiRequest<AdminStatsResponse>('/api/v1/admin/stats');
   },
 };
 
@@ -355,11 +347,11 @@ export interface PlanPricesResponse {
 export const subscriptionApi = {
   /** Public: Stripe price IDs from backend (works when NEXT_PUBLIC_STRIPE_* missing at build). */
   getPlanPrices: async (): Promise<PlanPricesResponse> => {
-    return apiRequestGet<PlanPricesResponse>('/api/v1/subscriptions/plan-prices');
+    return apiRequest<PlanPricesResponse>('/api/v1/subscriptions/plan-prices');
   },
 
   getStatus: async () => {
-    return apiRequestGet('/api/v1/subscriptions/status');
+    return apiRequest('/api/v1/subscriptions/status');
   },
   
   createCheckoutSession: async (priceId: string) => {

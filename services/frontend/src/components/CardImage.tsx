@@ -125,9 +125,12 @@ export default function CardImage({ cardName, size = 'sm', className = '' }: Car
   };
 
   useEffect(() => {
-    const el = rootRef.current;
-    if (!el) return;
     if (typeof IntersectionObserver === 'undefined') {
+      setVisible(true);
+      return;
+    }
+    const el = rootRef.current;
+    if (!el) {
       setVisible(true);
       return;
     }
