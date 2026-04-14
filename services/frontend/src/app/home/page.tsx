@@ -74,29 +74,23 @@ export default function HomePage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const scores = await marketApi.getDealScores({ limit: 100, min_score: 60 });
-      setDealScores(scores);
-      
-      try {
-        const sigs = await marketApi.getSignals({ limit: 50 });
-        setSignals(sigs);
-      } catch {
-        /* Signals are premium-gated for free users */
-      }
+      const [scoresRes, sigsRes, newsRes] = await Promise.allSettled([
+        marketApi.getDealScores({ limit: 100, min_score: 60 }),
+        marketApi.getSignals({ limit: 50 }),
+        newsApi.getNews(8),
+      ]);
 
-      // Fetch news in background
-      try {
-        const articles = await newsApi.getNews(8);
-        setNews(articles);
-      } catch {
-        /* News feed optional */
-      } finally {
-        setNewsLoading(false);
-      }
-      
-      setLoading(false);
+      if (scoresRes.status === 'fulfilled') setDealScores(scoresRes.value);
+      else setDealScores([]);
+
+      if (sigsRes.status === 'fulfilled') setSignals(sigsRes.value);
+      else setSignals([]);
+
+      if (newsRes.status === 'fulfilled') setNews(newsRes.value);
+      else setNews([]);
     } catch (err) {
       console.error('Error loading data:', err);
+    } finally {
       setLoading(false);
       setNewsLoading(false);
     }

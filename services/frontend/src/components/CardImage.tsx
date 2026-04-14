@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 
 interface CardImageProps {
@@ -10,6 +10,7 @@ interface CardImageProps {
 }
 
 const imageCache: Record<string, string | null> = {};
+const tcgInflight = new Map<string, Promise<string | null>>();
 const LS_PREFIX = 'card_img_v2_';
 
 function normalizeListingTitle(name: string): string {
@@ -81,7 +82,7 @@ async function fetchPokemonTcgImage(cardName: string): Promise<string | null> {
     try {
       const res = await fetch(
         `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}&pageSize=1&select=id,name,images`,
-        { signal: AbortSignal.timeout(6500) }
+        { signal: AbortSignal.timeout(4000) }
       );
       if (!res.ok) continue;
       const data = await res.json();
@@ -94,7 +95,18 @@ async function fetchPokemonTcgImage(cardName: string): Promise<string | null> {
   return null;
 }
 
+function fetchPokemonTcgImageDeduped(cardName: string): Promise<string | null> {
+  const key = cacheKeyFor(cardName);
+  const hit = tcgInflight.get(key);
+  if (hit) return hit;
+  const p = fetchPokemonTcgImage(cardName).finally(() => tcgInflight.delete(key));
+  tcgInflight.set(key, p);
+  return p;
+}
+
 export default function CardImage({ cardName, size = 'sm', className = '' }: CardImageProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -113,6 +125,28 @@ export default function CardImage({ cardName, size = 'sm', className = '' }: Car
   };
 
   useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === 'undefined') {
+      setVisible(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisible(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: '160px', threshold: 0.01 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
+
     const key = cacheKeyFor(cardName);
 
     const run = async () => {
@@ -130,7 +164,7 @@ export default function CardImage({ cardName, size = 'sm', className = '' }: Car
         return;
       }
 
-      const url = await fetchPokemonTcgImage(cardName);
+      const url = await fetchPokemonTcgImageDeduped(cardName);
       imageCache[key] = url;
       setCachedImage(key, url ?? '');
       setImageUrl(url);
@@ -145,10 +179,13 @@ export default function CardImage({ cardName, size = 'sm', className = '' }: Car
 
     setLoading(true);
     run();
-  }, [cardName]);
+  }, [cardName, visible]);
 
   return (
-    <div className={`${sizeClasses[size]} rounded-lg overflow-hidden flex-shrink-0 ${className}`}>
+    <div
+      ref={rootRef}
+      className={`${sizeClasses[size]} rounded-lg overflow-hidden flex-shrink-0 ${className}`}
+    >
       {loading ? (
         <div className="w-full h-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 animate-pulse rounded-lg" />
       ) : imageUrl ? (

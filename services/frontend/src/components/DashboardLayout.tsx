@@ -44,6 +44,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       }
     }
 
+    // Show the shell immediately; refresh /me in the background (avoids blocking every page on auth)
+    setAuthChecked(true);
+
     let cancelled = false;
     (async () => {
       try {
@@ -58,10 +61,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           localStorage.removeItem('access_token');
           localStorage.removeItem('user');
           router.push('/login');
-          return;
         }
-      } finally {
-        if (!cancelled) setAuthChecked(true);
       }
     })();
 
