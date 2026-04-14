@@ -5,8 +5,8 @@ Calculates market metrics per product from raw price data
 
 import gc
 import logging
-from collections import defaultdict
-from typing import Any, DefaultDict, Dict, List, Optional, Tuple
+from collections import defaultdict, deque
+from typing import Any, Deque, DefaultDict, Dict, List, Optional, Tuple
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -57,7 +57,7 @@ class MarketStatsCalculator:
 
             for (product_name, product_set, category), pairs in buckets.items():
                 try:
-                    df = pd.DataFrame(pairs, columns=["price_eur", "scraped_at"])
+                    df = pd.DataFrame(list(pairs), columns=["price_eur", "scraped_at"])
                     stats = await self._calculate_product_stats(
                         product_name, product_set, category, df
                     )
@@ -83,20 +83,24 @@ class MarketStatsCalculator:
 
     async def _stream_raw_prices_into_buckets(
         self, session: Any, cutoff_date: datetime
-    ) -> DefaultDict[Tuple[str, str, str], List[Tuple[float, Any]]]:
+    ) -> DefaultDict[Tuple[str, str, str], Deque[Tuple[float, Any]]]:
         """
         Load raw_prices in ID batches to avoid OOM (single .all() on large tables).
+        Each product keeps at most MAX_LISTINGS_PER_PRODUCT samples (stream ends with higher ids ≈ newer scrapes).
         """
         from app.models import RawPrice
 
         batch_size = max(500, int(self.config.RAW_FETCH_BATCH_SIZE))
+        cap = max(100, int(self.config.MAX_LISTINGS_PER_PRODUCT))
         last_id = 0
         total_rows = 0
-        buckets: DefaultDict[Tuple[str, str, str], List[Tuple[float, Any]]] = defaultdict(list)
+        buckets: DefaultDict[Tuple[str, str, str], Deque[Tuple[float, Any]]] = defaultdict(
+            lambda: deque(maxlen=cap)
+        )
 
         logger.info(
-            f"Streaming raw_prices (batch={batch_size}, lookback={self.config.LONG_WINDOW_DAYS}d). "
-            "Set ANALYSIS_LONG_WINDOW_DAYS or ANALYSIS_RAW_FETCH_BATCH_SIZE if needed."
+            f"Streaming raw_prices (batch={batch_size}, lookback={self.config.LONG_WINDOW_DAYS}d, "
+            f"max {cap} rows/product). Tune ANALYSIS_LONG_WINDOW_DAYS / ANALYSIS_MAX_LISTINGS_PER_PRODUCT."
         )
 
         batch_idx = 0

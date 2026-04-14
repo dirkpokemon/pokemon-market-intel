@@ -119,8 +119,9 @@ Deploy these services separately:
    ```
    ANALYSIS_LONG_WINDOW_DAYS=14
    ANALYSIS_RAW_FETCH_BATCH_SIZE=4000
+   ANALYSIS_MAX_LISTINGS_PER_PRODUCT=800
    ```
-   (`LONG_WINDOW` default 30 — lower = less RAM; `RAW_FETCH_BATCH_SIZE` defaults to 6000 row ORM chunks.)
+   (`LONG_WINDOW` default 30; `RAW_FETCH_BATCH_SIZE` 6000; `MAX_LISTINGS_PER_PRODUCT` 1500 caps RAM when a few SKUs have huge listing counts.)
 
 #### Alerts Worker:
 1. **"+ New"** → **"GitHub Repo"** → Select repo

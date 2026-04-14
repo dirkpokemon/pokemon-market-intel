@@ -96,6 +96,8 @@ class AnalysisConfig(BaseSettings):
     MAX_CONCURRENT_TASKS: int = 4
     # Stream raw_prices in chunks (ORM .all() on huge tables OOMs on Railway)
     RAW_FETCH_BATCH_SIZE: int = 6000
+    # Per product: keep only the last N points (by stream order ≈ rising id ≈ recent scrapes). Stops RAM from growing with millions of duplicate listings.
+    MAX_LISTINGS_PER_PRODUCT: int = 1500
     
     # Logging
     LOG_LEVEL: str = "INFO"
