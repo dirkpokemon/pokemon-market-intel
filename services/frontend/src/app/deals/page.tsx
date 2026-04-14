@@ -206,7 +206,7 @@ function DealsPageInner() {
               {presetSet || presetCard ? (
                 <>
                   {dealScores.length} deal{dealScores.length !== 1 ? 's' : ''} loaded for this filter
-                  {isSubscriberRole(userRole) ? ' · full list for subscribers' : ' · free: top 20 with score ≥65'}
+                  {isSubscriberRole(userRole) ? ' · full list for subscribers' : ' · free: top 20 with score ≥55'}
                 </>
               ) : isSubscriberRole(userRole) ? (
                 `${dealScores.length} deals with AI scoring, refreshed hourly`
@@ -340,7 +340,7 @@ function DealsPageInner() {
                     : dealScores.length > 0
                       ? 'Your filters exclude every loaded deal. Lower min. score or price, or clear the search field.'
                       : presetSet || presetCard
-                        ? 'No scored deals match this set/card right now (free: score ≥65 only). Try all deals or check back later.'
+                        ? 'No scored deals match this set/card right now (free: score ≥55 only). Try all deals or check back later.'
                         : 'Adjust your search or filters'}
                 </p>
                 <button

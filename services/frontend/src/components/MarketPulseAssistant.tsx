@@ -236,8 +236,8 @@ function renderAssistantBody(
           <div className="space-y-2">
             {[
               { label: '80+', count: marketData.scoreDistribution.excellent, color: 'bg-green-500' },
-              { label: '65–79', count: marketData.scoreDistribution.good, color: 'bg-blue-500' },
-              { label: '50–64', count: marketData.scoreDistribution.fair, color: 'bg-gray-400' },
+              { label: '55–79', count: marketData.scoreDistribution.good, color: 'bg-blue-500' },
+              { label: '50–54', count: marketData.scoreDistribution.fair, color: 'bg-gray-400' },
               { label: '<50', count: marketData.scoreDistribution.low, color: 'bg-gray-300' },
             ].map((row) => (
               <div key={row.label}>

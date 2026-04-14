@@ -5,7 +5,7 @@ Provides access to signals, deal scores, market statistics, full catalog search,
 
 import logging
 import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -150,7 +150,7 @@ async def get_deal_scores(
     """
     Get deal scores for products
     
-    **Free tier:** Limited to top 20 deals (score ≥ 65)
+    **Free tier:** Limited to top 20 deals (score ≥ 55)
     **Premium tier:** Full access to all deals
     
     Returns active deal scores sorted by score (highest first)
@@ -168,7 +168,7 @@ async def get_deal_scores(
     
     # Apply free tier limits (generous sample; premium gets full catalog)
     if not current_user.is_premium():
-        min_score = max(min_score, 65)
+        min_score = max(min_score, 55)
         limit = min(limit, 20)
     
     # Build query
@@ -283,7 +283,7 @@ async def get_market_digest(
     highlights = [SignalResponse.from_orm(s) for s in highlights_q.scalars().all()]
 
     # Set trends (aggregated from market_statistics)
-    cutoff = datetime.utcnow() - timedelta(hours=48)
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
     set_trends_q = await db.execute(
         select(
             MarketStats.product_set,
@@ -554,7 +554,7 @@ async def get_price_history(
     derived from the raw_prices append-only table (real scraped data, not simulated).
     Also returns a condition breakdown (NM / LP / HP etc.) for context.
     """
-    cutoff = datetime.utcnow() - timedelta(days=days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 
     # Fuzzy match: exact first, fall back to ILIKE if no results
     exact_check = await db.execute(

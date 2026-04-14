@@ -44,7 +44,7 @@ export default function MarketPulsePage() {
       marketApi.getMarketDigest().then(setDigest).catch(() => setDigest(null));
       const scores = await marketApi.getDealScores({
         limit: 100,
-        min_score: 40,
+        min_score: 0,
       });
       setDealScores(scores);
     } catch (err) {
@@ -62,7 +62,7 @@ export default function MarketPulsePage() {
   const visibleDeals = useMemo(() => {
     if (isSubscriber) return dealScores;
     return dealScores
-      .filter((d) => d.deal_score >= 65)
+      .filter((d) => d.deal_score >= 55)
       .sort((a, b) => b.deal_score - a.deal_score)
       .slice(0, 20);
   }, [dealScores, isSubscriber]);
@@ -93,8 +93,8 @@ export default function MarketPulsePage() {
 
     const scoreDistribution = {
       excellent: visibleDeals.filter((d) => d.deal_score >= 80).length,
-      good: visibleDeals.filter((d) => d.deal_score >= 65 && d.deal_score < 80).length,
-      fair: visibleDeals.filter((d) => d.deal_score >= 50 && d.deal_score < 65).length,
+      good: visibleDeals.filter((d) => d.deal_score >= 55 && d.deal_score < 80).length,
+      fair: visibleDeals.filter((d) => d.deal_score >= 50 && d.deal_score < 55).length,
       low: visibleDeals.filter((d) => d.deal_score < 50).length,
     };
 
@@ -143,7 +143,7 @@ export default function MarketPulsePage() {
             Market assistant: pick a suggestion for answers from live data.{' '}
             {isSubscriber
               ? `${dealScores.length} listings · refreshed hourly${lastUpdated ? ` · ${lastUpdated}` : ''}`
-              : `Free: top 20 (score ≥65)${lastUpdated ? ` · ${lastUpdated}` : ''}`}
+              : `Free: top 20 (score ≥55)${lastUpdated ? ` · ${lastUpdated}` : ''}`}
           </p>
         </div>
 

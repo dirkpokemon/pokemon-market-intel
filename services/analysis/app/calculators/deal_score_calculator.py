@@ -5,10 +5,10 @@ Implements the weighted deal scoring formula
 
 import logging
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app.config_analysis import analysis_config
 from app.database import AsyncSessionLocal
@@ -41,21 +41,18 @@ class DealScoreCalculator:
         logger.info("Starting deal score calculation")
         
         async with AsyncSessionLocal() as session:
-            # Get recent market stats
-            cutoff = datetime.utcnow() - timedelta(hours=24)
-            query = select(MarketStats).where(
-                MarketStats.calculated_at >= cutoff
-            )
-            
+            # TIMESTAMPTZ columns must use timezone-aware Python datetimes (naive utcnow() can exclude all rows).
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
+            query = select(MarketStats).where(MarketStats.calculated_at >= cutoff)
             result = await session.execute(query)
             market_stats = result.scalars().all()
-            
+
             if not market_stats:
                 logger.warning("No market stats found")
                 return 0
-            
+
             logger.info(f"Calculating deal scores for {len(market_stats)} products")
-            
+
             deal_scores = []
             for stats in market_stats:
                 try:
@@ -65,13 +62,21 @@ class DealScoreCalculator:
                 except Exception as e:
                     logger.error(f"Error calculating deal score for {stats.product_name}: {e}")
                     continue
-            
-            # Save to database
-            if deal_scores:
-                session.add_all(deal_scores)
-                await session.commit()
-                logger.info(f"Saved {len(deal_scores)} deal scores")
-            
+
+            if not deal_scores:
+                logger.warning("No deal scores computed; leaving existing active deal_scores unchanged")
+                return 0
+
+            await session.execute(
+                update(DealScore).where(DealScore.is_active == True).values(is_active=False)
+            )
+            await session.commit()
+            logger.info("Deactivated previous active deal scores")
+
+            session.add_all(deal_scores)
+            await session.commit()
+            logger.info(f"Saved {len(deal_scores)} deal scores")
+
             return len(deal_scores)
     
     async def _calculate_deal_score(self, stats: MarketStats) -> Optional[DealScore]:
@@ -110,8 +115,8 @@ class DealScoreCalculator:
         # Calculate confidence based on data quality
         confidence = self._calculate_confidence(stats.data_quality, stats.sample_size)
         
-        # Calculate expiration (24 hours)
-        expires_at = datetime.utcnow() + timedelta(hours=24)
+        now = datetime.now(timezone.utc)
+        expires_at = now + timedelta(hours=24)
         
         return DealScore(
             product_name=stats.product_name,
@@ -140,7 +145,7 @@ class DealScoreCalculator:
             
             is_active=True,
             expires_at=expires_at,
-            calculated_at=datetime.utcnow(),
+            calculated_at=now,
         )
     
     def _calculate_price_deviation_score(self, current_price: float, market_avg: float) -> float:

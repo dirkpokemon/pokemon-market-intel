@@ -57,7 +57,7 @@ export function isSubscriberRole(role: string | undefined | null): boolean {
 
 export const PLAN_FEATURES = {
   free: [
-    'Top 20 deal scores (score ≥ 65)',
+    'Top 20 deal scores (score ≥ 55)',
     'Basic market stats (Market Pulse sample)',
     'Portfolio & watchlist',
     'Card search (170K+ listings)',

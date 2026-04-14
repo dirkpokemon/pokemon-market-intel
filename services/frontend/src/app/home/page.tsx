@@ -75,7 +75,7 @@ export default function HomePage() {
     try {
       setLoading(true);
       const [scoresRes, sigsRes, newsRes] = await Promise.allSettled([
-        marketApi.getDealScores({ limit: 100, min_score: 60 }),
+        marketApi.getDealScores({ limit: 100, min_score: 0 }),
         marketApi.getSignals({ limit: 50 }),
         newsApi.getNews(8),
       ]);
@@ -377,7 +377,7 @@ export default function HomePage() {
               <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-4">Your Market at a Glance</h2>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard title="Total Deals" value={dealScores.length} subtitle="Active opportunities" icon="🎴" color="blue" />
-                <StatCard title="Avg Deal Score" value={avgDealScore} subtitle="Market average" icon="📊" color="purple" trend={{ value: 12, label: 'vs last week', isPositive: true }} />
+                <StatCard title="Avg Deal Score" value={avgDealScore} subtitle="Market average" icon="📊" color="purple" />
                 <StatCard title="Excellent Deals" value={excellentDeals} subtitle="Score 80+" icon="⭐" color="green" />
                 <StatCard title="Active Signals" value={signals.length} subtitle="Hourly scan" icon="🎯" color="blue" />
               </div>

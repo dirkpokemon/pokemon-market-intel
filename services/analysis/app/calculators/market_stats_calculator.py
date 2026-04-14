@@ -12,7 +12,7 @@ from decimal import Decimal
 
 import pandas as pd
 import numpy as np
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from app.config_analysis import analysis_config
 from app.database import AsyncSessionLocal
@@ -48,6 +48,11 @@ class MarketStatsCalculator:
             if not buckets:
                 logger.warning("No raw price data found in lookback window")
                 return 0
+
+            # Replace snapshot only after we know we have data (avoid empty table on failed runs).
+            await session.execute(delete(MarketStats))
+            await session.commit()
+            logger.info("Replacing market_statistics snapshot (single generation per run)")
 
             logger.info(f"Computing stats for {len(buckets)} products (streamed aggregates)")
 

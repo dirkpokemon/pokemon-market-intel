@@ -16,7 +16,7 @@ class AnalysisConfig(BaseSettings):
 
     # Time windows (days)
     SHORT_WINDOW_DAYS: int = 7
-    LONG_WINDOW_DAYS: int = 30
+    LONG_WINDOW_DAYS: int = 14
     
     # Data quality thresholds
     MIN_SAMPLES_EXCELLENT: int = 50

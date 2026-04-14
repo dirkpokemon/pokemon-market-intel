@@ -8,7 +8,7 @@ Does NOT generate deal-based signals (those belong in Top Deals).
 
 import logging
 from typing import List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
 
@@ -81,7 +81,7 @@ class SignalGenerator:
         signals = []
         
         async with AsyncSessionLocal() as session:
-            cutoff = datetime.utcnow() - timedelta(hours=24)
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
             result = await session.execute(
                 select(MarketStats).where(MarketStats.calculated_at >= cutoff)
             )
@@ -118,7 +118,7 @@ class SignalGenerator:
         signals = []
         
         async with AsyncSessionLocal() as session:
-            cutoff = datetime.utcnow() - timedelta(hours=24)
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
             result = await session.execute(
                 select(MarketStats).where(MarketStats.calculated_at >= cutoff)
             )
@@ -155,7 +155,7 @@ class SignalGenerator:
         signals = []
         
         async with AsyncSessionLocal() as session:
-            cutoff = datetime.utcnow() - timedelta(hours=24)
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
             result = await session.execute(
                 select(MarketStats).where(MarketStats.calculated_at >= cutoff)
             )
@@ -188,7 +188,7 @@ class SignalGenerator:
         signals = []
         
         async with AsyncSessionLocal() as session:
-            cutoff = datetime.utcnow() - timedelta(hours=24)
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
             result = await session.execute(
                 select(MarketStats).where(MarketStats.calculated_at >= cutoff)
             )
@@ -239,7 +239,7 @@ class SignalGenerator:
         signals = []
         
         async with AsyncSessionLocal() as session:
-            cutoff = datetime.utcnow() - timedelta(hours=24)
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
             result = await session.execute(
                 select(MarketStats).where(MarketStats.calculated_at >= cutoff)
             )
@@ -272,7 +272,7 @@ class SignalGenerator:
         signals = []
         
         async with AsyncSessionLocal() as session:
-            cutoff = datetime.utcnow() - timedelta(hours=24)
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
             
             # Aggregate trends per set
             result = await session.execute(
@@ -369,6 +369,6 @@ class SignalGenerator:
             priority=priority,
             is_active=True,
             is_sent=False,
-            detected_at=datetime.utcnow(),
-            expires_at=datetime.utcnow() + timedelta(hours=24),
+            detected_at=datetime.now(timezone.utc),
+            expires_at=datetime.now(timezone.utc) + timedelta(hours=24),
         )
