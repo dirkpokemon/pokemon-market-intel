@@ -1,5 +1,6 @@
 -- Prune old raw_prices in batches (less WAL/disk spike than one huge DELETE).
--- Use ONLY when Postgres is healthy and you have a backup.
+-- Prefer: analysis service hourly retention (see ANALYSIS_RAW_PRICES_RETENTION_DAYS in RAILWAY_DEPLOYMENT.md).
+-- Use this file ONLY for a one-time big cleanup when Postgres is healthy and you have a backup.
 -- Connect: Railway → Postgres → Connect / psql, or: railway connect Postgres
 --
 -- 1) See size / oldest row:

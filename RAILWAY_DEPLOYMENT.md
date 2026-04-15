@@ -123,6 +123,14 @@ Deploy these services separately:
    ```
    (`LONG_WINDOW` default 30; `RAW_FETCH_BATCH_SIZE` 6000; `MAX_LISTINGS_PER_PRODUCT` 1500 caps RAM when a few SKUs have huge listing counts.)
 
+   **Disk / `raw_prices` growth (recommended on small Postgres volumes):** each hourly run deletes rows older than the retention window (batched). Default keeps **60 days**; tune or disable:
+   ```
+   ANALYSIS_RAW_PRICES_RETENTION_DAYS=60
+   ANALYSIS_RAW_PRICES_PRUNE_BATCH_ROWS=40000
+   ANALYSIS_RAW_PRICES_PRUNE_MAX_BATCHES_PER_RUN=25
+   ```
+   Set `ANALYSIS_RAW_PRICES_RETENTION_DAYS=0` to turn pruning off. After Postgres is healthy again, you may still run `scripts/prune_raw_prices_batches.sql` once manually for a big one-time cleanup.
+
 #### Alerts Worker:
 1. **"+ New"** → **"GitHub Repo"** → Select repo
 2. **Settings:**

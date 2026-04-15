@@ -100,6 +100,13 @@ class AnalysisConfig(BaseSettings):
     RAW_FETCH_BATCH_SIZE: int = 6000
     # Per product: keep only the last N points (by stream order ≈ rising id ≈ recent scrapes). Stops RAM from growing with millions of duplicate listings.
     MAX_LISTINGS_PER_PRODUCT: int = 1500
+
+    # Disk: append-only raw_prices fills small Postgres volumes. Each full analysis run
+    # deletes rows older than this many days (batched). Set ANALYSIS_RAW_PRICES_RETENTION_DAYS=0 to disable.
+    # Default 60 keeps ~2× the default LONG_WINDOW (30) for safety + price-history headroom.
+    RAW_PRICES_RETENTION_DAYS: int = 60
+    RAW_PRICES_PRUNE_BATCH_ROWS: int = 40000
+    RAW_PRICES_PRUNE_MAX_BATCHES_PER_RUN: int = 25
     
     # Logging
     LOG_LEVEL: str = "INFO"

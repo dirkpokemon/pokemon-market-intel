@@ -126,6 +126,15 @@ class AnalysisService:
         logger.info("Starting full analysis pipeline")
         logger.info("=" * 60)
 
+        try:
+            from app.raw_prices_retention import prune_raw_prices_older_than_retention
+
+            pruned = await prune_raw_prices_older_than_retention()
+            if pruned:
+                logger.info(f"Retention step removed {pruned} old raw_prices rows")
+        except Exception as e:
+            logger.error(f"raw_prices retention step failed (continuing pipeline): {e}", exc_info=True)
+
         # Step 1: Market statistics
         stats_count = await self.calculate_market_stats()
         
