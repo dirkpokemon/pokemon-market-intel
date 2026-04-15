@@ -5,6 +5,9 @@
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+/** Abort slow requests so login/dashboard do not hang indefinitely if the API is wedged. */
+const API_REQUEST_TIMEOUT_MS = 45_000;
+
 export interface ApiError {
   detail: string;
 }
@@ -133,21 +136,46 @@ async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const token = getAuthToken();
-  
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
   };
-  
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
-  
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+  } catch (e: unknown) {
+    if (e instanceof Error && e.name === 'AbortError') {
+      const err = new Error(
+        'Request timed out. The API may be overloaded or the database is busy — try again in a minute.'
+      );
+      (err as { status?: number }).status = 408;
+      throw err;
+    }
+    if (e instanceof TypeError) {
+      const err = new Error(
+        `Cannot reach API at ${API_URL}. Set NEXT_PUBLIC_API_URL to your backend URL (e.g. Railway API) and redeploy the frontend.`
+      );
+      (err as { status?: number }).status = 0;
+      throw err;
+    }
+    throw e;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
   if (!response.ok) {
     let message = 'API request failed';
     try {
@@ -164,10 +192,10 @@ async function apiRequest<T>(
       /* ignore non-JSON error bodies */
     }
     const err = new Error(message);
-    (err as any).status = response.status;
+    (err as { status?: number }).status = response.status;
     throw err;
   }
-  
+
   return response.json();
 }
 
@@ -228,7 +256,8 @@ export const marketApi = {
       .filter(([, v]) => v !== undefined && v !== null && v !== '')
       .map(([k, v]) => [k, String(v)] as [string, string]);
     const query = new URLSearchParams(entries).toString();
-    return apiRequest<DealScore[]>(`/api/v1/deal_scores?${query}`);
+    const path = query ? `/api/v1/deal_scores?${query}` : '/api/v1/deal_scores';
+    return apiRequest<DealScore[]>(path);
   },
 
   getMarketDigest: async (): Promise<MarketDigest> => {

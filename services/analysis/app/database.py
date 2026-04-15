@@ -2,11 +2,16 @@
 Database Configuration for Analysis Service
 """
 
+import logging
+import ssl
 from typing import AsyncGenerator
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 # Railway provides postgresql:// or postgres:// — convert to asyncpg driver
 def _make_async_url(url: str) -> str:
@@ -15,16 +20,33 @@ def _make_async_url(url: str) -> str:
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     return url
 
-# Create async engine
-# pool_pre_ping: avoid using connections dropped by PgBouncer / idle timeouts during long jobs.
+
+def _connect_args(url: str) -> dict:
+    """Match backend SSL handling for Railway proxy URLs."""
+    if "proxy.rlwy.net" in url or "railway" in url.lower():
+        ssl_ctx = ssl.create_default_context()
+        ssl_ctx.check_hostname = False
+        ssl_ctx.verify_mode = ssl.CERT_NONE
+        logger.info("Railway PostgreSQL detected — SSL enabled (analysis)")
+        return {"ssl": ssl_ctx}
+    return {}
+
+
+_db_url = settings.DATABASE_URL
+_connect = _connect_args(_db_url)
+
+# Small pool: pipeline is mostly sequential; per-batch streaming sessions must not
+# exhaust shared Postgres max_connections (otherwise API login / getMe fail).
 engine = create_async_engine(
-    _make_async_url(settings.DATABASE_URL),
-    pool_size=10,
-    max_overflow=5,
+    _make_async_url(_db_url),
+    pool_size=2,
+    max_overflow=2,
+    pool_timeout=60,
     pool_pre_ping=True,
     pool_recycle=1800,
     echo=False,
     future=True,
+    connect_args=_connect,
 )
 
 # Create async session factory
