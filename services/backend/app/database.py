@@ -16,13 +16,16 @@ logger = logging.getLogger(__name__)
 connect_args = {}
 db_url = settings.DATABASE_URL
 
-# If connecting to Railway (proxy URL), configure SSL
+# Configure SSL based on host
 if "proxy.rlwy.net" in db_url or "railway" in db_url:
     ssl_ctx = ssl.create_default_context()
     ssl_ctx.check_hostname = False
     ssl_ctx.verify_mode = ssl.CERT_NONE
     connect_args["ssl"] = ssl_ctx
-    logger.info("Railway PostgreSQL detected — SSL enabled")
+    logger.info("Railway PostgreSQL detected — SSL enabled (no verify)")
+elif "supabase.co" in db_url:
+    connect_args["ssl"] = ssl.create_default_context()
+    logger.info("Supabase PostgreSQL detected — SSL enabled")
 
 logger.info(f"Connecting to database: {db_url[:50]}...")
 

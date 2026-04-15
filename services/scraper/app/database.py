@@ -2,6 +2,7 @@
 Database Configuration for Scraper Service
 """
 
+import ssl
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
@@ -14,9 +15,20 @@ def _make_async_url(url: str) -> str:
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     return url
 
+def _connect_args(url: str) -> dict:
+    if "proxy.rlwy.net" in url or "railway" in url.lower():
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        return {"ssl": ctx}
+    if "supabase.co" in url:
+        return {"ssl": ssl.create_default_context()}
+    return {}
+
 # Create async engine
 engine = create_async_engine(
     _make_async_url(settings.DATABASE_URL),
+    connect_args=_connect_args(settings.DATABASE_URL),
     pool_size=10,
     max_overflow=5,
     echo=False,

@@ -2,15 +2,35 @@
 Database connection and session management for Alert Engine
 """
 
+import ssl
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 
 from app.config import settings
 
 
+def _make_async_url(url: str) -> str:
+    url = url.replace("postgres://", "postgresql://", 1)
+    if url.startswith("postgresql://") and "+asyncpg" not in url:
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
+def _connect_args(url: str) -> dict:
+    if "proxy.rlwy.net" in url or "railway" in url.lower():
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        return {"ssl": ctx}
+    if "supabase.co" in url:
+        return {"ssl": ssl.create_default_context()}
+    return {}
+
+
 # Create async engine
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    _make_async_url(settings.DATABASE_URL),
+    connect_args=_connect_args(settings.DATABASE_URL),
     echo=False,
     pool_pre_ping=True,
     pool_size=5,
