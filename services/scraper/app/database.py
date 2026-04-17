@@ -1,4 +1,4 @@
-"""
+﻿"""
 Database Configuration for Scraper Service
 """
 
@@ -22,7 +22,10 @@ def _connect_args(url: str) -> dict:
         ctx.verify_mode = ssl.CERT_NONE
         return {"ssl": ctx}
     if "supabase.co" in url:
-        return {"ssl": ssl.create_default_context()}
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        return {"ssl": ctx}
     return {}
 
 # Create async engine

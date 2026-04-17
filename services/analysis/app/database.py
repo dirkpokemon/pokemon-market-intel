@@ -30,8 +30,11 @@ def _connect_args(url: str) -> dict:
         logger.info("Railway PostgreSQL detected — SSL enabled (no verify)")
         return {"ssl": ssl_ctx}
     if "supabase.co" in url:
-        logger.info("Supabase PostgreSQL detected — SSL enabled")
-        return {"ssl": ssl.create_default_context()}
+        ssl_ctx = ssl.create_default_context()
+        ssl_ctx.check_hostname = False
+        ssl_ctx.verify_mode = ssl.CERT_NONE
+        logger.info("Supabase PostgreSQL detected — SSL enabled (no verify)")
+        return {"ssl": ssl_ctx}
     return {}
 
 

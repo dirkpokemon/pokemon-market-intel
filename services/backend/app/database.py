@@ -1,4 +1,4 @@
-"""
+﻿"""
 Database Configuration and Session Management
 """
 
@@ -22,10 +22,13 @@ if "proxy.rlwy.net" in db_url or "railway" in db_url:
     ssl_ctx.check_hostname = False
     ssl_ctx.verify_mode = ssl.CERT_NONE
     connect_args["ssl"] = ssl_ctx
-    logger.info("Railway PostgreSQL detected — SSL enabled (no verify)")
+    logger.info("Railway PostgreSQL detected â€” SSL enabled (no verify)")
 elif "supabase.co" in db_url:
-    connect_args["ssl"] = ssl.create_default_context()
-    logger.info("Supabase PostgreSQL detected — SSL enabled")
+    ssl_ctx = ssl.create_default_context()
+    ssl_ctx.check_hostname = False
+    ssl_ctx.verify_mode = ssl.CERT_NONE
+    connect_args["ssl"] = ssl_ctx
+    logger.info("Supabase PostgreSQL detected - SSL enabled (no verify)")
 
 logger.info(f"Connecting to database: {db_url[:50]}...")
 
@@ -63,9 +66,9 @@ async def init_db() -> None:
         from sqlalchemy import text
         async with engine.begin() as conn:
             result = await conn.execute(text("SELECT 1"))
-            logger.info(f"✅ Database connection successful")
+            logger.info(f"âœ… Database connection successful")
     except Exception as e:
-        logger.error(f"❌ Database connection failed: {e}")
+        logger.error(f"âŒ Database connection failed: {e}")
         # Don't raise - app can still start and health check will work
 
 
