@@ -204,6 +204,67 @@ async def get_deal_scores(
     return [DealScoreResponse.from_orm(score) for score in deal_scores]
 
 
+@router.get("/sealed_prices")
+async def get_sealed_prices(
+    set_name: str = Query(..., description="Set name to look up sealed products for"),
+    days: int = Query(default=14, le=60, description="How many days back to look"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get sealed product prices for a given set.
+
+    Queries raw_prices where card_number IS NULL (sealed detection logic) and
+    aggregates by product name to return min/avg/max price per product.
+    """
+    from datetime import datetime, timedelta, timezone
+    from app.models.raw_price import RawPrice
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+
+    # Aggregate: for each distinct product name in this set, get price stats
+    stmt = (
+        select(
+            RawPrice.card_name,
+            RawPrice.source,
+            RawPrice.source_url,
+            func.min(RawPrice.price).label("min_price"),
+            func.avg(RawPrice.price).label("avg_price"),
+            func.max(RawPrice.price).label("max_price"),
+            func.count(RawPrice.id).label("listing_count"),
+            func.max(RawPrice.scraped_at).label("last_seen"),
+        )
+        .where(
+            and_(
+                RawPrice.card_number.is_(None),          # sealed products have no card_number
+                func.lower(RawPrice.card_set) == func.lower(set_name),
+                RawPrice.scraped_at >= cutoff,
+                RawPrice.price > 0,
+            )
+        )
+        .group_by(RawPrice.card_name, RawPrice.source, RawPrice.source_url)
+        .order_by(RawPrice.card_name)
+        .limit(50)
+    )
+
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    return [
+        {
+            "product_name": row.card_name,
+            "source": row.source,
+            "source_url": row.source_url,
+            "min_price": float(row.min_price),
+            "avg_price": float(row.avg_price),
+            "max_price": float(row.max_price),
+            "listing_count": row.listing_count,
+            "last_seen": row.last_seen.isoformat() if row.last_seen else None,
+        }
+        for row in rows
+    ]
+
+
 @router.get("/market_stats", response_model=List[MarketStatsResponse])
 async def get_market_stats(
     limit: int = Query(default=50, le=100, description="Maximum number of stats to return"),

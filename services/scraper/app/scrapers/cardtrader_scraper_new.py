@@ -24,6 +24,25 @@ from app.database import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
 
+# Keywords that identify a blueprint as a sealed product rather than a single card.
+# CardTrader uses the same blueprints endpoint for both — we detect by name.
+SEALED_KEYWORDS = [
+    'booster box', 'display box', 'booster display',
+    'elite trainer box', 'etb', 'trainer box',
+    'blister pack', 'blister',
+    'tin', 'collection box', 'gift box',
+    'premium collection', 'special collection',
+    'poster collection', 'figure collection',
+    'bundle', 'starter deck', 'theme deck',
+    'v box', 'vmax box', 'ex box',
+    'booster bundle',
+]
+
+def _is_sealed_product(name: str) -> bool:
+    """Return True if the blueprint name looks like a sealed product."""
+    lower = name.lower()
+    return any(kw in lower for kw in SEALED_KEYWORDS)
+
 
 class CardTraderScraperV2:
     """
@@ -219,11 +238,16 @@ class CardTraderScraperV2:
                     # Condition (if available)
                     condition = properties.get('condition', 'NM')
                     
+                    # Detect sealed products: leave card_number=None so the
+                    # analysis engine sets category='sealed' automatically.
+                    is_sealed = _is_sealed_product(card_name)
+                    card_number = None if is_sealed else str(blueprint.get('id'))
+
                     # Create raw_price entry
                     raw_price = RawPrice(
                         card_name=card_name,
                         card_set=expansion.get('name_en') or expansion.get('name'),
-                        card_number=str(blueprint.get('id')),  # Use blueprint_id as card number
+                        card_number=card_number,
                         condition=condition,
                         language=language,
                         price=float(price),

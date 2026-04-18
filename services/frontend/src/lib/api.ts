@@ -289,6 +289,25 @@ export const searchApi = {
   },
 };
 
+// Sealed Prices
+export interface SealedPrice {
+  product_name: string;
+  source: string;
+  source_url?: string;
+  min_price: number;
+  avg_price: number;
+  max_price: number;
+  listing_count: number;
+  last_seen?: string;
+}
+
+export const sealedApi = {
+  getPrices: async (setName: string, days = 14): Promise<SealedPrice[]> => {
+    const q = new URLSearchParams({ set_name: setName, days: String(days) }).toString();
+    return apiRequest<SealedPrice[]>(`/api/v1/sealed_prices?${q}`);
+  },
+};
+
 // News
 export interface NewsArticle {
   title: string;
