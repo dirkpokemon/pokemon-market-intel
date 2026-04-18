@@ -11,6 +11,7 @@ import StatCard from '@/components/StatCard';
 import DealModal from '@/components/DealModal';
 import CardImage from '@/components/CardImage';
 import OnboardingTour from '@/components/OnboardingTour';
+import SignalSetupWizard from '@/components/SignalSetupWizard';
 
 export default function HomePage() {
   const router = useRouter();
@@ -35,6 +36,7 @@ export default function HomePage() {
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [newsLoading, setNewsLoading] = useState(true);
   const [showSubSuccess, setShowSubSuccess] = useState(false);
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -59,6 +61,12 @@ export default function HomePage() {
           .then((me) => {
             setUser(me);
             localStorage.setItem('user', JSON.stringify(me));
+            // Show signal setup wizard for new paid subscribers who haven't set it up yet
+            const isPaid = me.role === 'paid' || me.role === 'pro' || me.role === 'admin';
+            const alreadyDone = localStorage.getItem('signals_setup_done');
+            if (isPaid && !alreadyDone) {
+              setTimeout(() => setShowSetupWizard(true), 800);
+            }
           })
           .catch(() => {});
       }
@@ -663,6 +671,14 @@ export default function HomePage() {
             setShowOnboarding(false);
             localStorage.setItem('onboarding_completed', 'true');
           }}
+        />
+      )}
+
+      {/* Signal Setup Wizard — shown after a new paid subscription */}
+      {showSetupWizard && (
+        <SignalSetupWizard
+          onClose={() => setShowSetupWizard(false)}
+          onDone={() => setShowSetupWizard(false)}
         />
       )}
     </DashboardLayout>

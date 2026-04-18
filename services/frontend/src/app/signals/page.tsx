@@ -6,6 +6,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import CardImage from '@/components/CardImage';
 import Link from 'next/link';
 import { SUBSCRIBER_BADGE, UPSELL_SUBSCRIBE } from '@/lib/plans';
+import SignalSetupWizard from '@/components/SignalSetupWizard';
 
 // ─── Watchlist helpers ────────────────────────────────────────────────────────
 
@@ -321,12 +322,21 @@ export default function PriceSignalsPage() {
   const [scope, setScope] = useState<'all' | 'cards' | 'sets'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [accessDenied, setAccessDenied] = useState(false);
+  const [showSetupBanner, setShowSetupBanner] = useState(false);
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     if (!token) { window.location.href = '/login'; return; }
     const userData = localStorage.getItem('user');
-    if (userData) setUser(JSON.parse(userData));
+    if (userData) {
+      const u = JSON.parse(userData);
+      setUser(u);
+      // Show setup banner for paid users who haven't configured signals
+      const isUserPaid = u?.role === 'paid' || u?.role === 'pro' || u?.role === 'admin';
+      const setupDone = localStorage.getItem('signals_setup_done');
+      if (isUserPaid && !setupDone) setShowSetupBanner(true);
+    }
     loadData();
   }, []);
 
@@ -457,6 +467,40 @@ export default function PriceSignalsPage() {
             Refresh
           </button>
         </div>
+
+        {/* Signal setup banner — shown to paid users who haven't configured notifications */}
+        {showSetupBanner && !loading && (
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl px-4 py-3.5 mb-6">
+            <div className="flex items-start gap-3 flex-1">
+              <span className="text-xl flex-shrink-0">🔔</span>
+              <div>
+                <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                  Ontvang signals als ze binnenkomen
+                </p>
+                <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
+                  Stel in via welk kanaal je alerts wil — email, Telegram of WhatsApp. Duurt minder dan een minuut.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0 pl-8 sm:pl-0">
+              <button
+                onClick={() => setShowSetupWizard(true)}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg transition"
+              >
+                Instellen →
+              </button>
+              <button
+                onClick={() => {
+                  setShowSetupBanner(false);
+                  localStorage.setItem('signals_setup_done', '1');
+                }}
+                className="px-3 py-2 text-emerald-700 dark:text-emerald-300 hover:text-emerald-900 dark:hover:text-emerald-100 text-sm transition"
+              >
+                Later
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Stale data warning */}
         {signalsAreStale && !loading && (
@@ -681,6 +725,17 @@ export default function PriceSignalsPage() {
           </>
         )}
       </div>
+
+      {/* Signal Setup Wizard modal */}
+      {showSetupWizard && (
+        <SignalSetupWizard
+          onClose={() => setShowSetupWizard(false)}
+          onDone={() => {
+            setShowSetupWizard(false);
+            setShowSetupBanner(false);
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 }
