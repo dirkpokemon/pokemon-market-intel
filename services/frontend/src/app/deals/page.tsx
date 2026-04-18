@@ -32,43 +32,56 @@ function DealCard({ deal, watchlist, toggleWatchlist, setSelectedDeal, getScoreC
   const savingsPercent = deal.market_avg_price
     ? Math.round((1 - deal.current_price / deal.market_avg_price) * 100)
     : 0;
+
   return (
     <div
       onClick={() => setSelectedDeal(deal)}
-      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition cursor-pointer group relative overflow-hidden"
+      className="rounded-xl overflow-hidden bg-gray-950 dark:bg-gray-950 border border-gray-800 hover:border-gray-600 transition cursor-pointer group"
     >
-      {savingsPercent > 5 && (
-        <div className="absolute top-3 left-3 z-10 px-2 py-0.5 bg-green-600 text-white text-[11px] font-bold rounded-md shadow-sm">
-          -{savingsPercent}%
+      {/* ── Card art section ── */}
+      <div className="relative h-52 bg-gray-900 overflow-hidden">
+        {/* Image centered, contained */}
+        <div className="absolute inset-0 flex items-center justify-center p-3">
+          <CardImage cardName={deal.product_name} size="xl" className="max-h-full" />
         </div>
-      )}
-      <button
-        onClick={(e) => { e.stopPropagation(); toggleWatchlist(deal.id); }}
-        className="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-700 transition text-sm shadow-sm border border-gray-200/80 dark:border-gray-600"
-      >
-        {watchlist.includes(deal.id) ? '⭐' : '☆'}
-      </button>
-      <div className="px-4 pt-4 flex justify-center">
-        <CardImage cardName={deal.product_name} size="md" />
-      </div>
-      <div className="p-4">
-        <div className="flex justify-between items-start mb-1">
-          <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 flex-1 pr-2">{deal.product_name}</h3>
-          <div className={`w-10 h-10 rounded-lg ${getScoreBg(deal.deal_score)} flex items-center justify-center flex-shrink-0`}>
-            <span className={`text-sm font-bold ${getScoreColor(deal.deal_score)}`}>{deal.deal_score}</span>
+
+        {/* Bottom gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/30 to-transparent pointer-events-none" />
+
+        {/* Top-left: savings badge */}
+        {savingsPercent > 5 && (
+          <div className="absolute top-3 left-3 z-10 px-2.5 py-1 bg-emerald-500 text-white text-[11px] font-bold rounded-lg shadow-sm">
+            -{savingsPercent}%
           </div>
-        </div>
-        {deal.product_set && <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 truncate">{deal.product_set}</p>}
-        <div className="flex items-end justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
-          <div>
-            <p className="text-lg font-bold text-gray-900 dark:text-white">&euro;{deal.current_price.toFixed(2)}</p>
-            {deal.market_avg_price && (
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 line-through">&euro;{deal.market_avg_price.toFixed(2)} avg</p>
-            )}
-          </div>
-          {savingsPercent > 0 && (
-            <p className="text-xs font-medium text-green-600 dark:text-green-400">Save &euro;{((deal.market_avg_price || 0) - deal.current_price).toFixed(2)}</p>
+        )}
+
+        {/* Top-right: watchlist */}
+        <button
+          onClick={(e) => { e.stopPropagation(); toggleWatchlist(deal.id); }}
+          className="absolute top-3 right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition text-sm"
+        >
+          {watchlist.includes(deal.id) ? '⭐' : '☆'}
+        </button>
+
+        {/* Bottom: card name overlaid on gradient */}
+        <div className="absolute bottom-0 left-0 right-0 px-3.5 pb-3 z-10">
+          <h3 className="text-sm font-bold text-white line-clamp-1 leading-snug">{deal.product_name}</h3>
+          {deal.product_set && (
+            <p className="text-[11px] text-gray-400 truncate mt-0.5">{deal.product_set}</p>
           )}
+        </div>
+      </div>
+
+      {/* ── Price + score row ── */}
+      <div className="px-3.5 py-3 flex items-center justify-between bg-gray-950">
+        <div>
+          <p className="text-lg font-bold text-white">&euro;{deal.current_price.toFixed(2)}</p>
+          {deal.market_avg_price && savingsPercent > 0 && (
+            <p className="text-[11px] text-gray-500 line-through">&euro;{deal.market_avg_price.toFixed(2)} avg</p>
+          )}
+        </div>
+        <div className={`w-10 h-10 rounded-lg ${getScoreBg(deal.deal_score)} flex items-center justify-center`}>
+          <span className={`text-sm font-bold ${getScoreColor(deal.deal_score)}`}>{deal.deal_score}</span>
         </div>
       </div>
     </div>

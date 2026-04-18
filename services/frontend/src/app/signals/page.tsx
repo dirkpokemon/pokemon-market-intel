@@ -171,27 +171,40 @@ function SignalCard({ signal }: { signal: Signal }) {
     >
       {/* ── Compact header ── */}
       <div className="p-5">
-        <div className="flex items-start justify-between gap-3 mb-1">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-lg flex-shrink-0" aria-hidden>{meta.icon}</span>
-            <h4 className="text-base font-bold text-gray-900 dark:text-white truncate">{signal.product_name}</h4>
-          </div>
-          <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 flex-shrink-0 whitespace-nowrap">
-            <span>{level.label}</span>
-            <span className="w-[3px] h-[3px] rounded-full bg-gray-300 dark:bg-gray-600" />
-            {signal.confidence != null && (
-              <>
-                <span>{Math.round(Number(signal.confidence))}% confidence</span>
+        {/* Header row: text left, card image right (card signals only) */}
+        <div className="flex items-start gap-4">
+          {/* Left: all the text content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-lg flex-shrink-0" aria-hidden>{meta.icon}</span>
+                <h4 className="text-base font-bold text-gray-900 dark:text-white truncate">{signal.product_name}</h4>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 flex-shrink-0 whitespace-nowrap">
+                <span>{level.label}</span>
                 <span className="w-[3px] h-[3px] rounded-full bg-gray-300 dark:bg-gray-600" />
-              </>
-            )}
-            <span>{timeAgo(signal.detected_at)}</span>
-          </div>
-        </div>
+                {signal.confidence != null && (
+                  <>
+                    <span>{Math.round(Number(signal.confidence))}% confidence</span>
+                    <span className="w-[3px] h-[3px] rounded-full bg-gray-300 dark:bg-gray-600" />
+                  </>
+                )}
+                <span>{timeAgo(signal.detected_at)}</span>
+              </div>
+            </div>
 
-        <p className="text-[13px] text-gray-500 dark:text-gray-400 mb-3">
-          {subtitle} <span className="text-gray-300 dark:text-gray-600">\u00B7</span> <span className="text-gray-500 dark:text-gray-400">{meta.label}</span>
-        </p>
+            <p className="text-[13px] text-gray-500 dark:text-gray-400 mb-3">
+              {subtitle} <span className="text-gray-300 dark:text-gray-600">·</span> <span className="text-gray-500 dark:text-gray-400">{meta.label}</span>
+            </p>
+          </div>
+
+          {/* Right: card image for single-card signals */}
+          {!isSetSignal && (
+            <div className="flex-shrink-0 rounded-lg overflow-hidden w-16 h-[88px] bg-gray-100 dark:bg-gray-800">
+              <CardImage cardName={signal.product_name} size="xl" />
+            </div>
+          )}
+        </div>
 
         {/* Stats block */}
         {stats.length > 0 && (

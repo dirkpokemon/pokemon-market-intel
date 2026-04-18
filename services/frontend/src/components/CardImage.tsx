@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 interface CardImageProps {
   cardName: string;
-  size?: 'xs' | 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
 }
 
@@ -115,6 +115,7 @@ export default function CardImage({ cardName, size = 'sm', className = '' }: Car
     sm: 'w-12 h-16',
     md: 'w-16 h-22',
     lg: 'w-24 h-32',
+    xl: 'w-full h-full',
   };
 
   const sizePx: Record<NonNullable<CardImageProps['size']>, { w: number; h: number }> = {
@@ -122,6 +123,7 @@ export default function CardImage({ cardName, size = 'sm', className = '' }: Car
     sm: { w: 48, h: 64 },
     md: { w: 64, h: 88 },
     lg: { w: 96, h: 128 },
+    xl: { w: 220, h: 308 },
   };
 
   useEffect(() => {
@@ -198,7 +200,7 @@ export default function CardImage({ cardName, size = 'sm', className = '' }: Car
           width={sizePx[size].w}
           height={sizePx[size].h}
           unoptimized
-          className="w-full h-full object-cover rounded-lg"
+          className={`w-full h-full rounded-lg ${size === 'xl' ? 'object-contain' : 'object-cover'}`}
         />
       ) : (
         <div className="w-full h-full bg-gradient-to-br from-indigo-100 via-purple-50 to-blue-100 rounded-lg flex items-center justify-center border border-gray-200">

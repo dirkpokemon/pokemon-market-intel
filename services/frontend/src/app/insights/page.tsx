@@ -136,21 +136,13 @@ export default function MarketPulsePage() {
 
   return (
     <DashboardLayout>
-      <div className="px-4 sm:px-6 py-6 max-w-4xl mx-auto w-full flex flex-col min-h-[calc(100dvh-10rem)]">
-        <div className="mb-4 shrink-0">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pulse</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Market assistant: pick a suggestion for answers from live data.{' '}
-            {isSubscriber
-              ? `${dealScores.length} listings · refreshed hourly${lastUpdated ? ` · ${lastUpdated}` : ''}`
-              : `Free: top 20 (score ≥55)${lastUpdated ? ` · ${lastUpdated}` : ''}`}
-          </p>
-        </div>
+      <div className="px-4 sm:px-6 py-6 max-w-4xl mx-auto w-full flex flex-col" style={{ height: 'calc(100dvh - 5rem)' }}>
 
         {!loading && !isSubscriber && (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-lg px-3 py-2 mb-4 shrink-0">
             <p className="text-xs text-amber-900 dark:text-amber-100">
-              Free: limited sample. <span className="font-medium">Plus</span> uses the full catalog in Pulse.
+              Free: limited sample ({dealScores.length} listings).{' '}
+              <span className="font-medium">Plus</span> uses the full catalog in Pulse.
             </p>
             <Link
               href="/pricing"
@@ -162,14 +154,14 @@ export default function MarketPulsePage() {
         )}
 
         {loading ? (
-          <div className="flex items-center justify-center flex-1 min-h-[320px]">
+          <div className="flex-1 flex items-center justify-center rounded-2xl bg-gray-950">
             <div className="text-center">
-              <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-800 dark:border-gray-600 dark:border-t-gray-200 rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">Loading market data…</p>
+              <div className="w-8 h-8 border-2 border-gray-700 border-t-gray-300 rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-sm text-gray-400">Loading market data…</p>
             </div>
           </div>
         ) : marketData ? (
-          <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 min-h-0">
             <MarketPulseAssistant
               marketData={marketData}
               visibleDeals={visibleDeals}
@@ -177,12 +169,12 @@ export default function MarketPulsePage() {
               isSubscriber={isSubscriber}
               lastUpdatedLine={lastUpdated}
               selectedSetLabel=""
-              className="flex-1 shadow-md"
+              className="h-full"
             />
           </div>
         ) : (
-          <div className="text-center py-20 flex-1">
-            <p className="text-gray-500 dark:text-gray-400">No market data available.</p>
+          <div className="flex-1 flex items-center justify-center rounded-2xl bg-gray-950">
+            <p className="text-gray-500">No market data available.</p>
           </div>
         )}
       </div>

@@ -27,42 +27,20 @@ type PillId =
   | 'priceSpread'
   | 'priceBuckets';
 
-type ChatRole = 'user' | 'assistant';
-
 type ChatMessage =
   | { id: string; role: 'user'; text: string }
   | { id: string; role: 'assistant'; pillId: PillId }
   | { id: string; role: 'assistant'; hint: string };
 
 const PILLS: { id: PillId; label: string; subscriberOnly?: boolean }[] = [
-  { id: 'snapshot', label: 'Quick overview' },
-  { id: 'priceVsAvg', label: 'Price vs average' },
-  { id: 'topSets', label: 'Top sets' },
-  { id: 'trends7d', label: 'Sets ↑↓ 7d' },
-  { id: 'scoreMix', label: 'Score mix' },
-  { id: 'priceSpread', label: 'Price spread' },
-  { id: 'priceBuckets', label: 'Price buckets', subscriberOnly: true },
+  { id: 'snapshot',    label: "What's happening in the market?" },
+  { id: 'priceVsAvg', label: 'Which cards are below avg price?' },
+  { id: 'topSets',    label: 'Show me the top sets right now' },
+  { id: 'trends7d',   label: 'Which sets are trending up this week?' },
+  { id: 'scoreMix',   label: 'How are deal scores distributed?' },
+  { id: 'priceSpread', label: 'Show me the price spread' },
+  { id: 'priceBuckets', label: 'Break down by price range', subscriberOnly: true },
 ];
-
-function PulseAvatar({ busy }: { busy?: boolean }) {
-  return (
-    <div className="relative w-11 h-11 shrink-0">
-      <div
-        className={`absolute inset-0 rounded-full border-2 border-indigo-400/40 ${busy ? 'animate-ping' : 'opacity-0'}`}
-        aria-hidden
-      />
-      <div className="relative rounded-full bg-white dark:bg-gray-800 shadow-md border border-gray-200 dark:border-gray-600 p-0.5">
-        <svg viewBox="0 0 40 40" className="w-9 h-9" aria-hidden>
-          <circle cx="20" cy="20" r="18" fill="#fafafa" />
-          <path d="M20 2c9.94 0 18 8.06 18 18H2c0-9.94 8.06-18 18-18z" fill="#dc2626" />
-          <rect x="2" y="19" width="36" height="2" fill="#111827" />
-          <circle cx="20" cy="20" r="7" fill="#fff" stroke="#111827" strokeWidth="2" />
-          <circle cx="20" cy="20" r="3" fill="#111827" />
-        </svg>
-      </div>
-    </div>
-  );
-}
 
 function AssistantCard({
   title,
@@ -74,13 +52,13 @@ function AssistantCard({
   footer?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm overflow-hidden text-left">
-      <div className="px-3 py-2 bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-950/50 dark:to-violet-950/40 border-b border-indigo-100 dark:border-indigo-900/50">
-        <p className="text-xs font-semibold text-indigo-900 dark:text-indigo-200">{title}</p>
+    <div className="rounded-xl border border-gray-700 bg-gray-900 shadow-sm overflow-hidden text-left">
+      <div className="px-3 py-2 bg-gray-800 border-b border-gray-700">
+        <p className="text-xs font-semibold text-gray-300">{title}</p>
       </div>
-      <div className="p-3 text-sm text-gray-700 dark:text-gray-300">{children}</div>
+      <div className="p-3 text-sm text-gray-200">{children}</div>
       {footer ? (
-        <div className="px-3 py-2 bg-gray-50 dark:bg-gray-950/60 border-t border-gray-100 dark:border-gray-800 text-[10px] text-gray-500 dark:text-gray-400">
+        <div className="px-3 py-2 bg-gray-900 border-t border-gray-800 text-[10px] text-gray-500">
           {footer}
         </div>
       ) : null}
@@ -100,7 +78,7 @@ function renderAssistantBody(
   }
 ) {
   const { marketData, visibleDeals, digest, isSubscriber, selectedSetLabel, lastUpdatedLine } = ctx;
-  const scopeNote = selectedSetLabel ? `Filter: set “${selectedSetLabel}”.` : 'All sets in this data slice.';
+  const scopeNote = selectedSetLabel ? `Filter: set "${selectedSetLabel}".` : 'All sets in this data slice.';
   const sourceFooter = (
     <span>
       Source: scored deals in this view
@@ -111,69 +89,69 @@ function renderAssistantBody(
   switch (pillId) {
     case 'snapshot':
       return (
-        <AssistantCard title="Quick overview" footer={sourceFooter}>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">{scopeNote}</p>
+        <AssistantCard title="Market overview" footer={sourceFooter}>
+          <p className="text-xs text-gray-400 mb-3">{scopeNote}</p>
           <div className="grid grid-cols-2 gap-2">
-            <div className="rounded-lg bg-gray-50 dark:bg-gray-800/90 p-2 text-center">
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{marketData.totalProducts}</p>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">Listings</p>
+            <div className="rounded-lg bg-gray-800 p-3 text-center">
+              <p className="text-xl font-bold text-white">{marketData.totalProducts}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">Listings tracked</p>
             </div>
-            <div className="rounded-lg bg-gray-50 dark:bg-gray-800/90 p-2 text-center">
-              <p className="text-lg font-bold text-gray-900 dark:text-white">€{marketData.avgPrice.toFixed(2)}</p>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">Avg. price</p>
+            <div className="rounded-lg bg-gray-800 p-3 text-center">
+              <p className="text-xl font-bold text-white">€{marketData.avgPrice.toFixed(2)}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">Avg. price</p>
             </div>
-            <div className="rounded-lg bg-gray-50 dark:bg-gray-800/90 p-2 text-center">
-              <p className="text-lg font-bold text-gray-900 dark:text-white">{marketData.avgScore}</p>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">Avg. score</p>
+            <div className="rounded-lg bg-gray-800 p-3 text-center">
+              <p className="text-xl font-bold text-white">{marketData.avgScore}</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">Avg. deal score</p>
             </div>
-            <div className="rounded-lg bg-gray-50 dark:bg-gray-800/90 p-2 text-center">
-              <p className="text-lg font-bold text-gray-900 dark:text-white">
+            <div className="rounded-lg bg-gray-800 p-3 text-center">
+              <p className="text-xl font-bold text-white">
                 {digest?.total_sets != null ? digest.total_sets.toLocaleString() : '—'}
               </p>
-              <p className="text-[10px] text-gray-500 dark:text-gray-400">Sets (catalog)</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">Sets in catalog</p>
             </div>
           </div>
         </AssistantCard>
       );
     case 'priceVsAvg':
       return (
-        <AssistantCard title="Below / above market average" footer={sourceFooter}>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-            Deepest discounts (listing below its own market average) in this slice. Tap for Deals.
+        <AssistantCard title="Cards below market average" footer={sourceFooter}>
+          <p className="text-xs text-gray-400 mb-2">
+            Deepest discounts (listing below its own market average). Tap any card to view in Deals.
           </p>
-          <ul className="space-y-1.5 max-h-48 overflow-y-auto">
-            {marketData.buying.slice(0, 6).map((d) => (
+          <ul className="space-y-2 max-h-52 overflow-y-auto">
+            {marketData.buying.slice(0, 8).map((d) => (
               <li key={d.id}>
                 <Link
                   href={`/deals?card=${encodeURIComponent(d.product_name)}`}
-                  className="flex justify-between gap-2 text-xs hover:text-indigo-700 dark:hover:text-indigo-400"
+                  className="flex justify-between gap-2 text-xs hover:text-emerald-400 transition"
                 >
-                  <span className="truncate font-medium text-gray-900 dark:text-gray-100">{d.product_name}</span>
-                  <span className="text-green-700 dark:text-green-400 shrink-0 font-semibold">{d.delta.toFixed(1)}%</span>
+                  <span className="truncate font-medium text-gray-200">{d.product_name}</span>
+                  <span className="text-emerald-400 shrink-0 font-semibold">{d.delta.toFixed(1)}%</span>
                 </Link>
               </li>
             ))}
           </ul>
           {marketData.buying.length === 0 && (
-            <p className="text-xs text-gray-400 dark:text-gray-500">No rows with market average for this selection.</p>
+            <p className="text-xs text-gray-500">No rows with market average for this selection.</p>
           )}
         </AssistantCard>
       );
     case 'topSets':
       return (
         <AssistantCard title="Top sets in this view" footer={sourceFooter}>
-          <ul className="space-y-1.5">
+          <ul className="space-y-2">
             {marketData.topSets.slice(0, 6).map((s, i) => (
               <li key={s.name} className="flex justify-between gap-2 text-xs">
-                <span className="text-gray-400 dark:text-gray-500 w-4">{i + 1}</span>
+                <span className="text-gray-600 w-4">{i + 1}</span>
                 {s.name !== 'Unknown' ? (
-                  <Link href={`/deals?set=${encodeURIComponent(s.name)}`} className="flex-1 truncate font-medium text-indigo-700 dark:text-indigo-400 hover:underline">
+                  <Link href={`/deals?set=${encodeURIComponent(s.name)}`} className="flex-1 truncate font-medium text-emerald-400 hover:underline">
                     {s.name}
                   </Link>
                 ) : (
-                  <span className="flex-1 truncate text-gray-500 dark:text-gray-400">{s.name}</span>
+                  <span className="flex-1 truncate text-gray-500">{s.name}</span>
                 )}
-                <span className="text-gray-500 dark:text-gray-400 shrink-0">{s.count} deals</span>
+                <span className="text-gray-500 shrink-0">{s.count} deals</span>
               </li>
             ))}
           </ul>
@@ -183,36 +161,36 @@ function renderAssistantBody(
       if (!digest?.top_rising_sets?.length && !digest?.top_declining_sets?.length) {
         return (
           <AssistantCard title="Set trends (7d)" footer={sourceFooter}>
-            <p className="text-xs text-gray-500 dark:text-gray-400">No trend data available yet.</p>
+            <p className="text-xs text-gray-500">No trend data available yet.</p>
           </AssistantCard>
         );
       }
       return (
-        <AssistantCard title="Set trends (7d average)" footer={sourceFooter}>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">From market stats (broader than the deal leaderboard alone).</p>
-          <div className="grid grid-cols-1 gap-3 text-xs">
+        <AssistantCard title="Set trends (7d)" footer={sourceFooter}>
+          <p className="text-xs text-gray-400 mb-2">From market statistics — broader than the deal leaderboard alone.</p>
+          <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
-              <p className="font-semibold text-green-800 dark:text-green-300 mb-1">Rising</p>
-              <ul className="space-y-1">
+              <p className="font-semibold text-emerald-400 mb-2">📈 Rising</p>
+              <ul className="space-y-1.5">
                 {(digest.top_rising_sets || []).slice(0, 4).map((t) => (
                   <li key={t.product_set} className="flex justify-between gap-2">
-                    <Link href={`/deals?set=${encodeURIComponent(t.product_set)}`} className="truncate text-indigo-700 dark:text-indigo-400 hover:underline">
+                    <Link href={`/deals?set=${encodeURIComponent(t.product_set)}`} className="truncate text-gray-300 hover:text-emerald-400 transition">
                       {t.product_set}
                     </Link>
-                    <span className="text-green-700 dark:text-green-400 font-medium shrink-0">+{t.avg_trend}%</span>
+                    <span className="text-emerald-400 font-medium shrink-0">+{t.avg_trend}%</span>
                   </li>
                 ))}
               </ul>
             </div>
             <div>
-              <p className="font-semibold text-rose-800 dark:text-rose-300 mb-1">Declining</p>
-              <ul className="space-y-1">
+              <p className="font-semibold text-rose-400 mb-2">📉 Declining</p>
+              <ul className="space-y-1.5">
                 {(digest.top_declining_sets || []).slice(0, 4).map((t) => (
                   <li key={t.product_set} className="flex justify-between gap-2">
-                    <Link href={`/deals?set=${encodeURIComponent(t.product_set)}`} className="truncate text-indigo-700 dark:text-indigo-400 hover:underline">
+                    <Link href={`/deals?set=${encodeURIComponent(t.product_set)}`} className="truncate text-gray-300 hover:text-rose-400 transition">
                       {t.product_set}
                     </Link>
-                    <span className="text-rose-700 dark:text-rose-400 font-medium shrink-0">{t.avg_trend}%</span>
+                    <span className="text-rose-400 font-medium shrink-0">{t.avg_trend}%</span>
                   </li>
                 ))}
               </ul>
@@ -223,34 +201,32 @@ function renderAssistantBody(
     case 'scoreMix':
       if (!isSubscriber) {
         return (
-          <AssistantCard title="Score mix" footer={sourceFooter}>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">Full distribution across all score buckets is on Plus.</p>
-            <Link href="/pricing" className="inline-flex text-xs font-semibold text-white bg-gray-900 px-3 py-1.5 rounded-lg hover:bg-gray-800">
-              Plus
+          <AssistantCard title="Score distribution" footer={sourceFooter}>
+            <p className="text-xs text-gray-400 mb-3">Full distribution across all score buckets is available on Plus.</p>
+            <Link href="/pricing" className="inline-flex text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg transition">
+              Upgrade to Plus
             </Link>
           </AssistantCard>
         );
       }
       return (
-        <AssistantCard title="Score mix (this view)" footer={sourceFooter}>
-          <div className="space-y-2">
+        <AssistantCard title="Score distribution" footer={sourceFooter}>
+          <div className="space-y-2.5">
             {[
-              { label: '80+', count: marketData.scoreDistribution.excellent, color: 'bg-green-500' },
-              { label: '55–79', count: marketData.scoreDistribution.good, color: 'bg-blue-500' },
-              { label: '50–54', count: marketData.scoreDistribution.fair, color: 'bg-gray-400' },
-              { label: '<50', count: marketData.scoreDistribution.low, color: 'bg-gray-300' },
+              { label: '80+ Excellent', count: marketData.scoreDistribution.excellent, color: 'bg-emerald-500' },
+              { label: '55–79 Good', count: marketData.scoreDistribution.good, color: 'bg-blue-500' },
+              { label: '50–54 Fair', count: marketData.scoreDistribution.fair, color: 'bg-gray-500' },
+              { label: '<50 Low', count: marketData.scoreDistribution.low, color: 'bg-gray-700' },
             ].map((row) => (
               <div key={row.label}>
-                <div className="flex justify-between text-[11px] mb-0.5 text-gray-700 dark:text-gray-300">
+                <div className="flex justify-between text-[11px] mb-1 text-gray-300">
                   <span>{row.label}</span>
                   <span className="font-medium">{row.count}</span>
                 </div>
-                <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full ${row.color}`}
-                    style={{
-                      width: `${Math.max(4, (row.count / Math.max(1, marketData.totalProducts)) * 100)}%`,
-                    }}
+                    style={{ width: `${Math.max(4, (row.count / Math.max(1, marketData.totalProducts)) * 100)}%` }}
                   />
                 </div>
               </div>
@@ -261,7 +237,7 @@ function renderAssistantBody(
     case 'priceSpread':
       return (
         <AssistantCard title="Price spread" footer={sourceFooter}>
-          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Distribution of listing prices in this slice.</p>
+          <p className="text-xs text-gray-400 mb-2">Distribution of listing prices in this slice.</p>
           <div className="h-[200px] w-full">
             <PriceChart deals={visibleDeals.slice(0, isSubscriber ? 100 : 20)} />
           </div>
@@ -270,16 +246,16 @@ function renderAssistantBody(
     case 'priceBuckets':
       if (!isSubscriber) {
         return (
-          <AssistantCard title="Price buckets" footer={sourceFooter}>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">Available on Plus.</p>
-            <Link href="/pricing" className="inline-flex text-xs font-semibold text-white bg-gray-900 px-3 py-1.5 rounded-lg hover:bg-gray-800">
-              Plus
+          <AssistantCard title="Price range breakdown" footer={sourceFooter}>
+            <p className="text-xs text-gray-400 mb-3">Available on Plus.</p>
+            <Link href="/pricing" className="inline-flex text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg transition">
+              Upgrade to Plus
             </Link>
           </AssistantCard>
         );
       }
       return (
-        <AssistantCard title="Price buckets" footer={sourceFooter}>
+        <AssistantCard title="Price range breakdown" footer={sourceFooter}>
           <div className="grid grid-cols-2 gap-2 text-center text-xs">
             {[
               { label: '< €5', n: marketData.ranges.under5 },
@@ -287,9 +263,9 @@ function renderAssistantBody(
               { label: '€20–€50', n: marketData.ranges.range20to50 },
               { label: '> €50', n: marketData.ranges.over50 },
             ].map((b) => (
-              <div key={b.label} className="rounded-lg bg-gray-50 dark:bg-gray-800/90 py-2">
-                <p className="text-base font-bold text-gray-900 dark:text-white">{b.n}</p>
-                <p className="text-[10px] text-gray-500 dark:text-gray-400">{b.label}</p>
+              <div key={b.label} className="rounded-lg bg-gray-800 py-3">
+                <p className="text-lg font-bold text-white">{b.n}</p>
+                <p className="text-[10px] text-gray-400 mt-0.5">{b.label}</p>
               </div>
             ))}
           </div>
@@ -330,21 +306,19 @@ export default function MarketPulseAssistant({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  // Reset conversation when set filter changes
   useEffect(() => {
-    setMessages([
-      {
-        id: 'welcome',
-        role: 'assistant',
-        pillId: 'snapshot',
-      },
-    ]);
+    setMessages([]);
   }, [selectedSetLabel]);
+
+  const hasConversation = messages.length > 0;
 
   const pushPill = (pillId: PillId) => {
     setBusy(true);
+    const label = PILLS.find((p) => p.id === pillId)?.label || pillId;
     setMessages((prev) => [
       ...prev,
-      { id: `u-${Date.now()}`, role: 'user', text: PILLS.find((p) => p.id === pillId)?.label || pillId },
+      { id: `u-${Date.now()}`, role: 'user', text: label },
       { id: `a-${Date.now()}`, role: 'assistant', pillId },
     ]);
     window.setTimeout(() => setBusy(false), 400);
@@ -361,92 +335,129 @@ export default function MarketPulseAssistant({
       {
         id: `a-${Date.now()}`,
         role: 'assistant',
-        hint:
-          'I still use fixed data blocks (no free-form AI yet). Pick a suggestion above for prices, sets, or trends—you will get an answer from the live feed.',
+        hint: 'I use live market data blocks — no free-form AI yet. Pick one of the suggestions below for a real answer from the feed.',
       },
     ]);
   };
 
   const ctx = { marketData, visibleDeals, digest, isSubscriber, selectedSetLabel, lastUpdatedLine };
-
   const visiblePills = PILLS.filter((p) => !p.subscriberOnly || isSubscriber);
 
   return (
-    <div
-      className={`flex flex-col h-full min-h-[420px] rounded-2xl border border-indigo-200/80 dark:border-gray-700/80 bg-gradient-to-b from-white to-indigo-50/40 dark:from-gray-900 dark:to-gray-950 shadow-sm overflow-hidden ${className ?? ''}`}
-    >
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-indigo-100 dark:border-gray-800 bg-white/90 dark:bg-gray-900/95">
-        <PulseAvatar busy={busy} />
-        <div className="min-w-0">
-          <p className="text-sm font-bold text-gray-900 dark:text-white">Pulse</p>
-          <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-snug">Answers from live market data</p>
+    <div className={`flex flex-col h-full rounded-2xl bg-gray-950 overflow-hidden ${className ?? ''}`}>
+
+      {/* ── Header bar ── */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800 shrink-0">
+        <div>
+          <p className="text-sm font-bold text-white tracking-tight">Card Advisor</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">AI-powered market intelligence</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {busy && (
+            <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-ping" />
+          )}
+          <span className="px-2.5 py-1 bg-blue-600/20 text-blue-400 text-[11px] font-semibold rounded-full border border-blue-500/30">
+            Live data
+          </span>
         </div>
       </div>
 
-      <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50/80 dark:bg-gray-900/80">
-        <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1.5">Suggestions</p>
-        <div className="flex flex-wrap gap-1.5">
-          {visiblePills.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => pushPill(p.id)}
-              className="px-2.5 py-1 rounded-full text-[11px] font-semibold border border-indigo-200 dark:border-indigo-800/80 bg-white dark:bg-gray-800 text-indigo-800 dark:text-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 transition"
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* ── Content area ── */}
+      {!hasConversation ? (
+        /* Empty state — centered call to action */
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 gap-8">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-white mb-2">What would you like to know?</h2>
+            <p className="text-sm text-gray-400">
+              Ask about prices, trends, signals, or compare cards
+            </p>
+          </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 space-y-3 bg-white/40 dark:bg-gray-950/40">
-        {messages.map((msg) => {
-          if (msg.role === 'user') {
-            return (
-              <div key={msg.id} className="flex justify-end">
-                <div className="max-w-[85%] rounded-2xl rounded-br-md bg-gray-900 text-white text-xs px-3 py-2">{msg.text}</div>
-              </div>
-            );
-          }
-          if ('hint' in msg) {
+          {/* Suggestion pills — 2 rows, centered */}
+          <div className="flex flex-wrap gap-2 justify-center max-w-xl">
+            {visiblePills.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => pushPill(p.id)}
+                className="px-4 py-2 rounded-full border border-gray-700 bg-gray-900 text-gray-300 text-sm hover:bg-gray-800 hover:text-white hover:border-gray-500 transition"
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        /* Chat thread */
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 space-y-4">
+          {messages.map((msg) => {
+            if (msg.role === 'user') {
+              return (
+                <div key={msg.id} className="flex justify-end">
+                  <div className="max-w-[80%] rounded-2xl rounded-br-md bg-gray-800 border border-gray-700 text-white text-sm px-4 py-2.5">
+                    {msg.text}
+                  </div>
+                </div>
+              );
+            }
+            if ('hint' in msg) {
+              return (
+                <div key={msg.id} className="flex justify-start">
+                  <div className="max-w-[90%] rounded-2xl rounded-bl-md border border-gray-800 bg-gray-900 text-sm text-gray-400 px-4 py-3 leading-relaxed">
+                    {msg.hint}
+                  </div>
+                </div>
+              );
+            }
             return (
               <div key={msg.id} className="flex justify-start">
-                <div className="max-w-[95%] rounded-2xl rounded-bl-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/90 text-xs text-gray-600 dark:text-gray-300 px-3 py-2 leading-relaxed">
-                  {msg.hint}
+                <div className="max-w-[90%] w-full space-y-1">
+                  <p className="text-[10px] font-semibold text-gray-500 px-1">Card Advisor</p>
+                  {renderAssistantBody(msg.pillId, ctx)}
                 </div>
               </div>
             );
-          }
-          return (
-            <div key={msg.id} className="flex justify-start">
-              <div className="max-w-[95%] w-full space-y-1">
-                <p className="text-[10px] font-semibold text-indigo-700 dark:text-indigo-400">Pulse</p>
-                {renderAssistantBody(msg.pillId, ctx)}
-              </div>
-            </div>
-          );
-        })}
-        <div ref={endRef} />
-      </div>
+          })}
 
-      <form onSubmit={onSubmitFreeText} className="p-3 border-t border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95">
-        <div className="flex gap-2">
+          {/* Suggestions persist at end of thread */}
+          <div className="pt-3">
+            <p className="text-[10px] text-gray-600 mb-2 px-1">Suggestions</p>
+            <div className="flex flex-wrap gap-2">
+              {visiblePills.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => pushPill(p.id)}
+                  className="px-3 py-1.5 rounded-full border border-gray-800 bg-gray-900 text-gray-400 text-xs hover:bg-gray-800 hover:text-gray-200 hover:border-gray-700 transition"
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div ref={endRef} />
+        </div>
+      )}
+
+      {/* ── Input bar ── */}
+      <form onSubmit={onSubmitFreeText} className="px-4 py-4 border-t border-gray-800 shrink-0">
+        <div className="flex items-center gap-3 bg-gray-900 border border-gray-700 rounded-2xl px-4 py-3 focus-within:border-gray-500 transition">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Short question (experimental)…"
-            className="flex-1 min-w-0 text-xs px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900 focus:border-indigo-300 dark:focus:border-indigo-700"
+            placeholder="Ask about any Pokémon card…"
+            className="flex-1 bg-transparent text-white text-sm placeholder-gray-600 outline-none"
           />
           <button
             type="submit"
-            className="shrink-0 px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-400"
+            className="shrink-0 text-gray-500 hover:text-white transition p-0.5"
+            aria-label="Send"
           >
-            Send
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
           </button>
         </div>
-        <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">
-          For answers from the feed, use the pills. Free typing only returns a short hint (no AI yet).
-        </p>
       </form>
     </div>
   );
