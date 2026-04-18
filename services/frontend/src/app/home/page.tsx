@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { authApi, marketApi, searchApi, newsApi, Signal, DealScore, CardSearchResult, NewsArticle } from '@/lib/api';
+import { ALL_SETS, PokemonSet } from '@/lib/pokemon-sets';
 import DashboardLayout from '@/components/DashboardLayout';
 import StatCard from '@/components/StatCard';
 import DealModal from '@/components/DealModal';
@@ -27,6 +28,7 @@ export default function HomePage() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchActive, setSearchActive] = useState(false);
   const [sortBy, setSortBy] = useState<'relevance' | 'price_asc' | 'price_desc' | 'listings'>('relevance');
+  const [matchedSets, setMatchedSets] = useState<PokemonSet[]>([]);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // News state
@@ -139,8 +141,14 @@ export default function HomePage() {
       setSearchActive(false);
       setSearchResults([]);
       setSearchTotal(0);
+      setMatchedSets([]);
       return;
     }
+    // Instant set matching from static catalog
+    const lower = value.toLowerCase();
+    const sets = ALL_SETS.filter(s => s.name.toLowerCase().includes(lower)).slice(0, 4);
+    setMatchedSets(sets);
+
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       executeSearch(value, sortBy);
@@ -223,12 +231,23 @@ export default function HomePage() {
 
               <div className="relative z-10">
                 {/* Header */}
-                <div className="flex items-center gap-3 mb-5">
-                  <h2 className="text-lg font-bold text-white">Market Search</h2>
-                  <span className="px-2.5 py-0.5 bg-green-500/20 text-green-400 text-[11px] font-bold rounded-full tracking-wider uppercase flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                    Hourly updated
-                  </span>
+                <div className="flex items-center justify-between gap-3 mb-5">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-bold text-white">Market Search</h2>
+                    <span className="px-2.5 py-0.5 bg-green-500/20 text-green-400 text-[11px] font-bold rounded-full tracking-wider uppercase flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
+                      Hourly updated
+                    </span>
+                  </div>
+                  <Link
+                    href="/sets"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 hover:border-gray-500 text-gray-300 hover:text-white text-xs font-medium transition"
+                  >
+                    📦 Browse all sets
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </Link>
                 </div>
 
                 {/* Search bar */}
@@ -247,7 +266,7 @@ export default function HomePage() {
                     />
                     {searchQuery && (
                       <button
-                        onClick={() => { setSearchQuery(''); setSearchActive(false); setSearchResults([]); setSearchTotal(0); }}
+                        onClick={() => { setSearchQuery(''); setSearchActive(false); setSearchResults([]); setSearchTotal(0); setMatchedSets([]); }}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -266,6 +285,24 @@ export default function HomePage() {
                     <span className="hidden sm:inline">Search</span>
                   </button>
                 </div>
+
+                {/* Set suggestions (instant, from static catalog) */}
+                {matchedSets.length > 0 && searchQuery.trim().length >= 2 && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {matchedSets.map(set => (
+                      <Link
+                        key={set.id}
+                        href={`/sets/${set.id}`}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition"
+                      >
+                        📦 {set.name}
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      </Link>
+                    ))}
+                  </div>
+                )}
 
                 {/* Search Results */}
                 {searchActive && searchQuery.trim() && (

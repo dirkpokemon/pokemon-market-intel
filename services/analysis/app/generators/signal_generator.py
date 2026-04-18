@@ -95,13 +95,23 @@ class SignalGenerator:
                     continue
                 price_trend = float(stats.price_trend_7d or 0)
                 volume_trend = float(stats.volume_trend_7d or 0)
-                
+
                 if (price_trend >= self.config.MOMENTUM_PRICE_CHANGE and
                     volume_trend >= self.config.MOMENTUM_VOLUME_CHANGE):
-                    
+
+                    if price_trend >= 40:
+                        level = 'high'
+                        confidence = min(95, 70 + price_trend / 10)
+                    elif price_trend >= 20:
+                        level = 'medium'
+                        confidence = 65 + price_trend / 5
+                    else:
+                        level = 'low'
+                        confidence = 55 + price_trend
+
                     signals.append(self._create_signal(
                         signal_type='momentum',
-                        signal_level='high' if price_trend >= 20 else 'medium',
+                        signal_level=level,
                         product_name=stats.product_name,
                         product_set=stats.product_set,
                         category=stats.category,
@@ -110,6 +120,7 @@ class SignalGenerator:
                         description=f"{stats.product_name}: price +{price_trend:.1f}% and volume +{volume_trend:.1f}% in 7 days",
                         metadata={'price_trend': round(price_trend, 2), 'volume_trend': round(volume_trend, 2)},
                         priority=7,
+                        confidence=round(min(95, confidence), 1),
                     ))
         
         logger.info(f"Generated {len(signals)} momentum signals")
@@ -135,10 +146,14 @@ class SignalGenerator:
                 
                 if (volume_trend <= self.config.RISK_VOLUME_DROP and
                     price_trend >= self.config.RISK_PRICE_RISE):
-                    
+
+                    # High only if both extremes are severe
+                    level = 'high' if (volume_trend <= -40 and price_trend >= 25) else 'medium'
+                    confidence = 75 if level == 'high' else 60
+
                     signals.append(self._create_signal(
                         signal_type='risk',
-                        signal_level='high',
+                        signal_level=level,
                         product_name=stats.product_name,
                         product_set=stats.product_set,
                         category=stats.category,
@@ -147,6 +162,7 @@ class SignalGenerator:
                         description=f"Risk: {stats.product_name} price +{price_trend:.1f}% but volume {volume_trend:.1f}% — possible bubble",
                         metadata={'price_trend': round(price_trend, 2), 'volume_trend': round(volume_trend, 2)},
                         priority=9,
+                        confidence=confidence,
                     ))
         
         logger.info(f"Generated {len(signals)} risk signals")
@@ -169,9 +185,19 @@ class SignalGenerator:
                 avg_price = float(stats.avg_price_30d or 0)
                 
                 if price_trend <= self.config.PRICE_DROP_THRESHOLD and avg_price > 1.0:
+                    if price_trend <= -35:
+                        level = 'high'
+                        confidence = min(90, 70 + abs(price_trend) / 5)
+                    elif price_trend <= -20:
+                        level = 'medium'
+                        confidence = 60 + abs(price_trend) / 5
+                    else:
+                        level = 'low'
+                        confidence = 50 + abs(price_trend)
+
                     signals.append(self._create_signal(
                         signal_type='price_drop',
-                        signal_level='high' if price_trend <= -25 else 'medium',
+                        signal_level=level,
                         product_name=stats.product_name,
                         product_set=stats.product_set,
                         category=stats.category,
@@ -180,6 +206,7 @@ class SignalGenerator:
                         description=f"{stats.product_name} dropped {price_trend:.1f}% in 7 days (avg was €{avg_price:.2f})",
                         metadata={'price_trend': round(price_trend, 2), 'avg_price_30d': round(avg_price, 2)},
                         priority=8,
+                        confidence=round(min(90, confidence), 1),
                     ))
         
         logger.info(f"Generated {len(signals)} price drop signals")
@@ -220,9 +247,19 @@ class SignalGenerator:
                         priority=5,
                     ))
                 elif volume_trend <= self.config.SUPPLY_DECREASE_THRESHOLD:
+                    if volume_trend <= -60:
+                        level = 'high'
+                        confidence = 80
+                    elif volume_trend <= -40:
+                        level = 'medium'
+                        confidence = 65
+                    else:
+                        level = 'low'
+                        confidence = 55
+
                     signals.append(self._create_signal(
                         signal_type='supply_drop',
-                        signal_level='high',
+                        signal_level=level,
                         product_name=stats.product_name,
                         product_set=stats.product_set,
                         category=stats.category,
@@ -231,6 +268,7 @@ class SignalGenerator:
                         description=f"{stats.product_name}: {volume_trend:+.0f}% fewer listings — shrinking supply, price may rise",
                         metadata={'volume_trend': round(volume_trend, 2), 'volume_7d': volume_7d},
                         priority=7,
+                        confidence=confidence,
                     ))
         
         logger.info(f"Generated {len(signals)} supply signals")
@@ -305,9 +343,19 @@ class SignalGenerator:
                     continue
                 
                 if avg_trend > 0:
+                    if avg_trend >= 75:
+                        level = 'high'
+                        confidence = min(92, 70 + avg_trend / 15)
+                    elif avg_trend >= 25:
+                        level = 'medium'
+                        confidence = 60 + avg_trend / 5
+                    else:
+                        level = 'low'
+                        confidence = 50 + avg_trend
+
                     signals.append(self._create_signal(
                         signal_type='set_rising',
-                        signal_level='high' if avg_trend >= 15 else 'medium',
+                        signal_level=level,
                         product_name=row.product_set,
                         product_set=row.product_set,
                         category='set_trend',
@@ -320,11 +368,23 @@ class SignalGenerator:
                             'card_count': card_count,
                         },
                         priority=8,
+                        confidence=round(min(92, confidence), 1),
                     ))
                 else:
+                    abs_trend = abs(avg_trend)
+                    if abs_trend >= 75:
+                        level = 'high'
+                        confidence = min(92, 70 + abs_trend / 15)
+                    elif abs_trend >= 25:
+                        level = 'medium'
+                        confidence = 60 + abs_trend / 5
+                    else:
+                        level = 'low'
+                        confidence = 50 + abs_trend
+
                     signals.append(self._create_signal(
                         signal_type='set_declining',
-                        signal_level='high' if avg_trend <= -15 else 'medium',
+                        signal_level=level,
                         product_name=row.product_set,
                         product_set=row.product_set,
                         category='set_trend',
@@ -337,6 +397,7 @@ class SignalGenerator:
                             'card_count': card_count,
                         },
                         priority=6,
+                        confidence=round(min(92, confidence), 1),
                     ))
         
         logger.info(f"Generated {len(signals)} set trend signals")
@@ -407,6 +468,7 @@ class SignalGenerator:
         description: str,
         metadata: dict = None,
         priority: int = 0,
+        confidence: float = 80.0,
     ) -> Signal:
         return Signal(
             signal_type=signal_type,
@@ -419,7 +481,7 @@ class SignalGenerator:
             deal_score=None,
             description=description,
             signal_metadata=json.dumps(metadata) if metadata else None,
-            confidence=Decimal('80.0'),
+            confidence=Decimal(str(round(confidence, 1))),
             priority=priority,
             is_active=True,
             is_sent=False,

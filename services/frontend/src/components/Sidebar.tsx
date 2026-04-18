@@ -40,7 +40,7 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
     { href: '/home', label: 'Home', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
     )},
-    { href: '/insights', label: 'Market Pulse', icon: (
+    { href: '/insights', label: 'Market Pulse', beta: true, icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
     )},
     { href: '/deals', label: 'Top Deals', icon: (
@@ -76,7 +76,7 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
     )},
   ];
 
-  const NavLink = ({ item, compact = false }: { item: typeof navItems[0] & { premium?: boolean }, compact?: boolean }) => {
+  const NavLink = ({ item, compact = false }: { item: typeof navItems[0] & { premium?: boolean; beta?: boolean }, compact?: boolean }) => {
     const isActive = pathname === item.href;
     return (
       <Link
@@ -93,14 +93,20 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
         {!compact && (
           <>
             <span className="truncate">{item.label}</span>
-            {item.premium && (
+            {(item as any).beta && (
+              <span className="ml-auto px-1.5 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 text-[10px] rounded font-semibold">BETA</span>
+            )}
+            {item.premium && !(item as any).beta && (
               <span className="ml-auto px-1.5 py-0.5 bg-indigo-100 text-indigo-600 text-[10px] rounded font-semibold">{SUBSCRIBER_BADGE}</span>
             )}
           </>
         )}
         {compact && (
-          <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-50 shadow-lg max-md:hidden">
+          <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 bg-gray-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition pointer-events-none whitespace-nowrap z-50 shadow-lg max-md:hidden flex items-center gap-1.5">
             {item.label}
+            {(item as any).beta && (
+              <span className="px-1 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] rounded font-semibold">BETA</span>
+            )}
           </div>
         )}
       </Link>

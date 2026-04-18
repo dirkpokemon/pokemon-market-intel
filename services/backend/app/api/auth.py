@@ -189,6 +189,31 @@ async def get_current_user_info(
     return UserResponse.model_validate(current_user)
 
 
+@router.post("/change-password")
+async def change_password(
+    data: dict,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Change the current user's password."""
+    current_password = data.get("current_password", "")
+    new_password = data.get("new_password", "")
+
+    if not verify_password(current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Huidig wachtwoord is onjuist")
+
+    if len(new_password) < 8:
+        raise HTTPException(status_code=400, detail="Nieuw wachtwoord moet minimaal 8 tekens zijn")
+
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one()
+    user.hashed_password = get_password_hash(new_password)
+    await db.commit()
+
+    logger.info("Password changed for user: %s", current_user.email)
+    return {"message": "Wachtwoord succesvol gewijzigd"}
+
+
 @router.post("/logout")
 async def logout():
     """Logout (client-side token removal)."""

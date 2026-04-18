@@ -88,9 +88,9 @@ function getTypeMeta(type: string) {
 
 function getLevelConfig(level: string) {
   switch (level) {
-    case 'high': return { badge: 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200', dot: 'bg-red-500' };
-    case 'medium': return { badge: 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200', dot: 'bg-amber-500' };
-    default: return { badge: 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-200', dot: 'bg-blue-500' };
+    case 'high': return { badge: 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200', dot: 'bg-red-500', barColor: '#ef4444', label: 'High priority' };
+    case 'medium': return { badge: 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200', dot: 'bg-amber-500', barColor: '#f59e0b', label: 'Medium priority' };
+    default: return { badge: 'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-200', dot: 'bg-blue-500', barColor: '#3b82f6', label: 'Low priority' };
   }
 }
 
@@ -134,183 +134,173 @@ function SignalCard({ signal }: { signal: Signal }) {
     setInWatchlist(nowIn);
   };
 
+  // Build stats for the compact block (max 3 shown)
+  const stats: { label: string; value: string; tone?: 'up' | 'down' | 'neutral' }[] = [];
+  if (parsedMeta.avg_trend !== undefined) {
+    stats.push({ label: 'Price trend', value: `${parsedMeta.avg_trend >= 0 ? '+' : ''}${parsedMeta.avg_trend}%`, tone: parsedMeta.avg_trend >= 0 ? 'up' : 'down' });
+  } else if (parsedMeta.price_trend !== undefined) {
+    stats.push({ label: 'Price trend', value: `${parsedMeta.price_trend >= 0 ? '+' : ''}${parsedMeta.price_trend}%`, tone: parsedMeta.price_trend >= 0 ? 'up' : 'down' });
+  }
+  if (parsedMeta.avg_volume_trend !== undefined) {
+    stats.push({ label: 'Volume trend', value: `${parsedMeta.avg_volume_trend >= 0 ? '+' : ''}${parsedMeta.avg_volume_trend}%`, tone: parsedMeta.avg_volume_trend >= 0 ? 'up' : 'down' });
+  } else if (parsedMeta.volume_trend !== undefined) {
+    stats.push({ label: 'Volume trend', value: `${parsedMeta.volume_trend >= 0 ? '+' : ''}${parsedMeta.volume_trend}%`, tone: parsedMeta.volume_trend >= 0 ? 'up' : 'down' });
+  }
+  if (parsedMeta.card_count !== undefined) {
+    stats.push({ label: 'Sample size', value: `${parsedMeta.card_count} cards` });
+  }
+  if (parsedMeta.volatility !== undefined && stats.length < 3) {
+    stats.push({ label: 'Volatility', value: `${parsedMeta.volatility}%` });
+  }
+  if (signal.current_price && stats.length < 3) {
+    stats.push({ label: 'Price', value: `\u20AC${signal.current_price.toFixed(2)}` });
+  }
+  if (signal.market_avg_price && signal.market_avg_price !== signal.current_price && stats.length < 3) {
+    stats.push({ label: 'Market avg', value: `\u20AC${signal.market_avg_price.toFixed(2)}` });
+  }
+
+  const subtitle = isSetSignal
+    ? `Set trend${parsedMeta.card_count ? ` \u00B7 ${parsedMeta.card_count} cards analyzed` : ''}`
+    : signal.product_set || meta.label;
+
   return (
-    <div className={`bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 transition ${expanded ? 'border-gray-300 dark:border-gray-600 shadow-sm' : 'hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'}`}>
-      {/* ── Summary row (always visible, clickable) ── */}
-      <button
-        className="w-full text-left p-5"
-        onClick={() => setExpanded(v => !v)}
-      >
-        <div className="flex items-start gap-4">
-          <div className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${level.dot}`} />
-
-          {!isSetSignal && <CardImage cardName={signal.product_name} size="sm" />}
-
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1.5">
-              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${level.badge}`}>
-                {signal.signal_level.toUpperCase()}
-              </span>
-              <span className={`text-[11px] font-medium px-2 py-0.5 rounded border ${meta.color}`}>
-                {meta.icon} {meta.label}
-              </span>
-              {signal.confidence != null && (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">
-                  {Math.round(Number(signal.confidence))}% confidence
-                </span>
-              )}
-              <span className="text-[11px] text-gray-400 ml-auto">{timeAgo(signal.detected_at)}</span>
-            </div>
-
-            <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5 truncate">{signal.product_name}</h4>
-            {signal.product_set && !isSetSignal && (
-              <p className="text-xs text-gray-400 mb-1">{signal.product_set}</p>
-            )}
-            {isSetSignal && (
-              <p className="text-xs text-amber-800 dark:text-amber-200 bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-800 rounded-md px-2 py-1 mt-1 inline-block">
-                Set signal: average trend across multiple cards in this set
-              </p>
-            )}
-            {signal.description && <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed mt-1.5">{signal.description}</p>}
-
-            {Object.keys(parsedMeta).length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {parsedMeta.avg_trend !== undefined && (
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${parsedMeta.avg_trend >= 0 ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`}>
-                    set avg. {parsedMeta.avg_trend >= 0 ? '+' : ''}{parsedMeta.avg_trend}%
-                  </span>
-                )}
-                {parsedMeta.avg_volume_trend !== undefined && (
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${parsedMeta.avg_volume_trend >= 0 ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'}`}>
-                    set volume {parsedMeta.avg_volume_trend >= 0 ? '+' : ''}{parsedMeta.avg_volume_trend}%
-                  </span>
-                )}
-                {parsedMeta.card_count !== undefined && (
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-100 text-gray-700">
-                    {parsedMeta.card_count} cards in sample
-                  </span>
-                )}
-                {parsedMeta.price_trend !== undefined && (
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${parsedMeta.price_trend >= 0 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                    price {parsedMeta.price_trend >= 0 ? '+' : ''}{parsedMeta.price_trend}%
-                  </span>
-                )}
-                {parsedMeta.volume_trend !== undefined && (
-                  <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${parsedMeta.volume_trend >= 0 ? 'bg-blue-50 text-blue-700' : 'bg-orange-50 text-orange-700'}`}>
-                    volume {parsedMeta.volume_trend >= 0 ? '+' : ''}{parsedMeta.volume_trend}%
-                  </span>
-                )}
-                {parsedMeta.volatility !== undefined && (
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-50 text-amber-700">
-                    volatility {parsedMeta.volatility}%
-                  </span>
-                )}
-              </div>
-            )}
+    <div
+      className={`bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 transition ${expanded ? 'shadow-sm' : 'hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'}`}
+      style={{ borderLeftWidth: '4px', borderLeftColor: level.barColor }}
+    >
+      {/* ── Compact header ── */}
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-lg flex-shrink-0" aria-hidden>{meta.icon}</span>
+            <h4 className="text-base font-bold text-gray-900 dark:text-white truncate">{signal.product_name}</h4>
           </div>
-
-          <div className="flex items-center gap-3 flex-shrink-0">
-            {signal.current_price && (
-              <div className="text-right">
-                <p className="text-xs text-gray-400">Price</p>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">&euro;{signal.current_price.toFixed(2)}</p>
-                {signal.market_avg_price && signal.market_avg_price !== signal.current_price && (
-                  <p className="text-[11px] text-gray-400">avg &euro;{signal.market_avg_price.toFixed(2)}</p>
-                )}
-              </div>
-            )}
-            <svg className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${expanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </div>
-        </div>
-      </button>
-
-      {/* ── Action panel (expanded) ── */}
-      {expanded && (
-        <div className="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
-          <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">
-            Detected:{' '}
-            {new Date(signal.detected_at).toLocaleString(undefined, {
-              dateStyle: 'medium',
-              timeStyle: 'short',
-            })}
-            {signal.deal_score != null && (
-              <span className="ml-2 text-gray-600 dark:text-gray-400">
-                · deal score {Math.round(signal.deal_score)}
-              </span>
-            )}
-          </p>
-          {/* Recommendation */}
-          <div className="flex items-start gap-2 mb-4">
-            <div className="flex-shrink-0 mt-0.5">
-              <span className={`inline-block px-2 py-0.5 text-[11px] font-semibold rounded ${level.badge}`}>
-                {action.label}
-              </span>
-            </div>
-            <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{action.hint}</p>
-          </div>
-
-          {/* Actions */}
-          <div className="flex flex-wrap items-center gap-2">
-            {isSetSignal ? (
-              <Link
-                href={setDealsUrl}
-                className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white rounded-lg transition ${action.ctaColor}`}
-              >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0l-7 7m7-7l-7-7" />
-                </svg>
-                Browse {signal.product_set} deals
-              </Link>
-            ) : (
+          <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 flex-shrink-0 whitespace-nowrap">
+            <span>{level.label}</span>
+            <span className="w-[3px] h-[3px] rounded-full bg-gray-300 dark:bg-gray-600" />
+            {signal.confidence != null && (
               <>
-                <Link
-                  href={cardDealsUrl}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white rounded-lg bg-emerald-600 hover:bg-emerald-700 transition"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                  Deal-scores (app)
-                </Link>
-                <a href={cardMarketUrl} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-white rounded-lg bg-blue-600 hover:bg-blue-700 transition">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                  CardMarket
-                </a>
-                <a href={cardTraderUrl} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-white rounded-lg bg-gray-800 hover:bg-gray-900 transition">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                  CardTrader
-                </a>
-                <a href={ebayUrl} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-white rounded-lg bg-amber-500 hover:bg-amber-600 transition">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                  eBay
-                </a>
+                <span>{Math.round(Number(signal.confidence))}% confidence</span>
+                <span className="w-[3px] h-[3px] rounded-full bg-gray-300 dark:bg-gray-600" />
               </>
             )}
+            <span>{timeAgo(signal.detected_at)}</span>
+          </div>
+        </div>
 
-            <button
-              onClick={handleWatchlist}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition ${
-                inWatchlist
-                  ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800 dark:hover:bg-amber-950/60'
-                  : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700'
-              }`}
+        <p className="text-[13px] text-gray-500 dark:text-gray-400 mb-3">
+          {subtitle} <span className="text-gray-300 dark:text-gray-600">\u00B7</span> <span className="text-gray-500 dark:text-gray-400">{meta.label}</span>
+        </p>
+
+        {/* Stats block */}
+        {stats.length > 0 && (
+          <div className="flex flex-wrap gap-x-8 gap-y-2 mb-3 px-3.5 py-3 rounded-lg bg-gray-50 dark:bg-white/5">
+            {stats.slice(0, 3).map((s) => (
+              <div key={s.label} className="flex flex-col">
+                <span className="text-[10px] uppercase tracking-wide text-gray-500 dark:text-gray-400">{s.label}</span>
+                <span className={`text-sm font-semibold ${
+                  s.tone === 'up' ? 'text-emerald-600 dark:text-emerald-400'
+                  : s.tone === 'down' ? 'text-rose-600 dark:text-rose-400'
+                  : 'text-gray-900 dark:text-white'
+                }`}>{s.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Advice line */}
+        <p className="text-sm italic text-gray-600 dark:text-gray-300 leading-relaxed mb-4">{action.hint}</p>
+
+        {/* Actions */}
+        <div className="flex flex-wrap items-center gap-2">
+          {isSetSignal ? (
+            <Link
+              href={setDealsUrl}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white rounded-lg bg-emerald-600 hover:bg-emerald-700 transition"
             >
-              <svg className="w-3.5 h-3.5" fill={inWatchlist ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
-              {inWatchlist ? 'Watching' : 'Watch'}
+              View {signal.product_set || 'set'} deals
+            </Link>
+          ) : (
+            <Link
+              href={cardDealsUrl}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white rounded-lg bg-emerald-600 hover:bg-emerald-700 transition"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+              View deals
+            </Link>
+          )}
+
+          <button
+            onClick={handleWatchlist}
+            className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition ${
+              inWatchlist
+                ? 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-800 dark:hover:bg-amber-950/60'
+                : 'bg-transparent text-gray-700 border-gray-200 hover:bg-gray-50 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-800'
+            }`}
+          >
+            <svg className="w-3.5 h-3.5" fill={inWatchlist ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+            {inWatchlist ? 'Watching' : 'Watch'}
+          </button>
+
+          {!isSetSignal && (
+            <button
+              type="button"
+              onClick={() => setExpanded(v => !v)}
+              className="ml-auto inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+            >
+              {expanded ? 'Hide links ↑' : 'More links ↓'}
             </button>
+          )}
+        </div>
+      </div>
+
+      {/* ── External links panel (expanded) ── */}
+      {expanded && !isSetSignal && (
+        <div className="px-5 pb-5 border-t border-gray-100 dark:border-gray-800 pt-4">
+          <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-3">
+            Detected: {new Date(signal.detected_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+            {signal.deal_score != null && (
+              <span className="ml-2 text-gray-600 dark:text-gray-400">\u00B7 deal score {Math.round(signal.deal_score)}</span>
+            )}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href={cardDealsUrl}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white rounded-lg bg-emerald-600 hover:bg-emerald-700 transition"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              Deal-scores (app)
+            </Link>
+            <a href={cardMarketUrl} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-white rounded-lg bg-blue-600 hover:bg-blue-700 transition">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              CardMarket
+            </a>
+            <a href={cardTraderUrl} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-white rounded-lg bg-gray-800 hover:bg-gray-900 transition">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              CardTrader
+            </a>
+            <a href={ebayUrl} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-white rounded-lg bg-amber-500 hover:bg-amber-600 transition">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              eBay
+            </a>
           </div>
         </div>
       )}

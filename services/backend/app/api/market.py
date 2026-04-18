@@ -65,8 +65,8 @@ async def get_signals(
     if product_set:
         query = query.where(Signal.product_set == product_set)
     
-    # Order by priority (desc) and detection time (desc)
-    query = query.order_by(desc(Signal.priority), desc(Signal.detected_at)).limit(limit)
+    # Order by detection time so high/medium/low signals are mixed in the feed
+    query = query.order_by(desc(Signal.detected_at), desc(Signal.priority)).limit(limit)
     
     result = await db.execute(query)
     signals = result.scalars().all()

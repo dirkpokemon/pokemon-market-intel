@@ -229,6 +229,13 @@ export const authApi = {
   getMe: async (): Promise<User> => {
     return apiRequest<User>('/api/v1/auth/me');
   },
+
+  changePassword: async (currentPassword: string, newPassword: string): Promise<{ message: string }> => {
+    return apiRequest('/api/v1/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    });
+  },
 };
 
 // Market Data
