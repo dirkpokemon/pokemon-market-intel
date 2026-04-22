@@ -50,12 +50,15 @@ def _ilike_any_set(column, aliases: List[str]):
     """
     Build SQLAlchemy OR-of-ILIKE clause across set name aliases. Returns None
     if aliases is empty (caller should skip the filter).
+
+    Uses exact case-insensitive matching (no wildcards) so short aliases like
+    'XY' or '151' don't accidentally match unrelated sets.
     """
     if not aliases:
         return None
     from sqlalchemy import or_ as sa_or
     clauses = [
-        column.ilike(f"%{_escape_ilike_pattern(a)}%", escape="\\")
+        column.ilike(_escape_ilike_pattern(a), escape="\\")
         for a in aliases
     ]
     return sa_or(*clauses) if len(clauses) > 1 else clauses[0]
@@ -307,7 +310,10 @@ async def get_sets(
         if not db_name:
             continue
         for slug, aliases in alias_index:
-            if any(a in db_name or db_name in a for a in aliases):
+            # Exact normalized equality — bidirectional substring caused shorter base-set
+            # names (e.g. "Crown Zenith") to be absorbed into longer sibling names
+            # (e.g. "Crown Zenith: Galarian Gallery") declared earlier in the registry.
+            if any(a == db_name for a in aliases):
                 entry = agg[slug]
                 entry["deal_count"] += 1
                 if row.category == "sealed" and row.current_price is not None:
@@ -847,7 +853,10 @@ async def get_public_top_deals(
     from app.models.deal_score import DealScore as DealScoreModel
     result = await db.execute(
         select(DealScoreModel)
-        .where(DealScoreModel.deal_score >= 70)
+        .where(
+            DealScoreModel.is_active == True,  # noqa: E712
+            DealScoreModel.deal_score >= 70,
+        )
         .order_by(desc(DealScoreModel.deal_score))
         .limit(5)
     )

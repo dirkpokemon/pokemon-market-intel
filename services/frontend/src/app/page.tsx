@@ -171,7 +171,7 @@ export default function LandingPage() {
                     <Link
                       key={deal.id}
                       href="/register"
-                      className="flex-shrink-0 flex items-center gap-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700 transition group"
+                      className="flex-shrink-0 flex items-center gap-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700 transition group"
                     >
                       <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 max-w-[140px] truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
                         {deal.product_name}

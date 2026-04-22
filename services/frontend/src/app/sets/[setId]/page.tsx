@@ -56,7 +56,7 @@ function DealCard({ deal, sparkline }: { deal: DealScore; sparkline?: number[] }
   return (
     <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-600 transition hover:shadow-sm overflow-hidden flex flex-col">
       {/* Image area */}
-      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-850 flex items-center justify-center py-4 px-3">
+      <div className="relative bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 flex items-center justify-center py-4 px-3">
         <CardImage cardName={deal.product_name} size="lg" />
         {savings >= 5 && (
           <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-emerald-500 text-white text-[10px] font-bold rounded-md">
@@ -114,8 +114,14 @@ export default function SetDetailPage({ params }: { params: { setId: string } })
 
   const logoUrl = set ? setLogoUrl(set) : null;
 
-  // Resolve slug → set metadata via registry API (single source of truth)
+  // Resolve slug → set metadata via registry API (single source of truth).
+  // Also reset all data state so navigating between sets never shows stale deals/prices.
   useEffect(() => {
+    setSet(null);
+    setDeals([]);
+    setDealsLoaded(false);
+    setSealedPrices([]);
+    setSparklines({});
     setsApi.list(false)
       .then(res => {
         const found = res.sets.find(s => s.slug === setId) || null;

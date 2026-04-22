@@ -109,7 +109,7 @@ export default function SignalSetupWizard({ onClose, onDone }: Props) {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-1">
-                  Stap {step} van 2
+                  Stap {step} van 3
                 </p>
                 <h2 className="text-lg font-bold text-gray-900 dark:text-white">
                   {step === 1 ? '📬 Hoe wil je alerts ontvangen?' : '⚡ Welke signalen wil je?'}

@@ -152,14 +152,15 @@ export default function PortfolioPage() {
       }));
     }
 
-    setCurrentPrices(prices);
+    // Merge into existing cache so adding one card doesn't wipe prices for all others
+    setCurrentPrices(prev => ({ ...prev, ...prices }));
     setLastUpdated(new Date());
     setLoading(false);
 
-    // Also fetch 7-day sparklines for collection cards
+    // Also fetch 7-day sparklines for collection cards (merge, don't replace)
     if (uniqueNames.length > 0) {
       marketApi.getSparklines(uniqueNames, 7)
-        .then(setSparklines)
+        .then(data => setSparklines(prev => ({ ...prev, ...data })))
         .catch(() => {});
     }
   };
@@ -702,10 +703,16 @@ export default function PortfolioPage() {
                           <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 rounded font-medium">{card.condition}</span>
                           <span className="text-[11px] text-gray-400">&times;{card.quantity}</span>
                         </div>
-                        {/* Sparkline trend */}
+                        {/* Sparkline trend — owner perspective: rising price = green (profit), falling = red */}
                         {sparklines[card.name] && sparklines[card.name].length >= 2 && (
                           <div className="mt-1.5">
-                            <Sparkline data={sparklines[card.name]} width={72} height={18} showChange />
+                            <Sparkline
+                              data={sparklines[card.name]}
+                              width={72}
+                              height={18}
+                              showChange
+                              color={card.profitLoss >= 0 ? '#10b981' : '#ef4444'}
+                            />
                           </div>
                         )}
                       </div>

@@ -492,16 +492,19 @@ class SignalGenerator:
                     FROM raw_prices
                     WHERE scraped_at >= NOW() - INTERVAL '5 days'
                       AND price > 2.0
+                      AND card_number IS NOT NULL   -- exclude sealed products (card_number IS NULL = sealed)
                     GROUP BY card_name, card_set,
                              DATE(scraped_at AT TIME ZONE 'UTC')
                 ),
                 pivoted AS (
+                    -- Use explicit UTC anchor on both sides to match the UTC-bucketed day keys above.
+                    -- CURRENT_DATE is session-TZ dependent; (NOW() AT TIME ZONE 'UTC')::date is always UTC.
                     SELECT
                         card_name, card_set,
-                        MAX(CASE WHEN day = CURRENT_DATE - 3 THEN avg_price END) AS d3,
-                        MAX(CASE WHEN day = CURRENT_DATE - 2 THEN avg_price END) AS d2,
-                        MAX(CASE WHEN day = CURRENT_DATE - 1 THEN avg_price END) AS d1,
-                        MAX(CASE WHEN day = CURRENT_DATE     THEN avg_price END) AS d0,
+                        MAX(CASE WHEN day = (NOW() AT TIME ZONE 'UTC')::date - 3 THEN avg_price END) AS d3,
+                        MAX(CASE WHEN day = (NOW() AT TIME ZONE 'UTC')::date - 2 THEN avg_price END) AS d2,
+                        MAX(CASE WHEN day = (NOW() AT TIME ZONE 'UTC')::date - 1 THEN avg_price END) AS d1,
+                        MAX(CASE WHEN day = (NOW() AT TIME ZONE 'UTC')::date     THEN avg_price END) AS d0,
                         SUM(listing_count) AS total_count
                     FROM daily_prices
                     GROUP BY card_name, card_set
