@@ -89,6 +89,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           sidebarCollapsed ? 'lg:ml-[68px]' : 'lg:ml-[240px]'
         }`}
       >
+        {/* Mobile sticky top bar — keeps content below the floating hamburger button */}
+        <header className="lg:hidden sticky top-0 z-30 h-14 flex items-center pl-16 pr-4 gap-2 bg-white/95 dark:bg-gray-950/95 backdrop-blur border-b border-gray-200 dark:border-gray-800 shrink-0">
+          <span className="text-sm font-bold text-gray-900 dark:text-white">TCG Pulse</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 font-semibold uppercase tracking-wide">EU</span>
+        </header>
         <TourBanner />
         <main className="flex-1 min-w-0">{children}</main>
         <SiteFooter />

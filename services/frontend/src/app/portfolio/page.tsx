@@ -3,10 +3,11 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { marketApi, searchApi, DealScore, CardSearchResult } from '@/lib/api';
+import { searchApi, CardSearchResult } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
-import DealModal from '@/components/DealModal';
 import CardImage from '@/components/CardImage';
+import Sparkline from '@/components/Sparkline';
+import { marketApi } from '@/lib/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -58,12 +59,17 @@ function safeListingPrice(n: unknown): number {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+type SortKey = 'pl-desc' | 'pl-asc' | 'value-desc' | 'name-asc';
+
 export default function PortfolioPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'collection' | 'watchlist'>('collection');
-  const [dealScores, setDealScores] = useState<DealScore[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedDeal, setSelectedDeal] = useState<DealScore | null>(null);
+  const [activeTab, setActiveTab] = useState<'collection' | 'watchlist' | 'valuate'>('collection');
+  // currentPrices: card name → current market price (from targeted search)
+  const [currentPrices, setCurrentPrices] = useState<Record<string, number>>({});
+  const [sparklines, setSparklines] = useState<Record<string, number[]>>({});
+  const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [collectionSort, setCollectionSort] = useState<SortKey>('value-desc');
 
   // Collection state
   const [collection, setCollection] = useState<CollectionCard[]>([]);
@@ -81,8 +87,16 @@ export default function PortfolioPage() {
   const [watchSearchResults, setWatchSearchResults] = useState<CardSearchResult[]>([]);
   const [watchSearchLoading, setWatchSearchLoading] = useState(false);
 
+  // Valuate tab state
+  interface ValuationItem { id: string; name: string; set?: string; price: number; quantity: number; }
+  const [valuationItems, setValuationItems] = useState<ValuationItem[]>([]);
+  const [valuateSearch, setValuateSearch] = useState('');
+  const [valuateResults, setValuateResults] = useState<CardSearchResult[]>([]);
+  const [valuateLoading, setValuateLoading] = useState(false);
+
   const addCardSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const watchSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const valuateSearchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ─── Load data ──────────────────────────────────────────────────────────────
 
@@ -90,29 +104,72 @@ export default function PortfolioPage() {
     const token = localStorage.getItem('access_token');
     if (!token) { router.push('/login'); return; }
 
-    setCollection(loadFromStorage<CollectionCard>(COLLECTION_KEY));
-    setWatchlist(loadFromStorage<WatchlistCard>(WATCHLIST_KEY));
-    
-    loadMarketData();
+    const col = loadFromStorage<CollectionCard>(COLLECTION_KEY);
+    const watch = loadFromStorage<WatchlistCard>(WATCHLIST_KEY);
+    setCollection(col);
+    setWatchlist(watch);
+
+    // Fetch prices for all cards in collection + watchlist
+    const allNames = [
+      ...col.map(c => c.name),
+      ...watch.map(w => w.name),
+    ];
+    if (allNames.length > 0) fetchMarketPrices(allNames);
   }, [router]);
 
   useEffect(() => {
     return () => {
       if (addCardSearchTimerRef.current) clearTimeout(addCardSearchTimerRef.current);
       if (watchSearchTimerRef.current) clearTimeout(watchSearchTimerRef.current);
+      if (valuateSearchTimerRef.current) clearTimeout(valuateSearchTimerRef.current);
     };
   }, []);
 
-  const loadMarketData = async () => {
-    try {
-      setLoading(true);
-      const scores = await marketApi.getDealScores({ limit: 200, min_score: 50 });
-      setDealScores(scores);
-    } catch (err) {
-      console.error('Error loading market data:', err);
-    } finally {
-      setLoading(false);
+  /**
+   * Targeted price lookup: for each unique card name, search the API and
+   * pick the first exact-name match. Much more accurate than loading 200
+   * bulk deal scores, and works for any card regardless of deal score.
+   */
+  const fetchMarketPrices = async (cardNames: string[]) => {
+    const uniqueNames = [...new Set(cardNames)];
+    if (!uniqueNames.length) return;
+
+    setLoading(true);
+    const prices: Record<string, number> = {};
+
+    // Batch in groups of 5 to avoid hammering the API
+    const BATCH = 5;
+    for (let i = 0; i < uniqueNames.length; i += BATCH) {
+      const batch = uniqueNames.slice(i, i + BATCH);
+      await Promise.all(batch.map(async (name) => {
+        try {
+          const res = await searchApi.search({ q: name, limit: 5, sort_by: 'price_asc' });
+          const exact = res.results.find(r =>
+            r.card_name.toLowerCase() === name.toLowerCase()
+          ) || res.results[0];
+          if (exact) prices[name] = safeListingPrice(exact.avg_price || exact.min_price);
+        } catch { /* skip, leave price as purchasePrice */ }
+      }));
     }
+
+    setCurrentPrices(prices);
+    setLastUpdated(new Date());
+    setLoading(false);
+
+    // Also fetch 7-day sparklines for collection cards
+    if (uniqueNames.length > 0) {
+      marketApi.getSparklines(uniqueNames, 7)
+        .then(setSparklines)
+        .catch(() => {});
+    }
+  };
+
+  const refreshPrices = () => {
+    const allNames = [
+      ...collection.map(c => c.name),
+      ...watchlist.map(w => w.name),
+    ];
+    if (allNames.length > 0) fetchMarketPrices(allNames);
   };
 
   // ─── Collection logic ───────────────────────────────────────────────────────
@@ -120,10 +177,11 @@ export default function PortfolioPage() {
   const addToCollection = () => {
     if (!newCard.name.trim()) return;
     const snapshot = { ...newCard };
+    const cardName = snapshot.name.trim();
     setCollection((prev) => {
       const card: CollectionCard = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-        name: snapshot.name.trim(),
+        name: cardName,
         set: snapshot.set.trim() || undefined,
         quantity: Math.max(1, snapshot.quantity),
         purchasePrice: safeListingPrice(snapshot.purchasePrice),
@@ -135,6 +193,8 @@ export default function PortfolioPage() {
       saveToStorage(COLLECTION_KEY, next);
       return next;
     });
+    // Fetch price for the newly added card if not already known
+    if (!(cardName in currentPrices)) fetchMarketPrices([cardName]);
     setNewCard({ name: '', set: '', quantity: 1, purchasePrice: 0, condition: 'NM', notes: '' });
     setShowAddCard(false);
     setAddCardSearch('');
@@ -204,15 +264,57 @@ export default function PortfolioPage() {
     }, 280);
   }, []);
 
+  // Search for valuation tab
+  const searchForValuateCard = useCallback((query: string) => {
+    if (valuateSearchTimerRef.current) clearTimeout(valuateSearchTimerRef.current);
+    const q = query.trim();
+    if (q.length < 2) {
+      setValuateResults([]);
+      setValuateLoading(false);
+      return;
+    }
+    valuateSearchTimerRef.current = setTimeout(async () => {
+      try {
+        setValuateLoading(true);
+        const res = await searchApi.search({ q, limit: 8 });
+        setValuateResults(res.results);
+      } catch {
+        setValuateResults([]);
+      } finally {
+        setValuateLoading(false);
+      }
+    }, 280);
+  }, []);
+
+  const addToValuation = (result: CardSearchResult) => {
+    const price = safeListingPrice(result.min_price);
+    setValuationItems(prev => {
+      const existing = prev.find(i => i.name === result.card_name && (i.set || '') === (result.card_set || ''));
+      if (existing) {
+        return prev.map(i => i.id === existing.id ? { ...i, quantity: i.quantity + 1 } : i);
+      }
+      return [...prev, {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        name: result.card_name,
+        set: result.card_set || undefined,
+        price,
+        quantity: 1,
+      }];
+    });
+    setValuateSearch('');
+    setValuateResults([]);
+  };
+
   // ─── Watchlist logic ────────────────────────────────────────────────────────
 
   const addToWatchlist = () => {
     if (!newWatch.name.trim()) return;
     const snapshot = { ...newWatch };
+    const cardName = snapshot.name.trim();
     setWatchlist((prev) => {
       const card: WatchlistCard = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-        name: snapshot.name.trim(),
+        name: cardName,
         set: snapshot.set.trim() || undefined,
         targetPrice: safeListingPrice(snapshot.targetPrice),
         direction: snapshot.direction,
@@ -223,6 +325,7 @@ export default function PortfolioPage() {
       saveToStorage(WATCHLIST_KEY, next);
       return next;
     });
+    if (!(cardName in currentPrices)) fetchMarketPrices([cardName]);
     setNewWatch({ name: '', set: '', targetPrice: 0, direction: 'below', notes: '' });
     setShowAddWatch(false);
     setWatchSearch('');
@@ -253,33 +356,39 @@ export default function PortfolioPage() {
   // Match collection cards with current market prices
   const enrichedCollection = useMemo(() => {
     return collection.map(card => {
-      const matchingDeal = dealScores.find(d =>
-        d.product_name.toLowerCase() === card.name.toLowerCase()
-      );
-      const currentPrice = matchingDeal?.current_price || card.purchasePrice;
+      const currentPrice = currentPrices[card.name] ?? card.purchasePrice;
+      const hasMarketPrice = card.name in currentPrices;
       const totalInvested = card.purchasePrice * card.quantity;
       const totalValue = currentPrice * card.quantity;
       const profitLoss = totalValue - totalInvested;
       const profitLossPct = totalInvested > 0 ? (profitLoss / totalInvested) * 100 : 0;
-      return { ...card, currentPrice, totalInvested, totalValue, profitLoss, profitLossPct, dealScore: matchingDeal?.deal_score };
+      return { ...card, currentPrice, hasMarketPrice, totalInvested, totalValue, profitLoss, profitLossPct };
     });
-  }, [collection, dealScores]);
+  }, [collection, currentPrices]);
+
+  const sortedCollection = useMemo(() => {
+    const list = [...enrichedCollection];
+    switch (collectionSort) {
+      case 'pl-desc': return list.sort((a, b) => b.profitLoss - a.profitLoss);
+      case 'pl-asc':  return list.sort((a, b) => a.profitLoss - b.profitLoss);
+      case 'value-desc': return list.sort((a, b) => b.totalValue - a.totalValue);
+      case 'name-asc': return list.sort((a, b) => a.name.localeCompare(b.name));
+      default: return list;
+    }
+  }, [enrichedCollection, collectionSort]);
 
   // Match watchlist cards with current prices
   const enrichedWatchlist = useMemo(() => {
     return watchlist.map(card => {
-      const matchingDeal = dealScores.find(d =>
-        d.product_name.toLowerCase() === card.name.toLowerCase()
-      );
-      const currentPrice = matchingDeal?.current_price;
+      const currentPrice = currentPrices[card.name];
       const triggered = currentPrice !== undefined
         ? card.direction === 'below'
           ? currentPrice <= card.targetPrice
           : currentPrice >= card.targetPrice
         : false;
-      return { ...card, currentPrice, triggered, dealScore: matchingDeal?.deal_score };
+      return { ...card, currentPrice, triggered };
     });
-  }, [watchlist, dealScores]);
+  }, [watchlist, currentPrices]);
 
   const portfolioStats = useMemo(() => {
     const totalCards = enrichedCollection.reduce((sum, c) => sum + c.quantity, 0);
@@ -291,17 +400,40 @@ export default function PortfolioPage() {
     return { totalCards, totalInvested, totalValue, totalPL, plPct, watchlistCount: watchlist.length, triggeredAlerts };
   }, [enrichedCollection, enrichedWatchlist, watchlist.length]);
 
+  const valuationTotal = useMemo(() =>
+    valuationItems.reduce((sum, i) => sum + i.price * i.quantity, 0),
+  [valuationItems]);
+
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <DashboardLayout>
-      <div className="px-6 py-8 max-w-[1400px] mx-auto">
+      <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-[1400px] mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Portfolio</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Track your collection value and monitor price targets for cards you want.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Track your collection value and monitor price targets.
+              {lastUpdated && (
+                <span className="ml-2 text-xs text-gray-400">
+                  Bijgewerkt {lastUpdated.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
+            </p>
           </div>
+          {(collection.length > 0 || watchlist.length > 0) && (
+            <button
+              onClick={refreshPrices}
+              disabled={loading}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition disabled:opacity-40"
+            >
+              <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {loading ? 'Laden…' : 'Prijzen verversen'}
+            </button>
+          )}
         </div>
 
         {/* KPI Row */}
@@ -361,25 +493,52 @@ export default function PortfolioPage() {
               <span className="ml-1 w-2 h-2 bg-green-500 rounded-full inline-block" />
             )}
           </button>
+          <button
+            onClick={() => setActiveTab('valuate')}
+            className={`px-5 py-3 text-sm font-medium border-b-2 transition ${
+              activeTab === 'valuate'
+                ? 'border-gray-900 text-gray-900 dark:border-white dark:text-white'
+                : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+          >
+            Waardebepaling
+            {valuationItems.length > 0 && (
+              <span className="ml-2 text-xs bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 px-1.5 py-0.5 rounded">{valuationItems.length}</span>
+            )}
+          </button>
         </div>
 
         {/* ════════════ COLLECTION TAB ════════════ */}
         {activeTab === 'collection' && (
           <>
-            {/* Add Card Button */}
-            <div className="flex items-center justify-between mb-4">
+            {/* Add Card Button + Sort */}
+            <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">
-                {collection.length > 0 ? `Your Cards` : 'Start Your Collection'}
+                {collection.length > 0 ? `Jouw kaarten (${collection.length})` : 'Start je collectie'}
               </h2>
-              <button
-                onClick={() => setShowAddCard(!showAddCard)}
-                className="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition flex items-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add Card
-              </button>
+              <div className="flex items-center gap-2">
+                {collection.length > 1 && (
+                  <select
+                    value={collectionSort}
+                    onChange={e => setCollectionSort(e.target.value as SortKey)}
+                    className="px-2 py-1.5 text-xs border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200"
+                  >
+                    <option value="value-desc">Hoogste waarde</option>
+                    <option value="pl-desc">Beste P&L</option>
+                    <option value="pl-asc">Slechtste P&L</option>
+                    <option value="name-asc">Naam A–Z</option>
+                  </select>
+                )}
+                <button
+                  onClick={() => setShowAddCard(!showAddCard)}
+                  className="px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Kaart toevoegen
+                </button>
+              </div>
             </div>
 
             {/* Add Card Form */}
@@ -529,62 +688,61 @@ export default function PortfolioPage() {
               </div>
             ) : collection.length > 0 && (
               <div className="space-y-2">
-                {enrichedCollection.map((card) => (
+                {sortedCollection.map((card) => (
                   <div key={card.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
                       {/* Card image */}
                       <CardImage cardName={card.name} size="sm" />
 
                       {/* Card info */}
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">{card.name}</h3>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          {card.set && <span className="text-[11px] text-gray-400 truncate">{card.set}</span>}
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          {card.set && <span className="text-[11px] text-gray-400 truncate max-w-[120px]">{card.set}</span>}
                           <span className="text-[10px] px-1.5 py-0.5 bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 rounded font-medium">{card.condition}</span>
                           <span className="text-[11px] text-gray-400">&times;{card.quantity}</span>
                         </div>
-                        {card.notes && <p className="text-[11px] text-gray-400 mt-1 truncate">{card.notes}</p>}
+                        {/* Sparkline trend */}
+                        {sparklines[card.name] && sparklines[card.name].length >= 2 && (
+                          <div className="mt-1.5">
+                            <Sparkline data={sparklines[card.name]} width={72} height={18} showChange />
+                          </div>
+                        )}
                       </div>
 
-                      {/* Purchase price */}
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-[11px] text-gray-400">Paid</p>
+                      {/* Paid per card */}
+                      <div className="text-right flex-shrink-0 hidden sm:block">
+                        <p className="text-[11px] text-gray-400">Betaald</p>
                         <p className="text-sm font-medium text-gray-600 dark:text-gray-300">&euro;{card.purchasePrice.toFixed(2)}</p>
                       </div>
 
-                      {/* Current value */}
+                      {/* Current market price */}
                       <div className="text-right flex-shrink-0">
-                        <p className="text-[11px] text-gray-400">Current</p>
-                        <p className="text-sm font-bold text-gray-900 dark:text-white">&euro;{card.currentPrice.toFixed(2)}</p>
+                        <p className="text-[11px] text-gray-400">Markt</p>
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">
+                          &euro;{card.currentPrice.toFixed(2)}
+                        </p>
+                        {!card.hasMarketPrice && (
+                          <p className="text-[9px] text-gray-400">±aankoopprijs</p>
+                        )}
                       </div>
 
                       {/* P&L */}
-                      <div className="text-right flex-shrink-0 min-w-[80px]">
+                      <div className="text-right flex-shrink-0 min-w-[72px]">
                         <p className="text-[11px] text-gray-400">P&amp;L</p>
-                        <p className={`text-sm font-bold ${card.profitLoss >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                        <p className={`text-sm font-bold ${card.profitLoss >= 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                           {card.profitLoss >= 0 ? '+' : ''}&euro;{card.profitLoss.toFixed(2)}
                         </p>
-                        <p className={`text-[10px] font-medium ${card.profitLossPct >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        <p className={`text-[10px] font-semibold ${card.profitLossPct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
                           {card.profitLossPct >= 0 ? '+' : ''}{card.profitLossPct.toFixed(1)}%
                         </p>
                       </div>
-
-                      {/* Deal score badge */}
-                      {card.dealScore && (
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          card.dealScore >= 80 ? 'bg-green-50 dark:bg-green-950/40' : card.dealScore >= 65 ? 'bg-amber-50 dark:bg-amber-950/40' : 'bg-gray-50 dark:bg-gray-800'
-                        }`}>
-                          <span className={`text-sm font-bold ${
-                            card.dealScore >= 80 ? 'text-green-700 dark:text-green-400' : card.dealScore >= 65 ? 'text-amber-700 dark:text-amber-400' : 'text-gray-600 dark:text-gray-300'
-                          }`}>{card.dealScore}</span>
-                        </div>
-                      )}
 
                       {/* Remove */}
                       <button
                         onClick={() => removeFromCollection(card.id)}
                         className="p-1.5 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition rounded flex-shrink-0"
-                        title="Remove from collection"
+                        title="Verwijder uit collectie"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -828,10 +986,145 @@ export default function PortfolioPage() {
             )}
           </>
         )}
+
+        {/* ════════════ WAARDEBEPALING TAB ════════════ */}
+        {activeTab === 'valuate' && (
+          <>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Waardebepaling</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Bereken de marktwaarde van losse kaarten op basis van live EU-data.</p>
+              </div>
+              {valuationItems.length > 0 && (
+                <button
+                  onClick={() => setValuationItems([])}
+                  className="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition"
+                >
+                  Alles wissen
+                </button>
+              )}
+            </div>
+
+            {/* Search */}
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 mb-4">
+              <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Zoek een kaart om toe te voegen</label>
+              <div className="relative z-30">
+                <input
+                  type="text"
+                  value={valuateSearch}
+                  onChange={e => { setValuateSearch(e.target.value); searchForValuateCard(e.target.value); }}
+                  placeholder="Bijv. Charizard ex, Pikachu V…"
+                  className="w-full px-3 py-2.5 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 outline-none pr-8"
+                />
+                {valuateLoading && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 dark:border-gray-600 dark:border-t-gray-300 rounded-full animate-spin" />
+                  </div>
+                )}
+                {valuateResults.length > 0 && (
+                  <div className="absolute z-40 w-full mt-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-64 overflow-y-auto">
+                    {valuateResults.map(r => (
+                      <button
+                        key={`${r.card_name}|${r.card_set ?? ''}|${r.last_seen}`}
+                        type="button"
+                        onClick={() => addToValuation(r)}
+                        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition text-left border-b border-gray-50 dark:border-gray-800 last:border-0"
+                      >
+                        <CardImage cardName={r.card_name} size="xs" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{r.card_name}</p>
+                          {r.card_set && <p className="text-[11px] text-gray-400 truncate">{r.card_set}</p>}
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">€{safeListingPrice(r.min_price).toFixed(2)}</p>
+                          <p className="text-[10px] text-gray-400">marktprijs</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Valuation list */}
+            {valuationItems.length === 0 ? (
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center">
+                <div className="w-14 h-14 bg-gray-50 dark:bg-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-7 h-7 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">Nog geen kaarten toegevoegd</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Zoek hierboven naar kaarten om hun huidige marktwaarde te berekenen.</p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2 mb-4">
+                  {valuationItems.map(item => (
+                    <div key={item.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+                      <div className="flex items-center gap-3">
+                        <CardImage cardName={item.name} size="sm" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{item.name}</p>
+                          {item.set && <p className="text-[11px] text-gray-400 truncate">{item.set}</p>}
+                          <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">€{item.price.toFixed(2)} per stuk</p>
+                        </div>
+                        {/* Quantity controls */}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            onClick={() => setValuationItems(prev =>
+                              prev.map(i => i.id === item.id ? { ...i, quantity: Math.max(1, i.quantity - 1) } : i)
+                            )}
+                            className="w-7 h-7 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition text-base leading-none"
+                          >
+                            −
+                          </button>
+                          <span className="w-8 text-center text-sm font-semibold text-gray-900 dark:text-white">{item.quantity}</span>
+                          <button
+                            onClick={() => setValuationItems(prev =>
+                              prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i)
+                            )}
+                            className="w-7 h-7 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition text-base leading-none"
+                          >
+                            +
+                          </button>
+                        </div>
+                        {/* Subtotal */}
+                        <div className="text-right flex-shrink-0 min-w-[72px]">
+                          <p className="text-sm font-bold text-gray-900 dark:text-white">€{(item.price * item.quantity).toFixed(2)}</p>
+                        </div>
+                        {/* Remove */}
+                        <button
+                          onClick={() => setValuationItems(prev => prev.filter(i => i.id !== item.id))}
+                          className="p-1.5 text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400 transition rounded flex-shrink-0"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Total */}
+                <div className="bg-gray-900 dark:bg-gray-950 rounded-xl p-5 border border-gray-800">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-400 mb-0.5">Geschatte marktwaarde</p>
+                      <p className="text-[11px] text-gray-500">
+                        {valuationItems.reduce((s, i) => s + i.quantity, 0)} kaart{valuationItems.reduce((s, i) => s + i.quantity, 0) !== 1 ? 'en' : ''} · op basis van laagste EU-listings
+                      </p>
+                    </div>
+                    <p className="text-3xl font-black text-white">€{valuationTotal.toFixed(2)}</p>
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        )}
       </div>
 
-      {/* Deal Modal */}
-      {selectedDeal && <DealModal deal={selectedDeal} onClose={() => setSelectedDeal(null)} />}
     </DashboardLayout>
   );
 }

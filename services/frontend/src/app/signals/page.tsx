@@ -42,6 +42,10 @@ function getActionConfig(type: string): { label: string; hint: string; cta: stri
       return { label: 'Set losing value', hint: 'This set is trending downward. Wait for stabilisation before buying.', cta: 'Monitor set', ctaColor: 'bg-rose-600 hover:bg-rose-700' };
     case 'market_mover':
       return { label: 'Price movement', hint: 'Meaningful 7-day price change vs the start of the window. Not a full momentum/supply signal — use for watchlists and context.', cta: 'Check price', ctaColor: 'bg-slate-600 hover:bg-slate-700' };
+    case 'sustained_uptrend':
+      return { label: 'Sustained uptrend', hint: 'Price rising consistently over both the past week AND month. Strong multi-timeframe conviction — momentum is likely to continue.', cta: 'Find & buy', ctaColor: 'bg-teal-600 hover:bg-teal-700' };
+    case 'consecutive_rising':
+      return { label: '3 days rising', hint: 'Price increased every day for the last 3 days. Early momentum indicator — could be the start of a stronger trend. Good for watchlist.', cta: 'Add to watchlist', ctaColor: 'bg-orange-600 hover:bg-orange-700' };
     // Legacy types
     case 'high_deal':
       return { label: 'Strong deal', hint: 'Strong buying opportunity: price is clearly below market average.', cta: 'Find & buy', ctaColor: 'bg-green-600 hover:bg-green-700' };
@@ -75,7 +79,9 @@ const SIGNAL_TYPE_META: Record<string, { label: string; icon: string; color: str
   volatility:     { label: 'Volatile',       icon: '🎢', color: 'text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-950/40 dark:border-amber-800' },
   set_rising:     { label: 'Set Rising',     icon: '📈', color: 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-800' },
   set_declining:  { label: 'Set Declining',  icon: '📉', color: 'text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-300 dark:bg-rose-950/40 dark:border-rose-800' },
-  market_mover:   { label: 'Market mover',   icon: '〰️', color: 'text-slate-700 bg-slate-50 border-slate-200 dark:text-slate-300 dark:bg-slate-950/40 dark:border-slate-700' },
+  market_mover:      { label: 'Market mover',   icon: '〰️', color: 'text-slate-700 bg-slate-50 border-slate-200 dark:text-slate-300 dark:bg-slate-950/40 dark:border-slate-700' },
+  sustained_uptrend: { label: 'Sustained Rise', icon: '📊', color: 'text-teal-700 bg-teal-50 border-teal-200 dark:text-teal-300 dark:bg-teal-950/40 dark:border-teal-800' },
+  consecutive_rising: { label: '3 Days Rising', icon: '🔥', color: 'text-orange-700 bg-orange-50 border-orange-200 dark:text-orange-300 dark:bg-orange-950/40 dark:border-orange-800' },
   // Legacy signal types (still in DB from older analysis runs)
   high_deal:      { label: 'Strong Deal',    icon: '⭐', color: 'text-green-700 bg-green-50 border-green-200 dark:text-green-300 dark:bg-green-950/40 dark:border-green-800' },
   medium_deal:    { label: 'Good Deal',      icon: '✅', color: 'text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-300 dark:bg-blue-950/40 dark:border-blue-800' },
@@ -180,16 +186,18 @@ function SignalCard({ signal }: { signal: Signal }) {
                 <span className="text-lg flex-shrink-0" aria-hidden>{meta.icon}</span>
                 <h4 className="text-base font-bold text-gray-900 dark:text-white truncate">{signal.product_name}</h4>
               </div>
-              <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 flex-shrink-0 whitespace-nowrap">
-                <span>{level.label}</span>
-                <span className="w-[3px] h-[3px] rounded-full bg-gray-300 dark:bg-gray-600" />
+              <div className="flex flex-col items-end sm:flex-row sm:items-center gap-0.5 sm:gap-2 text-[11px] text-gray-500 dark:text-gray-400 flex-shrink-0">
+                <span className="whitespace-nowrap">{level.label}</span>
                 {signal.confidence != null && (
-                  <>
-                    <span>{Math.round(Number(signal.confidence))}% confidence</span>
-                    <span className="w-[3px] h-[3px] rounded-full bg-gray-300 dark:bg-gray-600" />
-                  </>
+                  <span className="hidden sm:inline whitespace-nowrap">
+                    <span className="mx-1 opacity-40">·</span>
+                    {Math.round(Number(signal.confidence))}% confidence
+                  </span>
                 )}
-                <span>{timeAgo(signal.detected_at)}</span>
+                <span className="whitespace-nowrap">
+                  <span className="mr-1 opacity-40 sm:inline hidden">·</span>
+                  {timeAgo(signal.detected_at)}
+                </span>
               </div>
             </div>
 

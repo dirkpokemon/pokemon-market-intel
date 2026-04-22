@@ -41,6 +41,8 @@ class SignalGenerator:
         signals: List[Signal] = []
         
         signals.extend(await self._generate_momentum_signals())
+        signals.extend(await self._generate_sustained_uptrend_signals())
+        signals.extend(await self._generate_consecutive_rising_signals())
         signals.extend(await self._generate_risk_signals())
         signals.extend(await self._generate_price_drop_signals())
         signals.extend(await self._generate_supply_signals())
@@ -401,6 +403,165 @@ class SignalGenerator:
                     ))
         
         logger.info(f"Generated {len(signals)} set trend signals")
+        return signals
+
+    # ─── Sustained Uptrend: rising on both 7d and 30d ────────────
+
+    async def _generate_sustained_uptrend_signals(self) -> List[Signal]:
+        """
+        Cards where price is rising on BOTH the 7-day and 30-day window.
+        More reliable than single-period momentum — rules out short spikes.
+        """
+        signals = []
+
+        async with AsyncSessionLocal() as session:
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
+            result = await session.execute(
+                select(MarketStats).where(MarketStats.calculated_at >= cutoff)
+            )
+            stats_list = result.scalars().all()
+
+            for stats in stats_list:
+                if float(stats.avg_price_7d or 0) < self.MIN_SIGNAL_PRICE:
+                    continue
+                price_7d = float(stats.price_trend_7d or 0)
+                price_30d = float(stats.price_trend_30d or 0)
+
+                if price_7d < 8 or price_30d < 5:
+                    continue
+
+                # Skip cards already captured by momentum (avoid duplicates)
+                volume_trend = float(stats.volume_trend_7d or 0)
+                if (price_7d >= self.config.MOMENTUM_PRICE_CHANGE and
+                        volume_trend >= self.config.MOMENTUM_VOLUME_CHANGE):
+                    continue
+
+                if price_7d >= 30 and price_30d >= 15:
+                    level = 'high'
+                    confidence = min(92, 65 + price_30d / 3)
+                elif price_7d >= 15 and price_30d >= 8:
+                    level = 'medium'
+                    confidence = 60 + price_30d / 4
+                else:
+                    level = 'low'
+                    confidence = 55 + price_7d / 4
+
+                signals.append(self._create_signal(
+                    signal_type='sustained_uptrend',
+                    signal_level=level,
+                    product_name=stats.product_name,
+                    product_set=stats.product_set,
+                    category=stats.category,
+                    current_price=stats.avg_price_7d,
+                    market_avg_price=stats.avg_price_30d,
+                    description=(
+                        f"{stats.product_name}: consistent price increase "
+                        f"(+{price_7d:.1f}% this week, +{price_30d:.1f}% this month)"
+                    ),
+                    metadata={
+                        'price_trend_7d': round(price_7d, 2),
+                        'price_trend_30d': round(price_30d, 2),
+                    },
+                    priority=7,
+                    confidence=round(min(92, confidence), 1),
+                ))
+
+        logger.info(f"Generated {len(signals)} sustained uptrend signals")
+        return signals
+
+    # ─── Consecutive Rising: 3+ days of price increase ───────────
+
+    async def _generate_consecutive_rising_signals(self) -> List[Signal]:
+        """
+        Cards where the daily average price went up on each of the last 3
+        consecutive days. Detects early momentum before the weekly trend
+        window captures it.
+        """
+        from sqlalchemy import text as sa_text
+        signals = []
+
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(sa_text("""
+                WITH daily_prices AS (
+                    SELECT
+                        card_name,
+                        card_set,
+                        DATE(scraped_at AT TIME ZONE 'UTC') AS day,
+                        AVG(price)   AS avg_price,
+                        COUNT(*)     AS listing_count
+                    FROM raw_prices
+                    WHERE scraped_at >= NOW() - INTERVAL '5 days'
+                      AND price > 2.0
+                    GROUP BY card_name, card_set,
+                             DATE(scraped_at AT TIME ZONE 'UTC')
+                ),
+                pivoted AS (
+                    SELECT
+                        card_name, card_set,
+                        MAX(CASE WHEN day = CURRENT_DATE - 3 THEN avg_price END) AS d3,
+                        MAX(CASE WHEN day = CURRENT_DATE - 2 THEN avg_price END) AS d2,
+                        MAX(CASE WHEN day = CURRENT_DATE - 1 THEN avg_price END) AS d1,
+                        MAX(CASE WHEN day = CURRENT_DATE     THEN avg_price END) AS d0,
+                        SUM(listing_count) AS total_count
+                    FROM daily_prices
+                    GROUP BY card_name, card_set
+                )
+                SELECT
+                    card_name,
+                    card_set,
+                    d3, d2, d1, d0,
+                    ROUND(((d0 - d3) / NULLIF(d3, 0) * 100)::numeric, 1) AS total_rise_pct
+                FROM pivoted
+                WHERE d3 IS NOT NULL AND d2 IS NOT NULL
+                  AND d1 IS NOT NULL AND d0 IS NOT NULL
+                  AND d0 > d1 AND d1 > d2 AND d2 > d3
+                  AND total_count >= 6
+                ORDER BY total_rise_pct DESC
+                LIMIT 40
+            """))
+            rows = result.fetchall()
+
+            for row in rows:
+                rise_pct = float(row.total_rise_pct or 0)
+                if rise_pct < 5:
+                    continue
+
+                current_price = float(row.d0)
+                start_price = float(row.d3)
+
+                if rise_pct >= 25:
+                    level = 'high'
+                    confidence = min(88, 65 + rise_pct / 4)
+                elif rise_pct >= 12:
+                    level = 'medium'
+                    confidence = 60 + rise_pct / 4
+                else:
+                    level = 'low'
+                    confidence = 55 + rise_pct / 2
+
+                signals.append(self._create_signal(
+                    signal_type='consecutive_rising',
+                    signal_level=level,
+                    product_name=row.card_name,
+                    product_set=row.card_set or '',
+                    category='single',
+                    current_price=Decimal(str(round(current_price, 2))),
+                    market_avg_price=Decimal(str(round(start_price, 2))),
+                    description=(
+                        f"{row.card_name}: price rose every day for 3 days "
+                        f"(+{rise_pct:.1f}% total, €{start_price:.2f} → €{current_price:.2f})"
+                    ),
+                    metadata={
+                        'rise_pct_3d': round(rise_pct, 1),
+                        'price_d0': round(current_price, 2),
+                        'price_d3': round(start_price, 2),
+                        'days_rising': 3,
+                    },
+                    priority=8,
+                    confidence=round(min(88, confidence), 1),
+                ))
+
+        logger.info(f"Generated {len(signals)} consecutive rising signals")
         return signals
 
     async def _generate_market_mover_fallback(self) -> List[Signal]:

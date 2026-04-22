@@ -196,7 +196,7 @@ export default function HomePage() {
 
   return (
     <DashboardLayout>
-      <div className="px-6 py-8 max-w-[1400px] mx-auto">
+      <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-[1400px] mx-auto">
         {showSubSuccess && (
           <div className="mb-6 rounded-xl border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/40 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <p className="text-sm text-green-900 dark:text-green-100">
