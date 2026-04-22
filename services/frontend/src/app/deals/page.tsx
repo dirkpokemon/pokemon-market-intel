@@ -7,6 +7,7 @@ import { marketApi, DealScore } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import DealModal from '@/components/DealModal';
 import CardImage from '@/components/CardImage';
+import Sparkline from '@/components/Sparkline';
 import { isSubscriberRole } from '@/lib/plans';
 
 type ViewMode = 'all' | 'watchlist';
@@ -21,13 +22,14 @@ interface FilterOptions {
 
 const FREE_VISIBLE = 3;
 
-function DealCard({ deal, watchlist, toggleWatchlist, setSelectedDeal, getScoreColor, getScoreBg }: {
+function DealCard({ deal, watchlist, toggleWatchlist, setSelectedDeal, getScoreColor, getScoreBg, sparkline }: {
   deal: DealScore;
   watchlist: number[];
   toggleWatchlist: (id: number) => void;
   setSelectedDeal: (d: DealScore) => void;
   getScoreColor: (s: number) => string;
   getScoreBg: (s: number) => string;
+  sparkline?: number[];
 }) {
   const savingsPercent = deal.market_avg_price
     ? Math.round((1 - deal.current_price / deal.market_avg_price) * 100)
@@ -47,6 +49,13 @@ function DealCard({ deal, watchlist, toggleWatchlist, setSelectedDeal, getScoreC
 
         {/* Bottom gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/30 to-transparent pointer-events-none" />
+
+        {/* Hover CTA */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-20">
+          <span className="px-3 py-1.5 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-white text-xs font-semibold tracking-wide">
+            Bekijk deal →
+          </span>
+        </div>
 
         {/* Top-left: savings badge */}
         {savingsPercent > 5 && (
@@ -73,15 +82,20 @@ function DealCard({ deal, watchlist, toggleWatchlist, setSelectedDeal, getScoreC
       </div>
 
       {/* ── Price + score row ── */}
-      <div className="px-3.5 py-3 flex items-center justify-between bg-gray-950">
-        <div>
+      <div className="px-3.5 py-3 flex items-center justify-between bg-gray-950 gap-2">
+        <div className="min-w-0">
           <p className="text-lg font-bold text-white">&euro;{deal.current_price.toFixed(2)}</p>
           {deal.market_avg_price && savingsPercent > 0 && (
             <p className="text-[11px] text-gray-500 line-through">&euro;{deal.market_avg_price.toFixed(2)} avg</p>
           )}
         </div>
-        <div className={`w-10 h-10 rounded-lg ${getScoreBg(deal.deal_score)} flex items-center justify-center`}>
-          <span className={`text-sm font-bold ${getScoreColor(deal.deal_score)}`}>{deal.deal_score}</span>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {sparkline && sparkline.length >= 2 && (
+            <Sparkline data={sparkline} width={56} height={20} showChange />
+          )}
+          <div className={`w-10 h-10 rounded-lg ${getScoreBg(deal.deal_score)} flex items-center justify-center`}>
+            <span className={`text-sm font-bold ${getScoreColor(deal.deal_score)}`}>{deal.deal_score}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -96,6 +110,7 @@ function DealsPageInner() {
 
   const [loading, setLoading] = useState(true);
   const [dealScores, setDealScores] = useState<DealScore[]>([]);
+  const [sparklines, setSparklines] = useState<Record<string, number[]>>({});
   const [watchlist, setWatchlist] = useState<number[]>([]);
   const [selectedDeal, setSelectedDeal] = useState<DealScore | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -140,6 +155,12 @@ function DealsPageInner() {
           ...(cardP ? { product_name: cardP } : {}),
         });
         setDealScores(scores);
+        // Load sparklines in background — don't block the deals display
+        if (scores.length > 0) {
+          marketApi.getSparklines(scores.map(s => s.product_name), 7)
+            .then(setSparklines)
+            .catch(() => {});
+        }
       } catch (err) {
         console.error('Error loading data:', err);
       } finally {
@@ -373,7 +394,7 @@ function DealsPageInner() {
               /* ── Subscribers: full paginated grid ── */
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-8">
-                  {paginatedDeals.map((deal) => <DealCard key={deal.id} deal={deal} watchlist={watchlist} toggleWatchlist={toggleWatchlist} setSelectedDeal={setSelectedDeal} getScoreColor={getScoreColor} getScoreBg={getScoreBg} />)}
+                  {paginatedDeals.map((deal) => <DealCard key={deal.id} deal={deal} watchlist={watchlist} toggleWatchlist={toggleWatchlist} setSelectedDeal={setSelectedDeal} getScoreColor={getScoreColor} getScoreBg={getScoreBg} sparkline={sparklines[deal.product_name]} />)}
                 </div>
                 {totalPages > 1 && (
                   <div className="flex justify-center gap-1 flex-wrap">
@@ -412,7 +433,7 @@ function DealsPageInner() {
               <div className="relative">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-2">
                   {filteredAndSortedDeals.slice(0, FREE_VISIBLE).map((deal) => (
-                    <DealCard key={deal.id} deal={deal} watchlist={watchlist} toggleWatchlist={toggleWatchlist} setSelectedDeal={setSelectedDeal} getScoreColor={getScoreColor} getScoreBg={getScoreBg} />
+                    <DealCard key={deal.id} deal={deal} watchlist={watchlist} toggleWatchlist={toggleWatchlist} setSelectedDeal={setSelectedDeal} getScoreColor={getScoreColor} getScoreBg={getScoreBg} sparkline={sparklines[deal.product_name]} />
                   ))}
                   {/* Blurred preview cards */}
                   {filteredAndSortedDeals.slice(FREE_VISIBLE, FREE_VISIBLE + 5).map((deal) => (
@@ -432,16 +453,27 @@ function DealsPageInner() {
                         </svg>
                       </div>
                       <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1">
-                        {filteredAndSortedDeals.length - FREE_VISIBLE} deals hidden
+                        {filteredAndSortedDeals.length - FREE_VISIBLE} deals verborgen
                       </h3>
+                      {/* Show names of the next hidden deals so the user feels the loss */}
+                      {filteredAndSortedDeals.slice(FREE_VISIBLE, FREE_VISIBLE + 3).length > 0 && (
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+                          Waaronder:{' '}
+                          {filteredAndSortedDeals
+                            .slice(FREE_VISIBLE, FREE_VISIBLE + 3)
+                            .map((d) => d.product_name.split(' ').slice(0, 2).join(' '))
+                            .join(', ')}
+                          {filteredAndSortedDeals.length - FREE_VISIBLE > 3 ? ` en nog ${filteredAndSortedDeals.length - FREE_VISIBLE - 3} meer` : ''}
+                        </p>
+                      )}
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                        Upgrade to Plus for all {filteredAndSortedDeals.length} deals, refreshed hourly.
+                        Upgrade naar Plus voor alle {filteredAndSortedDeals.length} deals, elk uur bijgewerkt.
                       </p>
                       <Link
                         href="/pricing"
                         className="block w-full py-2.5 bg-gray-900 dark:bg-indigo-600 text-white text-sm font-semibold rounded-xl hover:bg-gray-800 dark:hover:bg-indigo-500 transition"
                       >
-                        Upgrade to Plus
+                        Upgrade naar Plus
                       </Link>
                     </div>
                   </div>

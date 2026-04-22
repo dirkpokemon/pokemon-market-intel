@@ -203,10 +203,11 @@ export default function CardImage({ cardName, size = 'sm', className = '' }: Car
           className={`w-full h-full rounded-lg ${size === 'xl' ? 'object-contain' : 'object-cover'}`}
         />
       ) : (
-        <div className="w-full h-full bg-gradient-to-br from-indigo-100 via-purple-50 to-blue-100 rounded-lg flex items-center justify-center border border-gray-200">
-          <span className="text-lg" title="No TCG image found">
-            🃏
+        <div className="w-full h-full bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 rounded-lg flex flex-col items-center justify-center border border-slate-600/40 gap-0.5">
+          <span className="text-white/30 font-black text-sm leading-none tracking-tight select-none uppercase">
+            {cardName.replace(/[^A-Za-z]/g, '').slice(0, 2) || '??'}
           </span>
+          <span className="text-white/20 text-[8px] font-medium select-none leading-none">no img</span>
         </div>
       )}
     </div>

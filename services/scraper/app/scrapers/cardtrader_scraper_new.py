@@ -77,10 +77,35 @@ class CardTraderScraperV2:
             expansions = await self._fetch_pokemon_expansions()
             logger.info(f"Found {len(expansions)} Pokemon expansions")
             
-            # Focus on recent/popular expansions (last 100 expansions = most recent sets)
-            # CardTrader has 3000+ expansions total, but most are old/inactive
-            recent_expansions = expansions[:100]  # Get most recent 100
-            logger.info(f"Processing {len(recent_expansions)} recent expansions for optimal data coverage")
+            # Target modern English TCG sets using multi-word fragments that are unique to English releases
+            # Single-word keywords cause false positives ("Black" matches "Wizards Black Star Promos", etc.)
+            ENGLISH_SET_PHRASES = [
+                # Scarlet & Violet series (2023-present)
+                'Scarlet & Violet', 'Paldea', 'Obsidian Flames', 'Paradox Rift', 'Temporal Forces',
+                'Twilight Masquerade', 'Stellar Crown', 'Shrouded Fable', 'Surging Sparks',
+                'Prismatic Evolutions', 'Journey Together', 'Destined Rivals',
+                'Terastal Festival', 'Mask of Change', 'Clay Burst', 'Wild Force',
+                'Indigo Disk', 'Iron Leaves', 'Charizard ex Special',
+                # Sword & Shield series (2020-2023)
+                'Sword & Shield', 'Rebel Clash', 'Darkness Ablaze', 'Vivid Voltage',
+                'Shining Fates', 'Battle Styles', 'Chilling Reign', 'Evolving Skies',
+                'Fusion Strike', 'Brilliant Stars', 'Astral Radiance', 'Pokémon GO',
+                'Lost Origin', 'Silver Tempest', 'Crown Zenith',
+                # Sun & Moon series (2017-2020)
+                'Sun & Moon', 'Guardians Rising', 'Burning Shadows', 'Crimson Invasion',
+                'Ultra Prism', 'Forbidden Light', 'Celestial Storm', 'Dragon Majesty',
+                'Team Up', 'Unbroken Bonds', 'Unified Minds', 'Hidden Fates',
+                'Cosmic Eclipse',
+            ]
+            def _is_target_set(name: str) -> bool:
+                return any(phrase.lower() in name.lower() for phrase in ENGLISH_SET_PHRASES)
+
+            target_sets = [e for e in expansions if _is_target_set(e.get('name', ''))]
+            # Also include the 20 most recent expansions to catch brand-new releases
+            seen_ids = {e['id'] for e in target_sets}
+            newest_20 = [e for e in expansions[-20:] if e['id'] not in seen_ids]
+            recent_expansions = target_sets + newest_20
+            logger.info(f"Processing {len(recent_expansions)} expansions ({len(target_sets)} target English sets + {len(newest_20)} newest)")
             
             # Step 2: For each expansion, get blueprints and marketplace listings
             for i, expansion in enumerate(recent_expansions, 1):

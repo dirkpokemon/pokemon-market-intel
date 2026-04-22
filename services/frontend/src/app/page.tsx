@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import SiteFooter from '@/components/SiteFooter';
@@ -7,26 +8,53 @@ import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
 import BrandMark from '@/components/BrandMark';
 import { ThemeIconButton } from '@/components/ThemeToggle';
 import { CTA_SUBSCRIBE_PLUS, PLAN_FEATURES, SUBSCRIBER_BADGE } from '@/lib/plans';
+import { publicApi, DealScore } from '@/lib/api';
 
-// ─── Mock Deal Card ───────────────────────────────────────────────
-function MockDealCard({ name, set, price, avg, score, savings }: {
-  name: string; set: string; price: string; avg: string; score: number; savings: number;
-}) {
+// ─── Live Deal Card ───────────────────────────────────────────────
+function LiveDealCard({ deal }: { deal: DealScore }) {
+  const savings = deal.market_avg_price && deal.market_avg_price > deal.current_price
+    ? Math.round((1 - deal.current_price / deal.market_avg_price) * 100)
+    : 0;
+  const score = deal.deal_score;
+
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 w-[220px] flex-shrink-0 shadow-sm">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 w-[210px] flex-shrink-0 shadow-sm">
       {savings > 5 && (
-        <div className="inline-block px-2 py-0.5 bg-green-600 text-white text-[11px] font-bold rounded-md mb-2">-{savings}%</div>
+        <div className="inline-block px-2 py-0.5 bg-emerald-500 text-white text-[11px] font-bold rounded-md mb-2">
+          -{savings}%
+        </div>
       )}
-      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5 truncate">{name}</h4>
-      <p className="text-[11px] text-gray-400 mb-2">{set}</p>
+      <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-0.5 truncate" title={deal.product_name}>
+        {deal.product_name}
+      </h4>
+      <p className="text-[11px] text-gray-400 mb-2 truncate">{deal.product_set ?? '—'}</p>
       <div className="flex items-end justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
         <div>
-          <p className="text-lg font-bold text-gray-900 dark:text-white">{price}</p>
-          <p className="text-[11px] text-gray-400 dark:text-gray-500 line-through">{avg} avg</p>
+          <p className="text-lg font-bold text-gray-900 dark:text-white">€{deal.current_price.toFixed(2)}</p>
+          {deal.market_avg_price && savings > 0 && (
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 line-through">€{deal.market_avg_price.toFixed(2)} avg</p>
+          )}
         </div>
-        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${score >= 80 ? 'bg-green-50 dark:bg-green-950/50' : 'bg-amber-50 dark:bg-amber-950/50'}`}>
-          <span className={`text-sm font-bold ${score >= 80 ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'}`}>{score}</span>
+        <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${score >= 80 ? 'bg-emerald-50 dark:bg-emerald-950/50' : 'bg-amber-50 dark:bg-amber-950/50'}`}>
+          <span className={`text-sm font-bold ${score >= 80 ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
+            {score}
+          </span>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Skeleton Deal Card (loading state) ──────────────────────────
+function SkeletonDealCard() {
+  return (
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 w-[210px] flex-shrink-0 animate-pulse">
+      <div className="h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
+      <div className="h-4 w-full bg-gray-200 dark:bg-gray-700 rounded mb-1" />
+      <div className="h-3 w-24 bg-gray-100 dark:bg-gray-800 rounded mb-3" />
+      <div className="flex items-end justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
+        <div className="h-6 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
+        <div className="w-9 h-9 bg-gray-100 dark:bg-gray-800 rounded-lg" />
       </div>
     </div>
   );
@@ -48,6 +76,14 @@ function MockSignalRow({ icon, label, color, description, time }: {
 // ─── Main ─────────────────────────────────────────────────────────
 export default function LandingPage() {
   const router = useRouter();
+  const [liveDeals, setLiveDeals] = useState<DealScore[]>([]);
+  const [dealsLoading, setDealsLoading] = useState(true);
+
+  useEffect(() => {
+    publicApi.getTopDeals()
+      .then(setLiveDeals)
+      .finally(() => setDealsLoading(false));
+  }, []);
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
@@ -107,6 +143,61 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ═══ Live Deals Ticker ═══ */}
+      <div className="border-y border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-900/60 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">Live deals</span>
+            </div>
+            <div className="flex gap-3 overflow-x-auto scrollbar-none flex-1">
+              {dealsLoading ? (
+                [...Array(4)].map((_, i) => (
+                  <div key={i} className="flex-shrink-0 flex items-center gap-2 bg-white dark:bg-gray-800 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700 animate-pulse">
+                    <div className="w-20 h-3 bg-gray-200 dark:bg-gray-700 rounded" />
+                    <div className="w-12 h-3 bg-gray-100 dark:bg-gray-600 rounded" />
+                  </div>
+                ))
+              ) : liveDeals.length > 0 ? (
+                liveDeals.map(deal => {
+                  const savings = deal.market_avg_price && deal.market_avg_price > deal.current_price
+                    ? Math.round((1 - deal.current_price / deal.market_avg_price) * 100)
+                    : 0;
+                  return (
+                    <Link
+                      key={deal.id}
+                      href="/register"
+                      className="flex-shrink-0 flex items-center gap-2.5 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700 transition group"
+                    >
+                      <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 max-w-[140px] truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
+                        {deal.product_name}
+                      </span>
+                      <span className="text-xs font-bold text-gray-900 dark:text-white">€{deal.current_price.toFixed(2)}</span>
+                      {savings > 0 && (
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">-{savings}%</span>
+                      )}
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${deal.deal_score >= 80 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400' : 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400'}`}>
+                        {deal.deal_score}
+                      </span>
+                    </Link>
+                  );
+                })
+              ) : null}
+              <Link
+                href="/register"
+                className="flex-shrink-0 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition px-2"
+              >
+                Alle deals →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ═══ Feature Tour ═══ */}
       <div id="features" />
 
@@ -131,21 +222,49 @@ export default function LandingPage() {
                 'Watchlist to save deals for later',
               ].map(item => (
                 <li key={item} className="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-300">
-                  <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                   {item}
                 </li>
               ))}
             </ul>
-          </div>
-          {/* Visual */}
-          <div className="flex gap-3 justify-center overflow-hidden">
-            <MockDealCard name="Charizard ex" set="Obsidian Flames" price="€42.50" avg="€55.00" score={92} savings={23} />
-            <MockDealCard name="Pikachu VMAX" set="Vivid Voltage" price="€18.90" avg="€24.50" score={85} savings={23} />
-            <div className="hidden xl:block">
-              <MockDealCard name="Mew ex" set="151" price="€31.00" avg="€38.00" score={78} savings={18} />
+            <div className="mt-8">
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 dark:bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-indigo-500 transition"
+              >
+                Bekijk live deals
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
             </div>
+          </div>
+          {/* Live deal cards */}
+          <div className="flex gap-3 justify-center overflow-hidden">
+            {dealsLoading ? (
+              <>
+                <SkeletonDealCard />
+                <SkeletonDealCard />
+                <div className="hidden xl:block"><SkeletonDealCard /></div>
+              </>
+            ) : liveDeals.length >= 2 ? (
+              <>
+                <LiveDealCard deal={liveDeals[0]} />
+                <LiveDealCard deal={liveDeals[1]} />
+                {liveDeals[2] && (
+                  <div className="hidden xl:block">
+                    <LiveDealCard deal={liveDeals[2]} />
+                  </div>
+                )}
+              </>
+            ) : (
+              // Fallback als er geen data is
+              <div className="flex items-center justify-center w-full h-40 text-sm text-gray-400 dark:text-gray-600">
+                Laden…
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -278,6 +397,91 @@ export default function LandingPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── Feature 3b: Waardebepaling ─── */}
+      <section className="bg-gray-50 dark:bg-gray-900 border-y border-gray-100 dark:border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
+            {/* Text */}
+            <div className="flex-1 max-w-xl">
+              <div className="inline-block px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold rounded-md uppercase tracking-wide mb-4">
+                Waardebepaling
+              </div>
+              <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+                Weet wat je Pokémon kaarten waard zijn
+              </h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
+                Heb je kaarten liggen en wil je weten wat ze samen waard zijn? Zoek je kaarten op, voeg ze toe aan je lijst en zie de totaalwaarde op basis van 170K+ live EU-listings — in minder dan een minuut.
+              </p>
+              <ul className="space-y-3 mb-8">
+                {[
+                  'Zoek op kaartnaam, zie direct de marktprijs',
+                  'Stel de hoeveelheid in per kaart',
+                  'Geschatte totaalwaarde van je hele selectie',
+                  'Gratis — geen creditcard nodig',
+                ].map(item => (
+                  <li key={item} className="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-300">
+                    <svg className="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition text-sm"
+              >
+                Gratis account aanmaken
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+            </div>
+
+            {/* Visual mock */}
+            <div className="w-full max-w-sm flex-shrink-0">
+              <div className="bg-white dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                {/* Search bar mock */}
+                <div className="px-4 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <span className="text-sm text-gray-400">Charizard ex</span>
+                  </div>
+                </div>
+                {/* Results mock */}
+                <div className="divide-y divide-gray-50 dark:divide-gray-800">
+                  {[
+                    { name: 'Charizard ex', set: 'Obsidian Flames', price: '€42.50', qty: 2, total: '€85.00' },
+                    { name: 'Charizard ex', set: '151', price: '€38.00', qty: 1, total: '€38.00' },
+                  ].map((row, i) => (
+                    <div key={i} className="flex items-center gap-3 px-4 py-3">
+                      <div className="w-8 h-11 bg-gradient-to-br from-red-100 to-orange-50 dark:from-red-950/40 dark:to-orange-950/40 rounded flex-shrink-0 flex items-center justify-center">
+                        <span className="text-[8px] font-black text-red-300 dark:text-red-600">CH</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">{row.name}</p>
+                        <p className="text-[10px] text-gray-400">{row.set} · {row.price} avg</p>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-xs font-bold text-gray-900 dark:text-white">{row.total}</p>
+                        <p className="text-[10px] text-gray-400">×{row.qty}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Total mock */}
+                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Totaalwaarde</span>
+                  <span className="text-xl font-bold text-gray-900 dark:text-white">€123.00</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>

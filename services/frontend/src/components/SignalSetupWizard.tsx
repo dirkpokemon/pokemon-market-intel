@@ -24,7 +24,7 @@ const SIGNAL_TYPES = [
 ];
 
 export default function SignalSetupWizard({ onClose, onDone }: Props) {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // 1 = channels, 2 = signal types, 3 = confirmation
   const [saving, setSaving] = useState(false);
 
   // Delivery channels
@@ -84,7 +84,8 @@ export default function SignalSetupWizard({ onClose, onDone }: Props) {
     } finally {
       setSaving(false);
       localStorage.setItem('signals_setup_done', '1');
-      onDone();
+      // Go to confirmation step instead of closing immediately
+      setStep(3);
     }
   };
 
@@ -98,32 +99,34 @@ export default function SignalSetupWizard({ onClose, onDone }: Props) {
         <div className="h-1 bg-gray-100 dark:bg-gray-800">
           <div
             className="h-full bg-emerald-500 transition-all duration-300"
-            style={{ width: step === 1 ? '50%' : '100%' }}
+            style={{ width: step === 1 ? '33%' : step === 2 ? '66%' : '100%' }}
           />
         </div>
 
-        {/* Header */}
-        <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-1">
-                Stap {step} van 2
-              </p>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                {step === 1 ? '📬 Hoe wil je alerts ontvangen?' : '⚡ Welke signalen wil je?'}
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                {step === 1
-                  ? 'Kies minimaal één kanaal. Je kan dit later altijd wijzigen.'
-                  : 'Standaard staan de belangrijkste aan. Pas aan naar eigen voorkeur.'}
-              </p>
+        {/* Header — hidden on confirmation step */}
+        {step < 3 && (
+          <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-gray-800">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-1">
+                  Stap {step} van 2
+                </p>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                  {step === 1 ? '📬 Hoe wil je alerts ontvangen?' : '⚡ Welke signalen wil je?'}
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  {step === 1
+                    ? 'Kies minimaal één kanaal. Je kan dit later altijd wijzigen.'
+                    : 'Standaard staan de belangrijkste aan. Pas aan naar eigen voorkeur.'}
+                </p>
+              </div>
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl leading-none">×</button>
             </div>
-            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-2xl leading-none">×</button>
           </div>
-        </div>
+        )}
 
         {/* Content */}
-        <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
+        <div className={`px-6 py-5 ${step < 3 ? 'max-h-[60vh] overflow-y-auto' : ''}`}>
 
           {/* ── STAP 1: Delivery channels ── */}
           {step === 1 && (
@@ -227,6 +230,62 @@ export default function SignalSetupWizard({ onClose, onDone }: Props) {
             </div>
           )}
 
+          {/* ── STAP 3: Bevestiging ── */}
+          {step === 3 && (
+            <div className="text-center py-4">
+              {/* Checkmark */}
+              <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-950/60 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Alerts ingesteld!</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Je ontvangt een melding zodra er iets relevants wordt gevonden.</p>
+
+              {/* Summary of channels */}
+              <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-4 mb-4 text-left space-y-2">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Jouw instellingen</p>
+                {emailEnabled && (
+                  <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                    <span>📧</span>
+                    <span>E-mail → <span className="font-medium">{emailAddress || 'ingesteld'}</span></span>
+                  </div>
+                )}
+                {telegramEnabled && (
+                  <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                    <span>✈️</span>
+                    <span>Telegram → <span className="font-medium">Chat ID {telegramChatId || 'ingesteld'}</span></span>
+                  </div>
+                )}
+                {whatsappEnabled && (
+                  <div className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-200">
+                    <span>💬</span>
+                    <span>WhatsApp → <span className="font-medium">{whatsappNumber || 'ingesteld'}</span></span>
+                  </div>
+                )}
+                <div className="pt-2 border-t border-gray-200 dark:border-gray-700 mt-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Signaaltypen:{' '}
+                    <span className="font-medium text-gray-700 dark:text-gray-300">
+                      {SIGNAL_TYPES.filter(s => selected[s.key]).map(s => s.label).join(', ') || 'geen'}
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              {/* When will you get an alert? */}
+              <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 text-left mb-2">
+                <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400 mb-2">⏰ Wanneer ontvang je een alert?</p>
+                <ul className="space-y-1.5 text-xs text-emerald-800 dark:text-emerald-300">
+                  <li>• Elk uur scant het systeem 170.000+ listings</li>
+                  <li>• Als een <strong>HIGH prioriteit signal</strong> wordt gedetecteerd, sturen we je een bericht</li>
+                  <li>• Gemiddeld 2–5 alerts per dag op actieve markten</li>
+                </ul>
+              </div>
+            </div>
+          )}
+
           {/* ── STAP 2: Signal types ── */}
           {step === 2 && (
             <div className="space-y-2">
@@ -258,7 +317,7 @@ export default function SignalSetupWizard({ onClose, onDone }: Props) {
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/50 flex items-center justify-between gap-3">
-          {step === 1 ? (
+          {step === 1 && (
             <>
               <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition">
                 Later instellen
@@ -271,7 +330,8 @@ export default function SignalSetupWizard({ onClose, onDone }: Props) {
                 Volgende →
               </button>
             </>
-          ) : (
+          )}
+          {step === 2 && (
             <>
               <button onClick={() => setStep(1)} className="text-sm text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition">
                 ← Terug
@@ -288,6 +348,14 @@ export default function SignalSetupWizard({ onClose, onDone }: Props) {
                 )}
               </button>
             </>
+          )}
+          {step === 3 && (
+            <button
+              onClick={onDone}
+              className="w-full px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg transition"
+            >
+              Ga naar Signals →
+            </button>
           )}
         </div>
       </div>

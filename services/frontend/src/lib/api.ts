@@ -256,6 +256,7 @@ export const marketApi = {
     limit?: number;
     min_score?: number;
     category?: string;
+    set_slug?: string;
     product_set?: string;
     product_name?: string;
   }): Promise<DealScore[]> => {
@@ -274,6 +275,14 @@ export const marketApi = {
   getPriceHistory: async (cardName: string, days = 30): Promise<PriceHistoryResponse> => {
     const query = new URLSearchParams({ card_name: cardName, days: String(days) }).toString();
     return apiRequest<PriceHistoryResponse>(`/api/v1/price_history?${query}`);
+  },
+
+  /** Batch sparkline data: { [cardName]: avgPricePerDay[] } */
+  getSparklines: async (cardNames: string[], days = 7): Promise<Record<string, number[]>> => {
+    if (!cardNames.length) return {};
+    const params = new URLSearchParams({ days: String(days) });
+    cardNames.forEach(n => params.append('card_names', n));
+    return apiRequest<Record<string, number[]>>(`/api/v1/price_sparklines?${params.toString()}`);
   },
 };
 
@@ -302,9 +311,54 @@ export interface SealedPrice {
 }
 
 export const sealedApi = {
-  getPrices: async (setName: string, days = 14): Promise<SealedPrice[]> => {
-    const q = new URLSearchParams({ set_name: setName, days: String(days) }).toString();
+  getPrices: async (setSlugOrName: string, days = 14, useSlug = true): Promise<SealedPrice[]> => {
+    const key = useSlug ? 'set_slug' : 'set_name';
+    const q = new URLSearchParams({ [key]: setSlugOrName, days: String(days) }).toString();
     return apiRequest<SealedPrice[]>(`/api/v1/sealed_prices?${q}`);
+  },
+};
+
+// ── Sets registry (canonical source of truth for set list) ────────
+export interface PokemonSetInfo {
+  slug: string;
+  name: string;
+  set_code: string | null;
+  era: string;
+  tcg_api_id: string | null;
+  cardmarket_slug: string | null;
+  deal_count: number;
+  cheapest_sealed: number | null;
+}
+
+export interface EraInfo {
+  id: string;
+  label: string;
+}
+
+export interface SetsResponse {
+  eras: EraInfo[];
+  sets: PokemonSetInfo[];
+  total: number;
+}
+
+export const setsApi = {
+  list: async (hasData = false): Promise<SetsResponse> => {
+    const q = hasData ? '?has_data=true' : '';
+    return apiRequest<SetsResponse>(`/api/v1/sets${q}`);
+  },
+};
+
+// Public (no auth required)
+export const publicApi = {
+  /** Top deals for the landing page — no login required. */
+  getTopDeals: async (): Promise<DealScore[]> => {
+    try {
+      const res = await fetch(`${API_URL}/api/v1/public/top_deals`);
+      if (!res.ok) return [];
+      return res.json();
+    } catch {
+      return [];
+    }
   },
 };
 

@@ -6,7 +6,7 @@ Provides access to signals, deal scores, market statistics, full catalog search,
 import logging
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, desc, func, text
@@ -21,10 +21,44 @@ from app.schemas.market import (
     MarketDigestResponse, SetTrend, SignalSummary,
 )
 from app.core.dependencies import get_current_user, get_current_premium_user
+from app.data.set_registry import SETS, ERAS as SET_ERAS, aliases_for
 
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["Market Data"])
+
+
+def _aliases_or_fallback(set_slug: Optional[str], product_set: Optional[str]) -> List[str]:
+    """
+    Resolve a set_slug to its aliases; if slug unknown but product_set given,
+    fall back to [product_set] so legacy callers still work. Returns [] if
+    neither is usable.
+    """
+    if set_slug:
+        al = aliases_for(set_slug)
+        if al:
+            return al
+    if product_set and product_set.strip():
+        # Legacy fallback: also include the short-name after stripping "XX: " prefix
+        ps = product_set.strip()
+        short = ps.split(": ", 1)[1].strip() if ": " in ps else ps
+        return [ps] if ps == short else [ps, short]
+    return []
+
+
+def _ilike_any_set(column, aliases: List[str]):
+    """
+    Build SQLAlchemy OR-of-ILIKE clause across set name aliases. Returns None
+    if aliases is empty (caller should skip the filter).
+    """
+    if not aliases:
+        return None
+    from sqlalchemy import or_ as sa_or
+    clauses = [
+        column.ilike(f"%{_escape_ilike_pattern(a)}%", escape="\\")
+        for a in aliases
+    ]
+    return sa_or(*clauses) if len(clauses) > 1 else clauses[0]
 
 
 @router.get("/signals", response_model=List[SignalResponse])
@@ -142,7 +176,8 @@ async def get_deal_scores(
     limit: int = Query(default=50, le=100, description="Maximum number of deal scores to return"),
     min_score: float = Query(default=0, ge=0, le=100, description="Minimum deal score"),
     category: Optional[str] = Query(default=None, description="Filter by category (single/sealed)"),
-    product_set: Optional[str] = Query(default=None, description="Filter by product set (exact, case-insensitive)"),
+    set_slug: Optional[str] = Query(default=None, description="Canonical set slug (preferred). Resolves to registry aliases."),
+    product_set: Optional[str] = Query(default=None, description="[DEPRECATED] Filter by product set string. Prefer set_slug."),
     product_name: Optional[str] = Query(default=None, description="Filter by product name (substring, case-insensitive)"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -167,10 +202,13 @@ async def get_deal_scores(
     from app.models.deal_score import DealScore
     
     # Apply free tier limits (generous sample; premium gets full catalog)
+    # Exception: when browsing a specific set, always show cards (no score gate)
+    # so every user can explore set content — limit still applies
     if not current_user.is_premium():
-        min_score = max(min_score, 55)
+        if not (set_slug or product_set):
+            min_score = max(min_score, 55)
         limit = min(limit, 20)
-    
+
     # Build query
     query = select(DealScore).where(
         and_(
@@ -178,14 +216,14 @@ async def get_deal_scores(
             DealScore.deal_score >= min_score
         )
     )
-    
+
     if category:
         query = query.where(DealScore.category == category)
-    
-    if product_set:
-        ps = product_set.strip()
-        if ps:
-            query = query.where(func.lower(DealScore.product_set) == func.lower(ps))
+
+    aliases = _aliases_or_fallback(set_slug, product_set)
+    set_clause = _ilike_any_set(DealScore.product_set, aliases)
+    if set_clause is not None:
+        query = query.where(set_clause)
 
     if product_name:
         pn = product_name.strip()
@@ -204,9 +242,109 @@ async def get_deal_scores(
     return [DealScoreResponse.from_orm(score) for score in deal_scores]
 
 
+@router.get("/deal_scores/sets")
+async def get_deal_score_sets(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Return distinct product_set values that have active deal scores."""
+    from app.models.deal_score import DealScore
+    result = await db.execute(
+        select(DealScore.product_set)
+        .where(DealScore.is_active == True, DealScore.product_set.isnot(None))
+        .distinct()
+        .order_by(DealScore.product_set)
+    )
+    sets = [row[0] for row in result.all() if row[0]]
+    return {"sets": sets, "count": len(sets)}
+
+
+@router.get("/sets")
+async def get_sets(
+    has_data: bool = Query(default=False, description="Only return sets with active deal data"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Return the canonical set registry, enriched with per-set data signals:
+
+    - deal_count: number of active deal_scores rows matching any alias
+    - cheapest_sealed: lowest sealed price (DealScore.current_price, category=sealed)
+
+    This endpoint is the single source of truth for the frontend set list.
+    Detail pages should use the returned `slug` when querying `/deal_scores`
+    etc. via the `set_slug` param — no more client-side name stripping.
+    """
+    from app.models.deal_score import DealScore
+
+    # Fetch all active deal rows (set + category + price) once, then bucket
+    # into sets in Python by alias-substring match. This avoids N+1 queries.
+    result = await db.execute(
+        select(
+            DealScore.product_set,
+            DealScore.category,
+            DealScore.current_price,
+        ).where(
+            DealScore.is_active == True,
+            DealScore.product_set.isnot(None),
+        )
+    )
+    rows = result.all()
+
+    # Pre-lowercase each alias per set for fast matching
+    alias_index = [
+        (s["slug"], [a.lower() for a in s["aliases"]])
+        for s in SETS
+    ]
+
+    # Aggregate
+    agg: Dict[str, Dict] = {
+        s["slug"]: {"deal_count": 0, "cheapest_sealed": None}
+        for s in SETS
+    }
+    for row in rows:
+        db_name = (row.product_set or "").lower().strip()
+        if not db_name:
+            continue
+        for slug, aliases in alias_index:
+            if any(a in db_name or db_name in a for a in aliases):
+                entry = agg[slug]
+                entry["deal_count"] += 1
+                if row.category == "sealed" and row.current_price is not None:
+                    cp = float(row.current_price)
+                    cur = entry["cheapest_sealed"]
+                    if cur is None or cp < cur:
+                        entry["cheapest_sealed"] = cp
+                break  # first alias match wins — avoid double-counting
+
+    # Build response
+    out = []
+    for s in SETS:
+        info = agg[s["slug"]]
+        if has_data and info["deal_count"] == 0:
+            continue
+        out.append({
+            "slug": s["slug"],
+            "name": s["name"],
+            "set_code": s["set_code"],
+            "era": s["era"],
+            "tcg_api_id": s["tcg_api_id"],
+            "cardmarket_slug": s["cardmarket_slug"],
+            "deal_count": info["deal_count"],
+            "cheapest_sealed": info["cheapest_sealed"],
+        })
+
+    return {
+        "eras": SET_ERAS,
+        "sets": out,
+        "total": len(out),
+    }
+
+
 @router.get("/sealed_prices")
 async def get_sealed_prices(
-    set_name: str = Query(..., description="Set name to look up sealed products for"),
+    set_slug: Optional[str] = Query(default=None, description="Canonical set slug (preferred)."),
+    set_name: Optional[str] = Query(default=None, description="[DEPRECATED] Set name. Prefer set_slug."),
     days: int = Query(default=14, le=60, description="How many days back to look"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -220,7 +358,13 @@ async def get_sealed_prices(
     from datetime import datetime, timedelta, timezone
     from app.models.raw_price import RawPrice
 
+    aliases = _aliases_or_fallback(set_slug, set_name)
+    if not aliases:
+        return []
+
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+
+    set_clause = _ilike_any_set(RawPrice.card_set, aliases)
 
     # Aggregate: for each distinct product name in this set, get price stats
     stmt = (
@@ -237,7 +381,7 @@ async def get_sealed_prices(
         .where(
             and_(
                 RawPrice.card_number.is_(None),          # sealed products have no card_number
-                func.lower(RawPrice.card_set) == func.lower(set_name),
+                set_clause,
                 RawPrice.scraped_at >= cutoff,
                 RawPrice.price > 0,
             )
@@ -268,7 +412,8 @@ async def get_sealed_prices(
 @router.get("/market_stats", response_model=List[MarketStatsResponse])
 async def get_market_stats(
     limit: int = Query(default=50, le=100, description="Maximum number of stats to return"),
-    product_set: Optional[str] = Query(default=None, description="Filter by product set"),
+    set_slug: Optional[str] = Query(default=None, description="Canonical set slug (preferred)."),
+    product_set: Optional[str] = Query(default=None, description="[DEPRECATED] Filter by product set. Prefer set_slug."),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -289,10 +434,12 @@ async def get_market_stats(
     
     # Build query
     query = select(MarketStats)
-    
-    if product_set:
-        query = query.where(MarketStats.product_set == product_set)
-    
+
+    aliases = _aliases_or_fallback(set_slug, product_set)
+    set_clause = _ilike_any_set(MarketStats.product_set, aliases)
+    if set_clause is not None:
+        query = query.where(set_clause)
+
     # Order by most recent
     query = query.order_by(desc(MarketStats.calculated_at)).limit(limit)
     
@@ -683,6 +830,88 @@ async def get_price_history(
             for c in cond_rows
         ],
     )
+
+
+# ═══════════════════════════════════════════════════════════════
+# Public endpoints — no auth required (landing page previews)
+# ═══════════════════════════════════════════════════════════════
+
+@router.get("/public/top_deals", response_model=List[DealScoreResponse])
+async def get_public_top_deals(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Public endpoint: top 5 deals for the landing page preview.
+    No authentication required. Returns real live data.
+    """
+    from app.models.deal_score import DealScore as DealScoreModel
+    result = await db.execute(
+        select(DealScoreModel)
+        .where(DealScoreModel.deal_score >= 70)
+        .order_by(desc(DealScoreModel.deal_score))
+        .limit(5)
+    )
+    deals = result.scalars().all()
+    return [DealScoreResponse.model_validate(d) for d in deals]
+
+
+# ═══════════════════════════════════════════════════════════════
+# Price sparklines — batch endpoint for inline trend charts
+# ═══════════════════════════════════════════════════════════════
+
+@router.get("/price_sparklines")
+async def get_price_sparklines(
+    card_names: List[str] = Query(..., description="Card names to fetch sparkline data for"),
+    days: int = Query(default=7, ge=3, le=30, description="Number of days of history"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Batch endpoint: returns daily avg price per card for the past N days.
+    Used for sparkline charts on deal cards. Returns a dict of {card_name: [avg_price, ...]}.
+    """
+    if not card_names:
+        return {}
+
+    # Limit to 200 cards per request to avoid abuse
+    card_names = card_names[:200]
+
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    lower_names = [n.lower() for n in card_names]
+
+    result = await db.execute(
+        text("""
+            SELECT
+                LOWER(card_name) AS card_key,
+                DATE(scraped_at AT TIME ZONE 'UTC') AS day,
+                ROUND(AVG(price)::numeric, 2) AS avg_price
+            FROM raw_prices
+            WHERE LOWER(card_name) = ANY(:names)
+              AND scraped_at >= :cutoff
+              AND price > 0
+            GROUP BY LOWER(card_name), day
+            ORDER BY LOWER(card_name), day ASC
+        """),
+        {"names": lower_names, "cutoff": cutoff},
+    )
+    rows = result.fetchall()
+
+    # Build lookup: lowercase card_name → list of daily avg prices
+    grouped: Dict[str, List[float]] = {}
+    for row in rows:
+        key = row.card_key
+        if key not in grouped:
+            grouped[key] = []
+        grouped[key].append(float(row.avg_price))
+
+    # Return keyed by original card_name (match on lowercase)
+    output: Dict[str, List[float]] = {}
+    for name in card_names:
+        key = name.lower()
+        if key in grouped:
+            output[name] = grouped[key]
+
+    return output
 
 
 # ═══════════════════════════════════════════════════════════════

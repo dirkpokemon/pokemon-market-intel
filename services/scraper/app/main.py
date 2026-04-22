@@ -80,7 +80,8 @@ class ScraperService:
         """
         logger.info("Stopping scraper service...")
         self.running = False
-        self.scheduler.shutdown(wait=False)
+        if self.scheduler.running:
+            self.scheduler.shutdown(wait=False)
         logger.info("Scraper service stopped")
 
     async def run_scrape_cycle(self):

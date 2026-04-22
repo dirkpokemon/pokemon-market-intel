@@ -75,14 +75,16 @@ class AnalysisService:
         # Initialize database (creates tables if they don't exist)
         await init_db()
         
-        # Schedule analysis jobs
+        # Schedule analysis jobs (schedule configurable via ANALYSIS_SCHEDULE env var)
+        schedule = settings.ANALYSIS_SCHEDULE
         self.scheduler.add_job(
             self.run_full_analysis,
-            CronTrigger.from_crontab('0 * * * *'),
+            CronTrigger.from_crontab(schedule),
             id='full_analysis',
             name='Full Analysis Pipeline',
             max_instances=1,
         )
+        logger.info(f"Analysis scheduled: {schedule}")
 
         self.scheduler.start()
         self.running = True
@@ -111,7 +113,8 @@ class AnalysisService:
         """
         logger.info("Stopping analysis service...")
         self.running = False
-        self.scheduler.shutdown()
+        if self.scheduler.running:
+            self.scheduler.shutdown(wait=False)
         logger.info("Analysis service stopped")
 
     async def run_full_analysis(self):
