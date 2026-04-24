@@ -113,6 +113,19 @@ export default function SetDetailClient({ params }: { params: { setId: string } 
   const [sortBy, setSortBy] = useState<SortKey>('score-desc');
 
   const logoUrl = set ? setLogoUrl(set) : null;
+  const [shared, setShared] = useState(false);
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    const title = set?.name ?? 'TCG Pulse';
+    if (navigator.share) {
+      try { await navigator.share({ title, url }); } catch {}
+    } else {
+      await navigator.clipboard.writeText(url);
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+    }
+  };
 
   // Resolve slug → set metadata via registry API (single source of truth).
   // Also reset all data state so navigating between sets never shows stale deals/prices.
@@ -237,7 +250,30 @@ export default function SetDetailClient({ params }: { params: { setId: string } 
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{set.name}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{set.name}</h1>
+              <button
+                onClick={handleShare}
+                title="Deel deze pagina"
+                className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-700 dark:hover:text-gray-200 transition"
+              >
+                {shared ? (
+                  <>
+                    <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span className="text-emerald-500">Gekopieerd!</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                    Deel
+                  </>
+                )}
+              </button>
+            </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 capitalize">{set.era.replace(/-/g, ' ')}</p>
           </div>
         </div>
