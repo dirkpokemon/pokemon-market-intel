@@ -265,7 +265,6 @@ async def get_deal_score_sets(
 @router.get("/sets")
 async def get_sets(
     has_data: bool = Query(default=False, description="Only return sets with active deal data"),
-    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -345,6 +344,32 @@ async def get_sets(
         "sets": out,
         "total": len(out),
     }
+
+
+@router.get("/sets/unmatched")
+async def get_unmatched_sets(
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Returns distinct product_set values in market_stats that don't match
+    any alias in the set registry. Use to discover newly scraped sets that
+    need to be added to set_registry.py.
+    No auth required — maintenance endpoint.
+    """
+    from app.models.market_stats import MarketStats
+
+    # Collect all known aliases (lowercase)
+    known = {a.lower() for s in SETS for a in s.get("aliases", [])}
+
+    result = await db.execute(
+        select(func.distinct(MarketStats.product_set)).where(
+            MarketStats.product_set.isnot(None)
+        )
+    )
+    db_sets = [r[0] for r in result.fetchall() if r[0]]
+
+    unmatched = sorted(s for s in db_sets if s.lower() not in known)
+    return {"unmatched": unmatched, "count": len(unmatched)}
 
 
 @router.get("/sealed_prices")

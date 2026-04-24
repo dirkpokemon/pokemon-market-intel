@@ -119,6 +119,13 @@ class CardTraderScraperV2:
             newest_20 = [e for e in expansions[-20:] if e['id'] not in seen_ids]
             recent_expansions = target_sets + newest_20
             logger.info(f"Processing {len(recent_expansions)} expansions ({len(target_sets)} target English sets + {len(newest_20)} newest)")
+            if newest_20:
+                logger.warning(
+                    f"⚠️  {len(newest_20)} newest expansions not matched by ENGLISH_SET_PHRASES — "
+                    f"may be new releases. Review and add to set_registry if relevant:"
+                )
+                for exp in newest_20:
+                    logger.warning(f"   UNKNOWN_EXPANSION | name='{exp.get('name_en') or exp.get('name')}' id={exp['id']}")
             
             # Step 2: For each expansion, get blueprints and marketplace listings
             for i, expansion in enumerate(recent_expansions, 1):

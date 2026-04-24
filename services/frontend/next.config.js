@@ -21,6 +21,7 @@ const nextConfig = {
     remotePatterns: [
       { protocol: 'http', hostname: 'localhost', pathname: '/**' },
       { protocol: 'https', hostname: 'localhost', pathname: '/**' },
+      { protocol: 'https', hostname: 'images.pokemontcg.io', pathname: '/**' },
     ],
     formats: ['image/avif', 'image/webp'],
   },
