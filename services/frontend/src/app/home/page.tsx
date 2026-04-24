@@ -4,8 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { authApi, marketApi, searchApi, newsApi, Signal, DealScore, CardSearchResult, NewsArticle } from '@/lib/api';
-import { ALL_SETS, PokemonSet } from '@/lib/pokemon-sets';
+import { authApi, marketApi, searchApi, newsApi, setsApi, Signal, DealScore, CardSearchResult, NewsArticle, PokemonSetInfo } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import StatCard from '@/components/StatCard';
 import DealModal from '@/components/DealModal';
@@ -29,7 +28,8 @@ export default function HomePage() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchActive, setSearchActive] = useState(false);
   const [sortBy, setSortBy] = useState<'relevance' | 'price_asc' | 'price_desc' | 'listings'>('relevance');
-  const [matchedSets, setMatchedSets] = useState<PokemonSet[]>([]);
+  const [allSets, setAllSets] = useState<PokemonSetInfo[]>([]);
+  const [matchedSets, setMatchedSets] = useState<PokemonSetInfo[]>([]);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // News state
@@ -77,6 +77,9 @@ export default function HomePage() {
     if (!hasSeenTour) {
       setShowOnboarding(true);
     }
+
+    // Pre-load set list for search autocomplete (fire-and-forget)
+    setsApi.list(false).then(r => setAllSets(r.sets)).catch(() => {});
 
     loadData();
   }, [router]);
@@ -152,9 +155,9 @@ export default function HomePage() {
       setMatchedSets([]);
       return;
     }
-    // Instant set matching from static catalog
+    // Instant set matching from cached API list
     const lower = value.toLowerCase();
-    const sets = ALL_SETS.filter(s => s.name.toLowerCase().includes(lower)).slice(0, 4);
+    const sets = allSets.filter(s => s.name.toLowerCase().includes(lower)).slice(0, 4);
     setMatchedSets(sets);
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -299,8 +302,8 @@ export default function HomePage() {
                   <div className="mt-3 flex flex-wrap gap-2">
                     {matchedSets.map(set => (
                       <Link
-                        key={set.id}
-                        href={`/sets/${set.id}`}
+                        key={set.slug}
+                        href={`/sets/${set.slug}`}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-medium hover:bg-emerald-500/20 transition"
                       >
                         📦 {set.name}
