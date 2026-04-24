@@ -66,7 +66,13 @@ class CardMarketConfig(BaseSettings):
     USE_PROXY: bool = False
     PROXY_URL: str = ""
     PROXY_COUNTRY: str = "DE"  # Germany for EU
-    
+
+    # MKM API credentials (optional — web scraping fallback if not set)
+    APP_TOKEN: str = ""
+    APP_SECRET: str = ""
+    ACCESS_TOKEN: str = ""
+    ACCESS_TOKEN_SECRET: str = ""
+
     class Config:
         env_prefix = "CARDMARKET_"
 

@@ -36,6 +36,19 @@ SEALED_KEYWORDS = [
     'bundle', 'starter deck', 'theme deck',
     'v box', 'vmax box', 'ex box',
     'booster bundle',
+    # Extended sealed product types
+    'build & battle', 'build and battle',
+    'mini tin', 'pokeball tin', 'poke ball tin',
+    'advent calendar',
+    'sleeved booster',
+    'booster case', 'display case',
+    '3-pack', '3 pack',
+    'binder',
+    'playmat',
+    'pin collection', 'pin box',
+    'collector chest', 'collection chest',
+    'ultra premium', 'upc',
+    'league battle deck',
 ]
 
 def _is_sealed_product(name: str) -> bool:
