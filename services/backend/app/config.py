@@ -69,6 +69,13 @@ class Settings(BaseSettings):
     # Product feedback: Brevo/SMTP sends submissions here (see POST /api/v1/feedback)
     FEEDBACK_INBOX_EMAIL: str = ""
 
+    # Telegram Bot
+    TELEGRAM_BOT_TOKEN: str = ""
+    TELEGRAM_BOT_USERNAME: str = "TCGPulseBot"
+
+    # Public backend URL (used for Telegram webhook registration)
+    BACKEND_URL: str = ""
+
     # Redis (optional)
     REDIS_URL: str = ""
 

@@ -151,6 +151,15 @@ class AnalysisService:
         if stats_count > 0:
             signal_count = await self.detect_signals()
         
+        # Step 4: Watchlist price alerts
+        try:
+            from app.generators.watchlist_notifier import check_watchlist_alerts
+            alerts_sent = await check_watchlist_alerts()
+            if alerts_sent:
+                logger.info(f"Watchlist alerts sent: {alerts_sent}")
+        except Exception as e:
+            logger.error(f"Watchlist alert check failed (non-fatal): {e}", exc_info=True)
+
         logger.info("=" * 60)
         logger.info(f"Analysis complete: {stats_count} stats, {deal_count} deals, {signal_count} signals")
         logger.info("=" * 60)
