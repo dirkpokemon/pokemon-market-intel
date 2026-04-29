@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import ProfileModal from '@/components/ProfileModal';
 import { activateTour } from '@/lib/tour';
-import { authApi, notificationApi, subscriptionApi } from '@/lib/api';
+import { authApi, notificationApi, subscriptionApi, BackendNotifPrefs, TelegramConnectResponse } from '@/lib/api';
 import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
 import ThemeToggle from '@/components/ThemeToggle';
 import { tierLabel, UPSELL_SUBSCRIBE } from '@/lib/plans';
@@ -86,6 +86,15 @@ export default function SettingsPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [billingError, setBillingError] = useState('');
 
+  // Backend notification preferences
+  const [backendPrefs, setBackendPrefs] = useState<BackendNotifPrefs | null>(null);
+  const [digestSaving, setDigestSaving] = useState(false);
+
+  // Telegram connect
+  const [telegramLink, setTelegramLink] = useState<TelegramConnectResponse | null>(null);
+  const [telegramLoading, setTelegramLoading] = useState(false);
+  const [telegramCopied, setTelegramCopied] = useState(false);
+
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) setUser(JSON.parse(userData));
@@ -94,7 +103,43 @@ export default function SettingsPage() {
       const stored = localStorage.getItem(NOTIF_PREFS_KEY);
       if (stored) setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(stored) });
     } catch {}
+
+    // Load backend notification prefs
+    notificationApi.getNotifPrefs()
+      .then(p => setBackendPrefs(p))
+      .catch(() => {});
   }, []);
+
+  const handleConnectTelegram = async () => {
+    setTelegramLoading(true);
+    try {
+      const res = await notificationApi.getTelegramLink();
+      setTelegramLink(res);
+    } catch {
+      // ignore
+    } finally {
+      setTelegramLoading(false);
+    }
+  };
+
+  const copyTelegramLink = async () => {
+    if (!telegramLink) return;
+    await navigator.clipboard.writeText(telegramLink.deep_link);
+    setTelegramCopied(true);
+    setTimeout(() => setTelegramCopied(false), 2000);
+  };
+
+  const toggleDigest = async (enabled: boolean) => {
+    setDigestSaving(true);
+    try {
+      const updated = await notificationApi.patchNotifPrefs({ email_digest_enabled: enabled });
+      setBackendPrefs(updated);
+    } catch {
+      // ignore
+    } finally {
+      setDigestSaving(false);
+    }
+  };
 
   const updatePref = (key: keyof NotificationPrefs, value: any) => {
     setPrefs(prev => {
@@ -287,27 +332,83 @@ export default function SettingsPage() {
                     />
                   </div>
                 )}
-                <Toggle
-                  checked={prefs.telegram_enabled}
-                  onChange={(v) => updatePref('telegram_enabled', v)}
-                  label="Telegram Notifications"
-                  description="Instant alerts via Telegram bot"
-                />
-                {prefs.telegram_enabled && (
-                  <div className="pl-0 py-2 pb-3 border-b border-gray-100 dark:border-gray-800">
-                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Telegram Chat ID</label>
-                    <input
-                      type="text"
-                      value={prefs.telegram_chat_id}
-                      onChange={(e) => updatePref('telegram_chat_id', e.target.value)}
-                      placeholder="123456789"
-                      className="w-full max-w-sm px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500/40 dark:focus:ring-indigo-400/40 focus:border-indigo-500 dark:focus:border-indigo-500"
-                    />
-                    <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
-                      Start a chat with <span className="font-mono">@PokemonIntelBot</span> and send /start to get your Chat ID.
-                    </p>
+                {/* Telegram connect */}
+                <div className="py-3 border-b border-gray-100 dark:border-gray-800">
+                  <div className="flex items-center justify-between gap-4 mb-2">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Telegram Meldingen</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Directe prijsalerts via Telegram</p>
+                    </div>
+                    {backendPrefs?.telegram_connected ? (
+                      <span className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 text-xs font-semibold rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                        Verbonden
+                      </span>
+                    ) : (
+                      <button
+                        onClick={handleConnectTelegram}
+                        disabled={telegramLoading}
+                        className="shrink-0 px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs rounded-lg transition font-medium disabled:opacity-60"
+                      >
+                        {telegramLoading ? 'Laden…' : 'Verbind Telegram'}
+                      </button>
+                    )}
                   </div>
-                )}
+                  {telegramLink && !backendPrefs?.telegram_connected && (
+                    <div className="mt-2 p-3 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 rounded-xl">
+                      <p className="text-xs text-sky-700 dark:text-sky-300 mb-2 font-medium">
+                        Klik op de knop om te verbinden. De link is 15 minuten geldig.
+                      </p>
+                      <div className="flex gap-2">
+                        <a
+                          href={telegramLink.deep_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-sky-600 text-white text-sm font-semibold rounded-lg hover:bg-sky-700 transition"
+                        >
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-1.97 9.289c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.932z"/>
+                          </svg>
+                          Open in Telegram
+                        </a>
+                        <button
+                          onClick={copyTelegramLink}
+                          className="px-3 py-2 bg-white dark:bg-gray-800 border border-sky-200 dark:border-sky-700 text-sky-700 dark:text-sky-300 text-sm rounded-lg hover:bg-sky-50 dark:hover:bg-sky-950/40 transition"
+                        >
+                          {telegramCopied ? '✓ Gekopieerd' : 'Kopieer link'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Email digest */}
+                <div className="py-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Dagelijkse E-mail Digest</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Ontvang elke ochtend om 8:00 de top deals en marktsignalen per mail</p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={backendPrefs?.email_digest_enabled ?? false}
+                      onClick={() => !digestSaving && toggleDigest(!(backendPrefs?.email_digest_enabled ?? false))}
+                      disabled={digestSaving || backendPrefs === null}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border transition-colors disabled:opacity-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 ${
+                        backendPrefs?.email_digest_enabled
+                          ? 'border-emerald-600/80 bg-emerald-500 dark:border-emerald-500 dark:bg-emerald-600'
+                          : 'border-gray-300/80 bg-gray-200 dark:border-gray-500 dark:bg-gray-600'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-md ring-1 ring-black/5 transition-transform duration-200 ease-out dark:ring-white/15 ${
+                          backendPrefs?.email_digest_enabled ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
               </div>
 
               {/* Signal types to notify about */}

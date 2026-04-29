@@ -385,15 +385,72 @@ export interface NotificationPrefs {
   telegram_chat_id?: string;
 }
 
+// Backend notification preferences (new endpoints)
+export interface BackendNotifPrefs {
+  email_digest_enabled: boolean;
+  telegram_connected: boolean;
+}
+
+export interface WatchlistItem {
+  id: number;
+  card_name: string;
+  card_set?: string | null;
+  target_price: number;
+  current_price?: number | null;
+  is_active: boolean;
+  notified_at?: string | null;
+  created_at: string;
+}
+
+export interface TelegramConnectResponse {
+  token: string;
+  deep_link: string;
+  expires_in: number;
+}
+
 export const notificationApi = {
-  getPrefs: async (): Promise<NotificationPrefs> => {
-    return apiRequest<NotificationPrefs>('/api/v1/auth/notifications/preferences');
-  },
+  /** Legacy: update signal-alert preferences stored in user profile */
   updatePrefs: async (prefs: Partial<NotificationPrefs>): Promise<NotificationPrefs> => {
     return apiRequest<NotificationPrefs>('/api/v1/auth/notifications/preferences', {
       method: 'PUT',
       body: JSON.stringify(prefs),
     });
+  },
+
+  /** Get backend notification preferences (email digest + telegram status) */
+  getNotifPrefs: async (): Promise<BackendNotifPrefs> => {
+    return apiRequest<BackendNotifPrefs>('/api/v1/notifications/preferences');
+  },
+
+  /** Patch email digest toggle */
+  patchNotifPrefs: async (payload: { email_digest_enabled: boolean }): Promise<BackendNotifPrefs> => {
+    return apiRequest<BackendNotifPrefs>('/api/v1/notifications/preferences', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Generate a Telegram deep-link connect token */
+  getTelegramLink: async (): Promise<TelegramConnectResponse> => {
+    return apiRequest<TelegramConnectResponse>('/api/v1/telegram/connect');
+  },
+
+  /** Get the user's active watchlist items */
+  getWatchlist: async (): Promise<WatchlistItem[]> => {
+    return apiRequest<WatchlistItem[]>('/api/v1/watchlist');
+  },
+
+  /** Add a card to the backend watchlist */
+  addWatchlistItem: async (payload: { card_name: string; card_set?: string; target_price: number }): Promise<WatchlistItem> => {
+    return apiRequest<WatchlistItem>('/api/v1/watchlist', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** Remove (soft-delete) a watchlist item */
+  removeWatchlistItem: async (id: number): Promise<void> => {
+    await apiRequest<void>(`/api/v1/watchlist/${id}`, { method: 'DELETE' });
   },
 };
 

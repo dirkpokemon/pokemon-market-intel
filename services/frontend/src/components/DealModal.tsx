@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { DealScore, marketApi, PriceHistoryPoint, ConditionBreakdown } from '@/lib/api';
+import { DealScore, marketApi, notificationApi, PriceHistoryPoint, ConditionBreakdown } from '@/lib/api';
 import CardImage from '@/components/CardImage';
 
 const CardHistoryChart = dynamic(() => import('@/components/CardHistoryChart'), { ssr: false });
@@ -130,6 +130,15 @@ type HistoryDays = 7 | 30 | 60;
 export default function DealModal({ deal, onClose }: DealModalProps) {
   const [inWatchlist, setInWatchlist] = useState(false);
 
+  // Backend price alert (watchlist)
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [targetPrice, setTargetPrice] = useState<string>(
+    deal.current_price ? (deal.current_price * 0.9).toFixed(2) : ''
+  );
+  const [alertSaving, setAlertSaving] = useState(false);
+  const [alertSaved, setAlertSaved] = useState(false);
+  const [alertError, setAlertError] = useState('');
+
   // Price history
   const [historyDays, setHistoryDays] = useState<HistoryDays>(30);
   const [historyData, setHistoryData] = useState<PriceHistoryPoint[]>([]);
@@ -169,6 +178,26 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
     const updated = inWatchlist ? list.filter(id => id !== deal.id) : [...list, deal.id];
     saveWatchlist(updated);
     setInWatchlist(!inWatchlist);
+  };
+
+  const handleAddAlert = async () => {
+    const price = parseFloat(targetPrice);
+    if (!price || price <= 0) { setAlertError('Voer een geldige prijs in'); return; }
+    setAlertSaving(true);
+    setAlertError('');
+    try {
+      await notificationApi.addWatchlistItem({
+        card_name: deal.product_name,
+        card_set: deal.product_set ?? undefined,
+        target_price: price,
+      });
+      setAlertSaved(true);
+      setTimeout(() => { setAlertOpen(false); setAlertSaved(false); }, 1600);
+    } catch (e: unknown) {
+      setAlertError(e instanceof Error ? e.message : 'Opslaan mislukt');
+    } finally {
+      setAlertSaving(false);
+    }
   };
 
   const handleAddToPortfolio = () => {
@@ -404,6 +433,52 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
             </p>
           </div>
 
+          {/* ── Prijsalert (backend watchlist) ── */}
+          {alertOpen && (
+            <div className="mx-6 mt-4 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 bg-emerald-50 dark:bg-emerald-950/30">
+              <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Prijsalert instellen</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                Je ontvangt een Telegram- of e-mailbericht zodra de marktprijs jouw doelprijs bereikt.
+              </p>
+              <div className="flex items-end gap-3 mb-3">
+                <div className="flex-1">
+                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Doelprijs (€)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={targetPrice}
+                    onChange={e => { setTargetPrice(e.target.value); setAlertError(''); }}
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-400/40 focus:border-emerald-500"
+                    placeholder="0.00"
+                  />
+                </div>
+                {deal.current_price > 0 && (
+                  <div className="text-right pb-2 shrink-0">
+                    <p className="text-[10px] text-gray-400">Nu</p>
+                    <p className="text-sm font-bold text-gray-700 dark:text-gray-200">€{deal.current_price.toFixed(2)}</p>
+                  </div>
+                )}
+              </div>
+              {alertError && <p className="text-xs text-red-600 dark:text-red-400 mb-2">{alertError}</p>}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAddAlert}
+                  disabled={alertSaving || alertSaved}
+                  className="flex-1 px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition disabled:opacity-60"
+                >
+                  {alertSaved ? '✓ Alert opgeslagen!' : alertSaving ? 'Opslaan…' : 'Alert instellen'}
+                </button>
+                <button
+                  onClick={() => setAlertOpen(false)}
+                  className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition"
+                >
+                  Annuleer
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* ── Add to portfolio (collapsible form) ── */}
           {portfolioOpen && (
             <div className="mx-6 mt-4 border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-800/60">
@@ -487,7 +562,21 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
               </button>
 
               <button
-                onClick={() => setPortfolioOpen(v => !v)}
+                onClick={() => { setAlertOpen(v => !v); setPortfolioOpen(false); }}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition ${
+                  alertOpen
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-800'
+                    : 'bg-gray-50 text-gray-700 border border-gray-200 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                Prijsalert
+              </button>
+
+              <button
+                onClick={() => { setPortfolioOpen(v => !v); setAlertOpen(false); }}
                 className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition ${
                   portfolioOpen
                     ? 'bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-200 dark:border-indigo-800'
