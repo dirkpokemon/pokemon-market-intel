@@ -22,6 +22,7 @@ from app.schemas.market import (
 )
 from app.core.dependencies import get_current_user, get_current_premium_user
 from app.data.set_registry import SETS, ERAS as SET_ERAS, aliases_for
+from app.utils.cache import public_cache, dashboard_cache
 
 
 logger = logging.getLogger(__name__)
@@ -277,6 +278,11 @@ async def get_sets(
     Detail pages should use the returned `slug` when querying `/deal_scores`
     etc. via the `set_slug` param — no more client-side name stripping.
     """
+    cache_key = f"sets:{has_data}"
+    cached = public_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     from app.models.deal_score import DealScore
 
     # Fetch all active deal rows (set + category + price) once, then bucket
@@ -339,11 +345,13 @@ async def get_sets(
             "cheapest_sealed": info["cheapest_sealed"],
         })
 
-    return {
+    response = {
         "eras": SET_ERAS,
         "sets": out,
         "total": len(out),
     }
+    public_cache.set(cache_key, response)
+    return response
 
 
 @router.get("/sets/unmatched")
@@ -493,6 +501,10 @@ async def get_market_digest(
     Aggregated market overview: signal counts, set trends, highlights.
     Powers the Price Signals page.
     """
+    cached = dashboard_cache.get("market_digest")
+    if cached is not None:
+        return cached
+
     from app.models.signal import Signal
     from app.models.market_stats import MarketStats
 
@@ -552,7 +564,7 @@ async def get_market_digest(
             avg_price=round(float(row.avg_price or 0), 2),
         )
 
-    return MarketDigestResponse(
+    result = MarketDigestResponse(
         total_cards_tracked=total_cards,
         total_sets=total_sets,
         total_listings=total_listings,
@@ -563,6 +575,8 @@ async def get_market_digest(
         top_rising_sets=[to_set_trend(r) for r in rising],
         top_declining_sets=[to_set_trend(r) for r in declining if float(r.avg_trend or 0) < 0],
     )
+    dashboard_cache.set("market_digest", result)
+    return result
 
 
 # ─── Full Catalog Search ──────────────────────────────────────────
@@ -875,6 +889,10 @@ async def get_public_top_deals(
     Public endpoint: top 5 deals for the landing page preview.
     No authentication required. Returns real live data.
     """
+    cached = public_cache.get("top_deals")
+    if cached is not None:
+        return cached
+
     from app.models.deal_score import DealScore as DealScoreModel
     result = await db.execute(
         select(DealScoreModel)
@@ -886,7 +904,9 @@ async def get_public_top_deals(
         .limit(5)
     )
     deals = result.scalars().all()
-    return [DealScoreResponse.model_validate(d) for d in deals]
+    response = [DealScoreResponse.model_validate(d) for d in deals]
+    public_cache.set("top_deals", response)
+    return response
 
 
 # ═══════════════════════════════════════════════════════════════
