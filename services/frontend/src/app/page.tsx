@@ -191,7 +191,7 @@ export default function LandingPage() {
                 href="/register"
                 className="flex-shrink-0 flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition px-2"
               >
-                Alle deals →
+                All deals →
               </Link>
             </div>
           </div>
@@ -234,7 +234,7 @@ export default function LandingPage() {
                 href="/register"
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 dark:bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-indigo-500 transition"
               >
-                Bekijk live deals
+                View live deals
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
@@ -402,27 +402,27 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Feature 3b: Waardebepaling ─── */}
+      {/* ─── Feature 3b: Card Valuation ─── */}
       <section className="bg-gray-50 dark:bg-gray-900 border-y border-gray-100 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
             {/* Text */}
             <div className="flex-1 max-w-xl">
               <div className="inline-block px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold rounded-md uppercase tracking-wide mb-4">
-                Waardebepaling
+                Card Valuation
               </div>
               <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                Weet wat je Pokémon kaarten waard zijn
+                Know exactly what your Pokémon cards are worth
               </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-                Heb je kaarten liggen en wil je weten wat ze samen waard zijn? Zoek je kaarten op, voeg ze toe aan je lijst en zie de totaalwaarde op basis van 170K+ live EU-listings — in minder dan een minuut.
+                Have a collection and want to know its total value? Search your cards, add them to your list, and see the combined value based on 170K+ live EU listings — in under a minute.
               </p>
               <ul className="space-y-3 mb-8">
                 {[
-                  'Zoek op kaartnaam, zie direct de marktprijs',
-                  'Stel de hoeveelheid in per kaart',
-                  'Geschatte totaalwaarde van je hele selectie',
-                  'Gratis — geen creditcard nodig',
+                  'Search by card name, see market price instantly',
+                  'Set the quantity per card',
+                  'Estimated total value of your entire selection',
+                  'Free — no credit card required',
                 ].map(item => (
                   <li key={item} className="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-300">
                     <svg className="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -436,7 +436,7 @@ export default function LandingPage() {
                 href="/register"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition text-sm"
               >
-                Gratis account aanmaken
+                Create free account
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
@@ -478,7 +478,7 @@ export default function LandingPage() {
                 </div>
                 {/* Total mock */}
                 <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Totaalwaarde</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Total value</span>
                   <span className="text-xl font-bold text-gray-900 dark:text-white">€123.00</span>
                 </div>
               </div>
