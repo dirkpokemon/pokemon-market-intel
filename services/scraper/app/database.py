@@ -53,10 +53,11 @@ Base = declarative_base()
 
 async def init_db() -> None:
     """
-    Initialize database connection
+    Initialize database — create all tables defined in scraper models.
     """
+    import app.models  # noqa: F401 — registers all models with Base.metadata
     async with engine.begin() as conn:
-        pass
+        await conn.run_sync(Base.metadata.create_all)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
