@@ -1,10 +1,11 @@
 #!/bin/bash
-# Railway startup script - runs migrations then starts the server
+set -e  # Exit immediately if any command fails — makes alembic errors visible
 
 PORT=${PORT:-8000}
 
-echo "Running database migrations..."
+echo "=== Running database migrations ==="
 alembic upgrade head
+echo "=== Migrations complete ==="
 
 echo "Starting FastAPI on port $PORT"
-uvicorn app.main:app --host 0.0.0.0 --port $PORT
+exec uvicorn app.main:app --host 0.0.0.0 --port $PORT

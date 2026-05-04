@@ -65,10 +65,21 @@ async def run_async_migrations() -> None:
     """
     Run migrations in 'online' mode with async engine.
     """
+    import ssl as _ssl
+
+    connect_args = {}
+    db_url = settings.DATABASE_URL
+    if "railway" in db_url or "proxy.rlwy.net" in db_url or "supabase" in db_url:
+        ssl_ctx = _ssl.create_default_context()
+        ssl_ctx.check_hostname = False
+        ssl_ctx.verify_mode = _ssl.CERT_NONE
+        connect_args["ssl"] = ssl_ctx
+
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args=connect_args,
     )
 
     async with connectable.connect() as connection:
