@@ -34,6 +34,7 @@ pytz==2023.3
 # Async/Task Management
 aiofiles==23.2.1
 aioredis==2.0.1
+apscheduler==3.10.4
 
 # Monitoring & Logging
 structlog==24.1.0
