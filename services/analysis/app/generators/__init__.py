@@ -1,7 +1,3 @@
 """
-Signal Generators Module
+Alert Generators Module
 """
-
-from app.generators.signal_generator import SignalGenerator
-
-__all__ = ["SignalGenerator"]

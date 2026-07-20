@@ -27,45 +27,6 @@ export interface User {
   subscription_status?: string;
 }
 
-export interface Signal {
-  id: number;
-  signal_type: string;
-  signal_level: string;
-  product_name: string;
-  product_set?: string;
-  category?: string;
-  current_price?: number;
-  market_avg_price?: number;
-  deal_score?: number;
-  description?: string;
-  signal_metadata?: string;
-  confidence?: number;
-  priority: number;
-  detected_at: string;
-  expires_at?: string;
-}
-
-export interface SetTrend {
-  product_set: string;
-  avg_trend: number;
-  avg_volume_trend: number;
-  card_count: number;
-  avg_price: number;
-}
-
-export interface MarketDigest {
-  total_cards_tracked: number;
-  total_sets: number;
-  total_listings: number;
-  last_analysis_at?: string;
-  /** Max scraped_at from raw_prices — scraper health */
-  last_scrape_at?: string;
-  signal_counts: Record<string, number>;
-  signal_highlights: Signal[];
-  top_rising_sets: SetTrend[];
-  top_declining_sets: SetTrend[];
-}
-
 export interface PriceHistoryPoint {
   date: string;
   avg_price: number;
@@ -240,18 +201,6 @@ export const authApi = {
 
 // Market Data
 export const marketApi = {
-  getSignals: async (params?: {
-    limit?: number;
-    signal_type?: string;
-    signal_level?: string;
-  }): Promise<Signal[]> => {
-    const entries = Object.entries(params || {})
-      .filter(([, v]) => v !== undefined && v !== null && v !== '')
-      .map(([k, v]) => [k, String(v)] as [string, string]);
-    const q = new URLSearchParams(entries).toString();
-    return apiRequest<Signal[]>(q ? `/api/v1/signals?${q}` : '/api/v1/signals');
-  },
-  
   getDealScores: async (params?: {
     limit?: number;
     min_score?: number;
@@ -266,10 +215,6 @@ export const marketApi = {
     const query = new URLSearchParams(entries).toString();
     const path = query ? `/api/v1/deal_scores?${query}` : '/api/v1/deal_scores';
     return apiRequest<DealScore[]>(path);
-  },
-
-  getMarketDigest: async (): Promise<MarketDigest> => {
-    return apiRequest<MarketDigest>('/api/v1/market_digest');
   },
 
   getPriceHistory: async (cardName: string, days = 30): Promise<PriceHistoryResponse> => {
@@ -359,22 +304,6 @@ export const publicApi = {
     } catch {
       return [];
     }
-  },
-};
-
-// News
-export interface NewsArticle {
-  title: string;
-  link: string;
-  source: string;
-  published?: string;
-  description?: string;
-  image_url?: string;
-}
-
-export const newsApi = {
-  getNews: async (limit: number = 10): Promise<NewsArticle[]> => {
-    return apiRequest<NewsArticle[]>(`/api/v1/news?limit=${limit}`);
   },
 };
 

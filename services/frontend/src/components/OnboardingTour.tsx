@@ -11,7 +11,7 @@ interface OnboardingTourProps {
   user?: TourUser;
 }
 
-type Goal = 'deals' | 'signals' | 'portfolio';
+type Goal = 'deals' | 'watchlist';
 
 const GOALS: { id: Goal; icon: string; title: string; description: string; page: string }[] = [
   {
@@ -22,28 +22,19 @@ const GOALS: { id: Goal; icon: string; title: string; description: string; page:
     page: '/deals',
   },
   {
-    id: 'signals',
-    icon: '⚡',
-    title: 'Markt volgen',
-    description: 'Signalen voor prijsbewegingen en momentum',
-    page: '/signals',
-  },
-  {
-    id: 'portfolio',
-    icon: '💼',
-    title: 'Collectie bijhouden',
-    description: 'Waarde en winst/verlies per kaart tracken',
-    page: '/portfolio',
+    id: 'watchlist',
+    icon: '🔔',
+    title: 'Prijsalerts',
+    description: 'Zet target-prijzen en krijg mail/Telegram bij een daling',
+    page: '/watchlist',
   },
 ];
 
-export default function OnboardingTour({ onComplete, user }: OnboardingTourProps) {
+export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [selectedGoals, setSelectedGoals] = useState<Goal[]>([]);
   const [animating, setAnimating] = useState(false);
-
-  const isPaid = user?.role && ['paid', 'pro', 'admin'].includes(user.role);
 
   const transition = (next: number) => {
     setAnimating(true);
@@ -61,8 +52,7 @@ export default function OnboardingTour({ onComplete, user }: OnboardingTourProps
 
   const primaryGoalPage = (): string => {
     if (selectedGoals.includes('deals')) return '/deals';
-    if (selectedGoals.includes('signals')) return '/signals';
-    if (selectedGoals.includes('portfolio')) return '/portfolio';
+    if (selectedGoals.includes('watchlist')) return '/watchlist';
     return '/home';
   };
 
@@ -132,8 +122,8 @@ export default function OnboardingTour({ onComplete, user }: OnboardingTourProps
               <div className="px-7 py-5 space-y-3">
                 {[
                   { icon: '🎯', label: 'Deal Score', desc: 'AI-scoring op 0–100 — hoe goedkoper vs markt, hoe hoger' },
-                  { icon: '⚡', label: 'Signalen', desc: 'Momentum, prijsdalingen, aanbodveranderingen per uur' },
-                  { icon: '💼', label: 'Portfolio', desc: 'P&L per kaart op basis van live marktprijzen' },
+                  { icon: '🔔', label: 'Prijsalerts', desc: 'Target-prijs per kaart, mail/Telegram bij een daling' },
+                  { icon: '📦', label: 'Sets & sealed', desc: 'Blader alle sets met live EU prijzen' },
                 ].map(item => (
                   <div key={item.label} className="flex items-start gap-3">
                     <span className="text-xl flex-shrink-0 mt-0.5">{item.icon}</span>
@@ -170,8 +160,6 @@ export default function OnboardingTour({ onComplete, user }: OnboardingTourProps
 
               <div className="px-7 pb-5 space-y-3">
                 {GOALS.map(goal => {
-                  // Lock signals for free users with a visual cue, but still allow selection
-                  const lockedForFree = goal.id === 'signals' && !isPaid;
                   const selected = selectedGoals.includes(goal.id);
                   return (
                     <button
@@ -186,12 +174,7 @@ export default function OnboardingTour({ onComplete, user }: OnboardingTourProps
                     >
                       <span className="text-2xl flex-shrink-0">{goal.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{goal.title}</p>
-                          {lockedForFree && (
-                            <span className="text-[10px] px-1.5 py-0.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 rounded font-semibold uppercase">Plus</span>
-                          )}
-                        </div>
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{goal.title}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">{goal.description}</p>
                       </div>
                       <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${

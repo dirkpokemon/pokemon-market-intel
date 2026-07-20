@@ -16,7 +16,7 @@ async def test_database():
     """Test database connection and models"""
     logger.info("Testing database connection...")
     from app.database import init_db, get_session
-    from app.models import MarketStats, DealScore, Signal, RawPrice
+    from app.models import MarketStats, DealScore, RawPrice
     
     await init_db()
     logger.info("✓ Database initialized")
@@ -83,21 +83,6 @@ async def test_deal_scores():
         logger.warning("⚠ No deal scores generated (no market stats?)")
 
 
-async def test_signals():
-    """Test signal generator"""
-    logger.info("Testing signal generator...")
-    from app.generators.signal_generator import SignalGenerator
-    
-    generator = SignalGenerator()
-    count = await generator.generate_all()
-    logger.info(f"✓ Generated {count} signals")
-    
-    if count > 0:
-        logger.info("✓ Signal generator test passed")
-    else:
-        logger.warning("⚠ No signals generated (no deal scores?)")
-
-
 async def main():
     """Run all tests"""
     logger.info("=" * 60)
@@ -116,10 +101,7 @@ async def main():
         
         await test_deal_scores()
         print()
-        
-        await test_signals()
-        print()
-        
+
         logger.info("=" * 60)
         logger.info("✅ All tests completed successfully!")
         logger.info("=" * 60)

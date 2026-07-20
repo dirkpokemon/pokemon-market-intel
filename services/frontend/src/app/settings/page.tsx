@@ -411,19 +411,8 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Signal types to notify about */}
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold mb-2">Signal Types</p>
-              <div className="mb-6">
-                <Toggle checked={prefs.notify_momentum} onChange={(v) => updatePref('notify_momentum', v)} label="Momentum" description="Price + volume both rising" />
-                <Toggle checked={prefs.notify_risk} onChange={(v) => updatePref('notify_risk', v)} label="Risk Warnings" description="Possible bubble or manipulation" />
-                <Toggle checked={prefs.notify_price_drop} onChange={(v) => updatePref('notify_price_drop', v)} label="Price Drops" description="Significant price decreases" />
-                <Toggle checked={prefs.notify_supply} onChange={(v) => updatePref('notify_supply', v)} label="Supply Changes" description="Listing volume surges or drops" />
-                <Toggle checked={prefs.notify_volatility} onChange={(v) => updatePref('notify_volatility', v)} label="Volatility Spikes" description="Unstable price action" />
-                <Toggle checked={prefs.notify_set_trends} onChange={(v) => updatePref('notify_set_trends', v)} label="Set Trends" description="Entire sets moving up or down" />
-              </div>
-
               {/* Watchlist alerts */}
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold mb-2">Portfolio</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold mb-2">Watchlist</p>
               <div className="mb-6">
                 <Toggle checked={prefs.notify_watchlist} onChange={(v) => updatePref('notify_watchlist', v)} label="Watchlist Price Targets" description="When a card in your watchlist hits its target price" />
               </div>

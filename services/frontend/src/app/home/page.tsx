@@ -3,20 +3,17 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
-import { authApi, marketApi, searchApi, newsApi, setsApi, Signal, DealScore, CardSearchResult, NewsArticle, PokemonSetInfo } from '@/lib/api';
+import { authApi, marketApi, searchApi, setsApi, DealScore, CardSearchResult, PokemonSetInfo } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import StatCard from '@/components/StatCard';
 import DealModal from '@/components/DealModal';
 import CardImage from '@/components/CardImage';
 import OnboardingTour from '@/components/OnboardingTour';
-import SignalSetupWizard from '@/components/SignalSetupWizard';
 
 export default function HomePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
-  const [signals, setSignals] = useState<Signal[]>([]);
   const [dealScores, setDealScores] = useState<DealScore[]>([]);
   const [selectedDeal, setSelectedDeal] = useState<DealScore | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -32,11 +29,7 @@ export default function HomePage() {
   const [matchedSets, setMatchedSets] = useState<PokemonSetInfo[]>([]);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // News state
-  const [news, setNews] = useState<NewsArticle[]>([]);
-  const [newsLoading, setNewsLoading] = useState(true);
   const [showSubSuccess, setShowSubSuccess] = useState(false);
-  const [showSetupWizard, setShowSetupWizard] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
@@ -61,12 +54,6 @@ export default function HomePage() {
           .then((me) => {
             setUser(me);
             localStorage.setItem('user', JSON.stringify(me));
-            // Show signal setup wizard for new paid subscribers who haven't set it up yet
-            const isPaid = me.role === 'paid' || me.role === 'pro' || me.role === 'admin';
-            const alreadyDone = localStorage.getItem('signals_setup_done');
-            if (isPaid && !alreadyDone) {
-              setTimeout(() => setShowSetupWizard(true), 800);
-            }
           })
           .catch(() => {});
       }
@@ -87,32 +74,19 @@ export default function HomePage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [scoresRes, sigsRes, newsRes] = await Promise.allSettled([
-        marketApi.getDealScores({ limit: 100, min_score: 0 }),
-        marketApi.getSignals({ limit: 50 }),
-        newsApi.getNews(8),
-      ]);
-
-      if (scoresRes.status === 'fulfilled') setDealScores(scoresRes.value);
-      else setDealScores([]);
-
-      if (sigsRes.status === 'fulfilled') setSignals(sigsRes.value);
-      else setSignals([]);
-
-      if (newsRes.status === 'fulfilled') setNews(newsRes.value);
-      else setNews([]);
+      const scores = await marketApi.getDealScores({ limit: 100, min_score: 0 });
+      setDealScores(scores);
     } catch (err) {
       console.error('Error loading data:', err);
+      setDealScores([]);
     } finally {
       setLoading(false);
-      setNewsLoading(false);
     }
   };
 
   const isPremiumHome = user?.role === 'paid' || user?.role === 'pro' || user?.role === 'admin';
   const topDealsLimit = isPremiumHome ? 5 : 3;
   const topDeals = dealScores.slice(0, topDealsLimit);
-  const recentSignals = signals.slice(0, 3);
   const excellentDeals = dealScores.filter(d => d.deal_score >= 80).length;
   const avgDealScore = dealScores.length > 0 
     ? Math.round(dealScores.reduce((sum, d) => sum + d.deal_score, 0) / dealScores.length)
@@ -204,7 +178,7 @@ export default function HomePage() {
           <div className="mb-6 rounded-xl border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/40 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <p className="text-sm text-green-900 dark:text-green-100">
               <span className="font-semibold">Subscription active.</span>{' '}
-              Your plan should appear in a few seconds once Stripe has finished syncing. If Signals still shows as locked, refresh the page or sign out and back in.
+              Your plan should appear in a few seconds once Stripe has finished syncing. If deals still show as limited, refresh the page or sign out and back in.
             </p>
             <button
               type="button"
@@ -423,54 +397,12 @@ export default function HomePage() {
             {/* Key Metrics */}
             <div className="mb-8">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-4">Your Market at a Glance</h2>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                 <StatCard title="Total Deals" value={dealScores.length} subtitle="Active opportunities" icon="🎴" color="blue" />
                 <StatCard title="Avg Deal Score" value={avgDealScore} subtitle="Market average" icon="📊" color="purple" />
                 <StatCard title="Excellent Deals" value={excellentDeals} subtitle="Score 80+" icon="⭐" color="green" />
-                <StatCard title="Active Signals" value={signals.length} subtitle="Hourly scan" icon="🎯" color="blue" />
               </div>
             </div>
-
-            {/* Recent Signals */}
-            {signals.length > 0 && (
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Priority Signals</h2>
-                  <Link href="/signals" className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium">View all →</Link>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {recentSignals.map((signal) => (
-                    <div key={signal.id} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition">
-                      <div className="flex items-start justify-between mb-3">
-                        <span className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
-                          signal.signal_level === 'high' ? 'bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-200' :
-                          signal.signal_level === 'medium' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-200' :
-                          'bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-200'
-                        }`}>
-                          {signal.signal_level.toUpperCase()}
-                        </span>
-                        <span className="text-[11px] text-gray-400">
-                          {new Date(signal.detected_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <CardImage cardName={signal.product_name} size="sm" />
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1 line-clamp-2">{signal.product_name}</h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{signal.signal_type.replace(/_/g, ' ')}</p>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-gray-500 dark:text-gray-400">€{signal.current_price?.toFixed(2) || 'N/A'}</span>
-                            {signal.deal_score && (
-                              <span className="font-bold text-green-700 dark:text-green-400">Score: {signal.deal_score}</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Top deals preview (3 free / 5 premium — matches deals page gate) */}
             <div className="mb-8">
@@ -520,114 +452,23 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* ═══ TCG news ═══ */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Latest TCG news</h2>
-                  <span className="px-2 py-0.5 bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300 text-[10px] font-bold rounded-full uppercase">Hourly</span>
-                </div>
-              </div>
-
-              {newsLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 animate-pulse">
-                      <div className="flex gap-3">
-                        <div className="w-20 h-14 bg-gray-100 dark:bg-gray-800 rounded-lg flex-shrink-0" />
-                        <div className="flex-1 space-y-2">
-                          <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-3/4" />
-                          <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded w-1/2" />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : news.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {news.map((article, idx) => (
-                    <a
-                      key={idx}
-                      href={article.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm transition group"
-                    >
-                      <div className="flex items-start gap-3">
-                        {article.image_url ? (
-                          <Image
-                            src={article.image_url}
-                            alt=""
-                            width={80}
-                            height={56}
-                            unoptimized
-                            className="w-20 h-14 object-cover rounded-lg flex-shrink-0 bg-gray-100 dark:bg-gray-800"
-                          />
-                        ) : (
-                          <div className="w-20 h-14 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/50 dark:to-indigo-950/50 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <span className="text-lg">📰</span>
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition">
-                            {article.title}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1.5">
-                            <span className="text-[11px] text-gray-400 font-medium">{article.source}</span>
-                            {article.published && (
-                              <>
-                                <span className="text-gray-300">·</span>
-                                <span className="text-[11px] text-gray-400">
-                                  {(() => {
-                                    try {
-                                      const d = new Date(article.published);
-                                      const now = new Date();
-                                      const diffH = Math.floor((now.getTime() - d.getTime()) / 3600000);
-                                      if (diffH < 1) return 'Just now';
-                                      if (diffH < 24) return `${diffH}h ago`;
-                                      const diffD = Math.floor(diffH / 24);
-                                      if (diffD === 1) return 'Yesterday';
-                                      if (diffD < 7) return `${diffD}d ago`;
-                                      return d.toLocaleDateString();
-                                    } catch { return ''; }
-                                  })()}
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                        <svg className="w-4 h-4 text-gray-300 dark:text-gray-600 group-hover:text-gray-500 dark:group-hover:text-gray-400 transition flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                      </div>
-                    </a>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-8 text-center">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">No news articles available right now.</p>
-                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Check back soon for the latest TCG updates.</p>
-                </div>
-              )}
-            </div>
-
             {/* Quick Actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Link href="/portfolio" className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition group">
+              <Link href="/watchlist" className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition group">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-xl">📦</div>
+                  <div className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-xl">🔔</div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition">My Portfolio</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Collection & watchlist</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition">Watchlist</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Price alerts on your cards</p>
                   </div>
                 </div>
               </Link>
-              <Link href="/signals" className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition group">
+              <Link href="/sets" className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4 hover:border-gray-300 dark:hover:border-gray-600 transition group">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-xl">⚡</div>
+                  <div className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-xl">📦</div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition">Price Signals</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">AI-powered market intel</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition">Browse Sets</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">All sets & sealed prices</p>
                   </div>
                 </div>
               </Link>
@@ -647,7 +488,7 @@ export default function HomePage() {
               <div className="mt-8 bg-gray-900 rounded-xl p-8 text-center">
                 <h3 className="text-xl font-bold text-white mb-2">Unlock Plus</h3>
                 <p className="text-sm text-gray-400 mb-6">
-                  Get the full Signals feed, unlimited deals, email &amp; Telegram alerts, and more!
+                  Get unlimited deals, all filters, email &amp; Telegram alerts, and more!
                 </p>
                 <Link
                   href="/pricing"
@@ -677,13 +518,6 @@ export default function HomePage() {
         />
       )}
 
-      {/* Signal Setup Wizard — shown after a new paid subscription */}
-      {showSetupWizard && (
-        <SignalSetupWizard
-          onClose={() => setShowSetupWizard(false)}
-          onDone={() => setShowSetupWizard(false)}
-        />
-      )}
     </DashboardLayout>
   );
 }

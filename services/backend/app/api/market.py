@@ -1,28 +1,25 @@
 """
 Market Data API endpoints
-Provides access to signals, deal scores, market statistics, full catalog search, and news
+Provides access to deal scores, market statistics, sets, and full catalog search
 """
 
 import logging
-import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends, Query, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, desc, func, text
 from pydantic import BaseModel
-import httpx
 
 from app.database import get_db
 from app.models.user import User
 from app.schemas.market import (
-    SignalResponse, DealScoreResponse, MarketStatsResponse,
+    DealScoreResponse, MarketStatsResponse,
     CardSearchResult, SearchResponse,
-    MarketDigestResponse, SetTrend, SignalSummary,
 )
-from app.core.dependencies import get_current_user, get_current_premium_user
+from app.core.dependencies import get_current_user
 from app.data.set_registry import SETS, ERAS as SET_ERAS, aliases_for
-from app.utils.cache import public_cache, dashboard_cache
+from app.utils.cache import public_cache
 
 
 logger = logging.getLogger(__name__)
@@ -63,107 +60,6 @@ def _ilike_any_set(column, aliases: List[str]):
         for a in aliases
     ]
     return sa_or(*clauses) if len(clauses) > 1 else clauses[0]
-
-
-@router.get("/signals", response_model=List[SignalResponse])
-async def get_signals(
-    limit: int = Query(default=50, le=100, description="Maximum number of signals to return"),
-    signal_type: Optional[str] = Query(default=None, description="Filter by signal type"),
-    signal_level: Optional[str] = Query(default=None, description="Filter by signal level"),
-    product_set: Optional[str] = Query(default=None, description="Filter by product set"),
-    current_user: User = Depends(get_current_premium_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """
-    Get latest market signals (PREMIUM ONLY)
-    
-    **Requires:** Paid or Pro subscription
-    
-    Returns active signals sorted by priority and detection time
-    
-    - **limit**: Maximum number of signals (default: 50, max: 100)
-    - **signal_type**: Filter by type (high_deal, medium_deal, undervalued, momentum, risk, arbitrage)
-    - **signal_level**: Filter by level (high, medium, low)
-    - **product_set**: Filter by card set name
-    """
-    logger.info(f"User {current_user.email} fetching signals")
-    
-    # Import Signal model
-    from app.models.signal import Signal
-    
-    # Build query
-    query = select(Signal).where(Signal.is_active == True)
-    
-    if signal_type:
-        query = query.where(Signal.signal_type == signal_type)
-    
-    if signal_level:
-        query = query.where(Signal.signal_level == signal_level)
-    
-    if product_set:
-        query = query.where(Signal.product_set == product_set)
-    
-    # Order by detection time so high/medium/low signals are mixed in the feed
-    query = query.order_by(desc(Signal.detected_at), desc(Signal.priority)).limit(limit)
-    
-    result = await db.execute(query)
-    signals = result.scalars().all()
-    
-    logger.info(f"Returning {len(signals)} signals")
-    
-    return [SignalResponse.from_orm(signal) for signal in signals]
-
-
-def _approx_distinct_from_pg_stats(n_distinct_raw, n_live: int) -> int:
-    """
-    Turn pg_stats.n_distinct into an approximate count (PostgreSQL planner stats).
-    Positive = estimated distinct count; negative = -fraction * row estimate.
-    """
-    if n_live <= 0 or n_distinct_raw is None:
-        return 0
-    try:
-        nd = float(n_distinct_raw)
-    except (TypeError, ValueError):
-        return 0
-    if nd >= 0:
-        return int(nd)
-    return max(1, min(n_live, int(round(abs(nd) * n_live))))
-
-
-async def _raw_prices_digest_row(db: AsyncSession):
-    """
-    Fast raw_prices stats: catalog stats + MAX(scraped_at) only.
-    Avoids multiple full-table COUNT(*) / COUNT(DISTINCT) on large tables.
-    """
-    row = (
-        await db.execute(
-            text(
-                """
-        SELECT
-          COALESCE(
-            (SELECT n_live_tup::bigint FROM pg_stat_user_tables
-             WHERE schemaname = 'public' AND relname = 'raw_prices'),
-            0
-          ) AS n_live,
-          (SELECT MAX(scraped_at) FROM raw_prices) AS last_scrape,
-          (SELECT n_distinct FROM pg_stats
-             WHERE schemaname = 'public' AND tablename = 'raw_prices' AND attname = 'card_name'
-             LIMIT 1) AS nd_cards,
-          (SELECT n_distinct FROM pg_stats
-             WHERE schemaname = 'public' AND tablename = 'raw_prices' AND attname = 'card_set'
-             LIMIT 1) AS nd_sets
-        """
-            )
-        )
-    ).one()
-
-    n_live = int(row.n_live or 0)
-    last_scrape = row.last_scrape
-    cards = _approx_distinct_from_pg_stats(row.nd_cards, n_live)
-    sets = _approx_distinct_from_pg_stats(row.nd_sets, n_live)
-    # Sets with NULL card_set are not distinct "sets"; cap for display sanity
-    sets = min(sets, n_live) if n_live else 0
-    return n_live, cards, sets, last_scrape
 
 
 def _escape_ilike_pattern(value: str) -> str:
@@ -488,95 +384,6 @@ async def get_market_stats(
     logger.info(f"Returning {len(stats)} market stats")
     
     return [MarketStatsResponse.from_orm(stat) for stat in stats]
-
-
-# ─── Market Digest (Price Signals command center) ─────────────────
-
-@router.get("/market_digest", response_model=MarketDigestResponse)
-async def get_market_digest(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    """
-    Aggregated market overview: signal counts, set trends, highlights.
-    Powers the Price Signals page.
-    """
-    cached = dashboard_cache.get("market_digest")
-    if cached is not None:
-        return cached
-
-    from app.models.signal import Signal
-    from app.models.market_stats import MarketStats
-
-    # Overview counts: use planner stats + MAX(scraped_at) — full COUNT(*) on raw_prices is too slow at scale
-    total_listings, total_cards, total_sets, last_scrape_at = await _raw_prices_digest_row(db)
-
-    last_analysis = await db.execute(
-        select(func.max(MarketStats.calculated_at))
-    )
-    last_at = last_analysis.scalar()
-
-    # Signal counts by type
-    sig_counts_q = await db.execute(
-        select(Signal.signal_type, func.count(Signal.id))
-        .where(Signal.is_active == True)
-        .group_by(Signal.signal_type)
-    )
-    signal_counts = {row[0]: row[1] for row in sig_counts_q.all()}
-
-    # Top 5 highest-priority active signals as highlights
-    highlights_q = await db.execute(
-        select(Signal)
-        .where(Signal.is_active == True)
-        .order_by(desc(Signal.priority), desc(Signal.detected_at))
-        .limit(5)
-    )
-    highlights = [SignalResponse.from_orm(s) for s in highlights_q.scalars().all()]
-
-    # Set trends (aggregated from market_statistics)
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=48)
-    set_trends_q = await db.execute(
-        select(
-            MarketStats.product_set,
-            func.avg(MarketStats.price_trend_7d).label("avg_trend"),
-            func.avg(MarketStats.volume_trend_7d).label("avg_vol_trend"),
-            func.count(MarketStats.id).label("card_count"),
-            func.avg(MarketStats.avg_price_7d).label("avg_price"),
-        )
-        .where(and_(
-            MarketStats.calculated_at >= cutoff,
-            MarketStats.product_set.isnot(None),
-        ))
-        .group_by(MarketStats.product_set)
-        .having(func.count(MarketStats.id) >= 3)
-    )
-    all_set_trends = set_trends_q.all()
-
-    rising = sorted(all_set_trends, key=lambda r: float(r.avg_trend or 0), reverse=True)[:5]
-    declining = sorted(all_set_trends, key=lambda r: float(r.avg_trend or 0))[:5]
-
-    def to_set_trend(row) -> SetTrend:
-        return SetTrend(
-            product_set=row.product_set,
-            avg_trend=round(float(row.avg_trend or 0), 2),
-            avg_volume_trend=round(float(row.avg_vol_trend or 0), 2),
-            card_count=row.card_count,
-            avg_price=round(float(row.avg_price or 0), 2),
-        )
-
-    result = MarketDigestResponse(
-        total_cards_tracked=total_cards,
-        total_sets=total_sets,
-        total_listings=total_listings,
-        last_analysis_at=last_at,
-        last_scrape_at=last_scrape_at,
-        signal_counts=signal_counts,
-        signal_highlights=highlights,
-        top_rising_sets=[to_set_trend(r) for r in rising],
-        top_declining_sets=[to_set_trend(r) for r in declining if float(r.avg_trend or 0) < 0],
-    )
-    dashboard_cache.set("market_digest", result)
-    return result
 
 
 # ─── Full Catalog Search ──────────────────────────────────────────
@@ -968,151 +775,7 @@ async def get_price_sparklines(
     return output
 
 
-# ═══════════════════════════════════════════════════════════════
-# TCG news — fetches from real RSS feeds, cached in memory
-# ═══════════════════════════════════════════════════════════════
-
-# In-memory news cache: { "articles": [...], "fetched_at": datetime }
-_news_cache: dict = {"articles": [], "fetched_at": None}
-NEWS_CACHE_MINUTES = 60  # Refresh every hour
-
-# RSS feed sources (tried in order — only reliable ones that return valid XML)
-NEWS_FEEDS = [
-    ("https://www.dexerto.com/pokemon/feed/", "Dexerto"),
-    ("https://pokemonblog.com/feed/", "PokémonBlog"),
-]
 
 
-class NewsArticle(BaseModel):
-    title: str
-    link: str
-    source: str
-    published: Optional[str] = None
-    description: Optional[str] = None
-    image_url: Optional[str] = None
 
 
-def _parse_rss(xml_text: str, source_name: str, limit: int = 20) -> List[dict]:
-    """Parse RSS XML and return list of article dicts"""
-    import re
-    articles = []
-    try:
-        # Clean XML of invalid characters
-        xml_text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', xml_text)
-        root = ET.fromstring(xml_text)
-        # Standard RSS 2.0 structure
-        channel = root.find("channel")
-        if channel is None:
-            return articles
-        for item in channel.findall("item")[:limit]:
-            title = item.findtext("title", "").strip()
-            link = item.findtext("link", "").strip()
-            pub_date = item.findtext("pubDate", "").strip()
-            description = item.findtext("description", "").strip()
-
-            # Try to extract image from multiple sources
-            image_url = None
-            # 1. Check media:content or media:thumbnail (Yahoo Media RSS namespace)
-            media_ns = "{http://search.yahoo.com/mrss/}"
-            for tag in [f"{media_ns}content", f"{media_ns}thumbnail"]:
-                media_el = item.find(tag)
-                if media_el is not None:
-                    image_url = media_el.get("url")
-                    if image_url:
-                        break
-            # 2. Check <enclosure> tag (common for podcast/blog RSS)
-            if not image_url:
-                enclosure = item.find("enclosure")
-                if enclosure is not None and "image" in (enclosure.get("type", "")):
-                    image_url = enclosure.get("url")
-            # 3. Try to find image URL in description HTML
-            if not image_url and description:
-                img_match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', description)
-                if img_match:
-                    image_url = img_match.group(1)
-            # 4. Check content:encoded for image
-            if not image_url:
-                content_ns = "{http://purl.org/rss/1.0/modules/content/}"
-                content = item.findtext(f"{content_ns}encoded", "")
-                if content:
-                    img_match = re.search(r'<img[^>]+src=["\']([^"\']+)["\']', content)
-                    if img_match:
-                        image_url = img_match.group(1)
-
-            # Clean description (remove HTML tags)
-            if description:
-                description = re.sub(r'<[^>]+>', '', description).strip()
-                description = re.sub(r'\s+', ' ', description).strip()
-                if len(description) > 200:
-                    description = description[:200].rsplit(' ', 1)[0] + '...'
-
-            if title and link:
-                articles.append({
-                    "title": title,
-                    "link": link,
-                    "source": source_name,
-                    "published": pub_date,
-                    "description": description or None,
-                    "image_url": image_url,
-                })
-    except Exception as e:
-        logger.warning(f"Failed to parse RSS from {source_name}: {e}")
-    return articles
-
-
-async def _fetch_news(limit: int = 15) -> List[dict]:
-    """Fetch news from RSS feeds"""
-    global _news_cache
-
-    # Return cached if fresh
-    if _news_cache["fetched_at"] and (
-        datetime.utcnow() - _news_cache["fetched_at"] < timedelta(minutes=NEWS_CACHE_MINUTES)
-    ):
-        return _news_cache["articles"][:limit]
-
-    all_articles = []
-    async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
-        for feed_url, source_name in NEWS_FEEDS:
-            try:
-                resp = await client.get(feed_url, headers={
-                    "User-Agent": "TCGPulse/1.0 (News Aggregator)"
-                })
-                if resp.status_code == 200:
-                    articles = _parse_rss(resp.text, source_name, limit=15)
-                    all_articles.extend(articles)
-                    logger.info(f"Fetched {len(articles)} articles from {source_name}")
-            except Exception as e:
-                logger.warning(f"Failed to fetch {source_name}: {e}")
-
-    # Sort by published date (newest first) if possible
-    # pubDate format: "Thu, 20 Mar 2026 12:00:00 +0000"
-    def parse_pub_date(article):
-        try:
-            from email.utils import parsedate_to_datetime
-            return parsedate_to_datetime(article.get("published", ""))
-        except:
-            return datetime.min
-
-    all_articles.sort(key=parse_pub_date, reverse=True)
-
-    # Update cache
-    _news_cache = {
-        "articles": all_articles,
-        "fetched_at": datetime.utcnow(),
-    }
-
-    return all_articles[:limit]
-
-
-@router.get("/news", response_model=List[NewsArticle])
-async def get_pokemon_news(
-    limit: int = Query(default=10, le=20, description="Number of articles to return"),
-    current_user: User = Depends(get_current_user),
-):
-    """
-    Get latest TCG news from trusted sources.
-    Results are cached for 1 hour.
-    """
-    articles = await _fetch_news(limit=limit)
-    logger.info(f"Returning {len(articles)} news articles for user {current_user.email}")
-    return articles

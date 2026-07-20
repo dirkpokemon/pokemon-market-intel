@@ -3,8 +3,6 @@ builder = "DOCKERFILE"
 dockerfilePath = "services/analysis/Dockerfile"
 
 [deploy]
-startCommand = "python -m app.main"
-healthcheckPath = "/"
-healthcheckTimeout = 100
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
+startCommand = "python -m app.main --once"
+cronSchedule = "30 7,19 * * *"
+restartPolicyType = "NEVER"

@@ -1,5 +1,5 @@
 """
-Daily email digest — top deals + top signals for all opted-in users.
+Daily email digest — top deals for all opted-in users.
 """
 import logging
 from datetime import datetime, timezone
@@ -8,15 +8,14 @@ from sqlalchemy import select, desc
 
 from app.database import AsyncSessionLocal
 from app.models.deal_score import DealScore
-from app.models.signal import Signal
 from app.models.user import User
 from app.utils.email import send_email
 
 logger = logging.getLogger(__name__)
 
 
-def _build_html(deals: list, signals: list) -> str:
-    """Build a dark-themed HTML email with deals and signals tables."""
+def _build_html(deals: list) -> str:
+    """Build a dark-themed HTML email with a top-deals table."""
 
     # --- Deals rows ---
     deal_rows = ""
@@ -37,19 +36,7 @@ def _build_html(deals: list, signals: list) -> str:
             </tr>
         """
 
-    # --- Signal rows ---
-    signal_rows = ""
-    for s in signals:
-        signal_rows += f"""
-            <tr>
-              <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#818cf8;">{(s.signal_type or "").replace("_", " ").title()}</td>
-              <td style="padding:8px 12px;border-bottom:1px solid #1e293b;">{s.product_name or ""}</td>
-              <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#94a3b8;">{s.description or ""}</td>
-            </tr>
-        """
-
     no_deals_msg = "" if deal_rows else "<tr><td colspan='5' style='padding:12px;color:#64748b;text-align:center;'>Geen deals gevonden</td></tr>"
-    no_signals_msg = "" if signal_rows else "<tr><td colspan='3' style='padding:12px;color:#64748b;text-align:center;'>Geen signalen gevonden</td></tr>"
 
     return f"""<!DOCTYPE html>
 <html lang="nl">
@@ -96,23 +83,6 @@ def _build_html(deals: list, signals: list) -> str:
                 </tbody>
               </table>
 
-              <!-- Top Signals section -->
-              <h2 style="margin:0 0 16px;font-size:18px;color:#818cf8;border-bottom:1px solid #334155;padding-bottom:12px;">
-                &#9889; Marktsignalen
-              </h2>
-              <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:32px;">
-                <thead>
-                  <tr style="background:#0f172a;">
-                    <th style="padding:10px 12px;text-align:left;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">Type</th>
-                    <th style="padding:10px 12px;text-align:left;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">Kaart</th>
-                    <th style="padding:10px 12px;text-align:left;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;">Beschrijving</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {signal_rows or no_signals_msg}
-                </tbody>
-              </table>
-
               <!-- CTA -->
               <div style="text-align:center;margin-bottom:32px;">
                 <a href="https://charming-contentment-production-ce0e.up.railway.app/deals"
@@ -139,7 +109,7 @@ def _build_html(deals: list, signals: list) -> str:
 </html>"""
 
 
-def _build_text(deals: list, signals: list) -> str:
+def _build_text(deals: list) -> str:
     """Plain-text fallback for the digest email."""
     lines = ["TCG Pulse — Dagelijkse Marktupdate", "=" * 40, ""]
     lines.append("TOP DEALS")
@@ -148,9 +118,6 @@ def _build_text(deals: list, signals: list) -> str:
         avg = float(d.market_avg_price or 0)
         saving_pct = round((avg - current) / avg * 100, 1) if avg > 0 else 0
         lines.append(f"  {d.product_name} ({d.product_set}) — EUR{current:.2f} | Score: {d.deal_score:.0f} | -{saving_pct}%")
-    lines += ["", "MARKTSIGNALEN"]
-    for s in signals:
-        lines.append(f"  [{s.signal_type}] {s.product_name}: {s.description}")
     lines += ["", "Stuur STOP naar de TCG Pulse bot om te stoppen."]
     return "\n".join(lines)
 
@@ -173,15 +140,6 @@ async def send_daily_digest() -> int:
         )
         deals = deals_result.scalars().all()
 
-        # Fetch top 5 active signals ordered by priority/confidence
-        signals_result = await session.execute(
-            select(Signal)
-            .where(Signal.is_active == True)
-            .order_by(desc(Signal.priority), desc(Signal.confidence))
-            .limit(5)
-        )
-        signals = signals_result.scalars().all()
-
         # Fetch all eligible users
         users_result = await session.execute(
             select(User).where(
@@ -192,15 +150,15 @@ async def send_daily_digest() -> int:
         users = users_result.scalars().all()
 
     logger.info(
-        f"Digest: {len(deals)} deals, {len(signals)} signals -> {len(users)} recipients"
+        f"Digest: {len(deals)} deals -> {len(users)} recipients"
     )
 
     if not users:
         logger.info("No recipients for daily digest")
         return 0
 
-    html = _build_html(deals, signals)
-    text = _build_text(deals, signals)
+    html = _build_html(deals)
+    text = _build_text(deals)
     today = datetime.now(timezone.utc).strftime("%d %b %Y")
     subject = f"TCG Pulse — Marktupdate {today}"
 

@@ -8,31 +8,6 @@ from pydantic import BaseModel, Field
 from decimal import Decimal
 
 
-class SignalResponse(BaseModel):
-    """Schema for signal response"""
-    id: int
-    signal_type: str
-    signal_level: str
-    product_name: str
-    product_set: Optional[str] = None
-    category: Optional[str] = None
-    current_price: Optional[float] = None
-    market_avg_price: Optional[float] = None
-    deal_score: Optional[float] = None
-    description: Optional[str] = None
-    signal_metadata: Optional[str] = None
-    confidence: Optional[float] = None
-    priority: int
-    detected_at: datetime
-    expires_at: Optional[datetime] = None
-    
-    class Config:
-        from_attributes = True
-        json_encoders = {
-            Decimal: lambda v: float(v) if v is not None else None
-        }
-
-
 class DealScoreResponse(BaseModel):
     """Schema for deal score response"""
     id: int
@@ -110,37 +85,3 @@ class SearchResponse(BaseModel):
     total_results: int
     results: List[CardSearchResult]
     has_more: bool = False
-
-
-# ─── Market Digest Schemas ─────────────────────────────────────────
-
-class SignalSummary(BaseModel):
-    signal_type: str
-    count: int
-    latest_description: Optional[str] = None
-
-class SetTrend(BaseModel):
-    product_set: str
-    avg_trend: float
-    avg_volume_trend: float
-    card_count: int
-    avg_price: float
-
-class MarketDigestResponse(BaseModel):
-    """Aggregated market overview for the Price Signals command center."""
-    total_cards_tracked: int
-    total_sets: int
-    total_listings: int
-    last_analysis_at: Optional[datetime] = None
-    last_scrape_at: Optional[datetime] = None
-
-    signal_counts: dict
-    signal_highlights: List[SignalResponse]
-
-    top_rising_sets: List[SetTrend]
-    top_declining_sets: List[SetTrend]
-
-    class Config:
-        json_encoders = {
-            Decimal: lambda v: float(v) if v is not None else None
-        }

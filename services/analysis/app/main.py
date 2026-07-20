@@ -6,6 +6,7 @@ import asyncio
 import logging
 import os
 import signal
+import sys
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
@@ -117,9 +118,19 @@ class AnalysisService:
             self.scheduler.shutdown(wait=False)
         logger.info("Analysis service stopped")
 
+    async def run_once_and_exit(self):
+        """
+        Run the full pipeline once and return.
+        Used by Railway cron: the container starts on schedule, analyzes, and exits.
+        """
+        logger.info(f"Starting TCG Pulse Analysis Service v{settings.APP_VERSION} in --once mode")
+        await init_db()
+        await self.run_full_analysis()
+        logger.info("--once run complete, exiting")
+
     async def run_full_analysis(self):
         """
-        Run the complete analysis pipeline: stats -> deal scores -> signals
+        Run the complete analysis pipeline: stats -> deal scores -> watchlist alerts
         """
         async with self._pipeline_lock:
             await self._run_full_analysis_locked()
@@ -146,12 +157,7 @@ class AnalysisService:
         if stats_count > 0:
             deal_count = await self.calculate_deal_scores()
         
-        # Step 3: Signals (reads MarketStats only; deal scores feed Top Deals, not this gate)
-        signal_count = 0
-        if stats_count > 0:
-            signal_count = await self.detect_signals()
-        
-        # Step 4: Watchlist price alerts
+        # Step 3: Watchlist price alerts
         try:
             from app.generators.watchlist_notifier import check_watchlist_alerts
             alerts_sent = await check_watchlist_alerts()
@@ -161,7 +167,7 @@ class AnalysisService:
             logger.error(f"Watchlist alert check failed (non-fatal): {e}", exc_info=True)
 
         logger.info("=" * 60)
-        logger.info(f"Analysis complete: {stats_count} stats, {deal_count} deals, {signal_count} signals")
+        logger.info(f"Analysis complete: {stats_count} stats, {deal_count} deals")
         logger.info("=" * 60)
 
     async def calculate_market_stats(self) -> int:
@@ -194,28 +200,19 @@ class AnalysisService:
             logger.error(f"Deal score calculation failed: {e}", exc_info=True)
             return 0
 
-    async def detect_signals(self) -> int:
-        """
-        Detect price signals and alerts
-        """
-        logger.info("Detecting signals...")
-        try:
-            from app.generators.signal_generator import SignalGenerator
-            generator = SignalGenerator()
-            count = await generator.generate_all()
-            logger.info(f"Signals detected: {count}")
-            return count
-        except Exception as e:
-            logger.error(f"Signal detection failed: {e}", exc_info=True)
-            return 0
-
-
 async def main():
     """
     Main entry point
     """
-    start_health_server_thread()
     service = AnalysisService()
+
+    # Cron mode: single pipeline run, then exit (Railway cronSchedule).
+    # No health server — the container is not expected to stay up.
+    if "--once" in sys.argv:
+        await service.run_once_and_exit()
+        return
+
+    start_health_server_thread()
     
     # Handle shutdown signals
     def signal_handler(signum: int, frame: Any) -> None:

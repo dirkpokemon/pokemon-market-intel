@@ -4,6 +4,7 @@ Scraper Service Entry Point
 
 import asyncio
 import signal
+import sys
 import logging
 from typing import Any
 from datetime import datetime
@@ -116,6 +117,17 @@ class ScraperService:
         logger.info(f"Scrape cycle completed in {cycle_duration:.2f}s")
         logger.info("=" * 60)
 
+    async def run_once_and_exit(self):
+        """
+        Run a single scrape cycle (CardTrader + CardMarket) and exit.
+        Used by Railway cron: the container starts on schedule, scrapes, and exits.
+        """
+        logger.info(f"Starting TCG Pulse Scraper v{settings.APP_VERSION} in --once mode")
+        await init_db()
+        await self.run_scrape_cycle()
+        await self.run_cardmarket_scrape()
+        logger.info("--once run complete, exiting")
+
     async def run_cardmarket_scrape(self):
         """
         Run a standalone CardMarket price guide scrape cycle (every 12 hours).
@@ -144,15 +156,20 @@ async def main():
     Main entry point
     """
     service = ScraperService()
-    
+
+    # Cron mode: single cycle, then exit (Railway cronSchedule)
+    if "--once" in sys.argv:
+        await service.run_once_and_exit()
+        return
+
     # Handle shutdown signals
     def signal_handler(signum: int, frame: Any) -> None:
         logger.info(f"\nReceived signal {signum}")
         asyncio.create_task(service.stop())
-    
+
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
-    
+
     try:
         await service.start()
     except KeyboardInterrupt:

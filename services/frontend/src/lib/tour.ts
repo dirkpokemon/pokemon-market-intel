@@ -21,36 +21,14 @@ export function getTourSteps(role: TourRole): TourStep[] {
       pageLabel: 'Top Deals',
       title: 'Deal Score explained',
       body: 'Each card gets a Deal Score from 0 to 100. The higher the score, the better the price versus the EU market average. Click a card for buy links on CardMarket, CardTrader, and eBay.',
-    },
-    {
-      page: '/insights',
-      pageLabel: 'Market Pulse',
-      title: role === 'subscriber' ? 'Full market overview' : 'Market overview (free sample)',
-      body:
-        role === 'subscriber'
-          ? 'See the EU market at a glance: buyer vs seller market, most active sets, deal quality, and signals. All data refreshes every hour.'
-          : 'You are seeing a free sample of the market overview. Upgrade to Plus for all sets, the deal quality breakdown, and the full signal overview.',
       actionLink:
         role === 'free' ? { href: '/pricing', label: 'View Plus plans' } : undefined,
     },
     {
-      page: '/signals',
-      pageLabel: 'Signals',
-      title: role === 'subscriber' ? 'Your signal feed' : 'Signals (Plus feature)',
-      body:
-        role === 'subscriber'
-          ? 'Signals detect hourly price moves, supply shifts, and momentum. Open a signal for suggested actions and direct buy links. Filter by type or search by card name.'
-          : 'Signals detect hourly price moves and momentum. The full feed is in Plus and Business. Here you see a preview.',
-      actionLink:
-        role === 'free'
-          ? { href: '/pricing', label: 'Unlock Signals with Plus' }
-          : undefined,
-    },
-    {
-      page: '/portfolio',
-      pageLabel: 'Portfolio',
-      title: 'Manage your collection',
-      body: 'Add cards you own with purchase prices. We compare them to live market data so you always know your gain or loss. Watchlist cards show up here too.',
+      page: '/watchlist',
+      pageLabel: 'Watchlist',
+      title: 'Price alerts on your cards',
+      body: 'Add any card with a target price. When the EU market drops to your target, we email or Telegram you automatically. No need to check back daily.',
     },
   ];
 }

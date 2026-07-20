@@ -15,9 +15,7 @@ import {
 const PAGE_ICONS: Record<string, string> = {
   '/home': '🏠',
   '/deals': '🎯',
-  '/insights': '📊',
-  '/signals': '⚡',
-  '/portfolio': '💼',
+  '/watchlist': '🔔',
 };
 
 export default function TourBanner() {
