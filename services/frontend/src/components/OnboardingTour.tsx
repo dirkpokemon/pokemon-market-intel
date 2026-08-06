@@ -115,7 +115,7 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
                   Welkom bij TCG Pulse
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                  EU marktintelligentie voor Pokémon TCG — live prijzen, deal-scores en marktsignalen van 170K+ Europese listings.
+                  EU marktintelligentie voor Pokémon TCG — live prijzen, deal-scores en prijsalerts van Europese listings.
                 </p>
               </div>
 

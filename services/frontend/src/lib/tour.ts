@@ -14,7 +14,7 @@ export function getTourSteps(role: TourRole): TourStep[] {
       page: '/home',
       pageLabel: 'Home',
       title: 'Your dashboard',
-      body: 'This is your command center. Use the search bar to find any card across 170K+ EU listings. The stats below give you a quick read on the market.',
+      body: 'This is your command center. Use the search bar to find any card across live EU listings. The stats below give you a quick read on the market.',
     },
     {
       page: '/deals',

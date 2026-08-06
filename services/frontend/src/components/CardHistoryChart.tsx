@@ -27,7 +27,7 @@ export default function CardHistoryChart({ history }: CardHistoryChartProps) {
         </svg>
         <p className="text-sm text-gray-400 font-medium">No history for this window yet</p>
         <p className="text-xs text-gray-300 max-w-[220px]">
-          Price history builds up as the scraper runs every hour.
+          Price history builds up as the scraper runs twice daily.
           Try the 60D view, or check back in a few days.
         </p>
       </div>

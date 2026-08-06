@@ -7,7 +7,7 @@ import SiteFooter from '@/components/SiteFooter';
 import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
 import BrandMark from '@/components/BrandMark';
 import { ThemeIconButton } from '@/components/ThemeToggle';
-import { CTA_SUBSCRIBE_PLUS, PLAN_FEATURES, SUBSCRIBER_BADGE } from '@/lib/plans';
+import { CTA_SUBSCRIBE_PLUS, PLAN_FEATURES } from '@/lib/plans';
 import { publicApi, DealScore } from '@/lib/api';
 
 // ─── Live Deal Card ───────────────────────────────────────────────
@@ -60,19 +60,6 @@ function SkeletonDealCard() {
   );
 }
 
-// ─── Mock Signal Row ──────────────────────────────────────────────
-function MockSignalRow({ icon, label, color, description, time }: {
-  icon: string; label: string; color: string; description: string; time: string;
-}) {
-  return (
-    <div className="flex items-start gap-3 py-3 border-b border-gray-50 dark:border-gray-800 last:border-0">
-      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded border ${color}`}>{icon} {label}</span>
-      <p className="text-xs text-gray-600 dark:text-gray-300 flex-1">{description}</p>
-      <span className="text-[11px] text-gray-400 dark:text-gray-500 flex-shrink-0">{time}</span>
-    </div>
-  );
-}
-
 // ─── Main ─────────────────────────────────────────────────────────
 export default function LandingPage() {
   const router = useRouter();
@@ -116,14 +103,14 @@ export default function LandingPage() {
       {/* ═══ Hero ═══ */}
       <section className="max-w-7xl mx-auto px-4 pt-20 pb-16 sm:px-6 lg:px-8 text-center">
         <div className="inline-block px-3 py-1 bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300 text-xs font-semibold rounded-full mb-6 border border-green-200 dark:border-green-800">
-          EU-Focused &middot; 170K+ Listings &middot; Updated Every Hour
+          EU-Focused &middot; Live singles prices &middot; Updated twice daily
         </div>
         <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight max-w-3xl mx-auto">
           Stop guessing.<br />
           Start buying <span className="text-green-600 dark:text-green-400">below market price.</span>
         </h2>
         <p className="text-lg text-gray-500 dark:text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-          AI-powered deal scoring, hourly market signals, and portfolio tracking for European trading card singles. See what others miss.
+          AI deal scoring on live EU prices, plus price-drop alerts on the cards you want. Find undervalued singles and get told when they hit your target.
         </p>
         <div className="flex gap-4 justify-center">
           <button
@@ -269,60 +256,60 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Feature 2: Signals (Plus+) ─── */}
+      {/* ─── Feature 2: Watchlist price alerts ─── */}
       <section className="bg-gray-50 dark:bg-gray-900 border-y border-gray-100 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Visual */}
             <div className="order-2 lg:order-1">
-              <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-5 shadow-sm">
-                <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Signals (hourly scan)</h4>
-                <MockSignalRow icon="🚀" label="Momentum" color="text-green-700 bg-green-50 border-green-200 dark:text-green-300 dark:bg-green-950/40 dark:border-green-800" description="Charizard ex 151: price +18.5% and volume +32% in 7 days" time="2h ago" />
-                <MockSignalRow icon="📉" label="Price Drop" color="text-orange-700 bg-orange-50 border-orange-200 dark:text-orange-300 dark:bg-orange-950/40 dark:border-orange-800" description="Mewtwo VSTAR dropped -22% in 7 days (avg was €45.00)" time="4h ago" />
-                <MockSignalRow icon="🔒" label="Supply Drop" color="text-purple-700 bg-purple-50 border-purple-200 dark:text-purple-300 dark:bg-purple-950/40 dark:border-purple-800" description="Umbreon VMAX: 40% fewer listings, price may rise" time="5h ago" />
-                <MockSignalRow icon="📈" label="Set Rising" color="text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-800" description="Paldean Fates is trending up: avg +12.3% across 48 cards" time="1h ago" />
-              </div>
-              <div className="grid grid-cols-2 gap-3 mt-3">
-                <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-green-600">📈</span>
-                    <p className="text-xs font-semibold text-gray-900 dark:text-white">Rising Sets</p>
-                  </div>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">Paldean Fates +12.3%</p>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">151 +8.7%</p>
+              <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                <div className="px-5 py-3 border-b border-gray-100 dark:border-gray-800">
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Your watchlist</h4>
                 </div>
-                <div className="bg-white dark:bg-gray-950 rounded-xl border border-gray-200 dark:border-gray-800 p-4 shadow-sm">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-red-600">📉</span>
-                    <p className="text-xs font-semibold text-gray-900 dark:text-white">Declining Sets</p>
-                  </div>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">Paradox Rift -6.2%</p>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400">Obsidian Flames -4.1%</p>
+                <div className="divide-y divide-gray-50 dark:divide-gray-800">
+                  {[
+                    { name: 'Charizard ex', set: 'Obsidian Flames', target: '€40', current: '€38.50', hit: true },
+                    { name: 'Umbreon VMAX', set: 'Evolving Skies', target: '€55', current: '€61.00', hit: false },
+                    { name: 'Mew ex', set: '151', target: '€30', current: '€34.20', hit: false },
+                  ].map(row => (
+                    <div key={row.name} className="flex items-center gap-4 px-5 py-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{row.name}</p>
+                        <p className="text-[11px] text-gray-400 dark:text-gray-500">{row.set} · target {row.target}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-gray-900 dark:text-white">{row.current}</p>
+                        {row.hit ? (
+                          <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">🔔 target hit</span>
+                        ) : (
+                          <span className="text-[10px] text-gray-400">watching</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
             {/* Text */}
             <div className="order-1 lg:order-2">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 text-[11px] font-semibold rounded-md uppercase tracking-wide mb-4">
-                Signals
-                <span className="px-1 py-0 bg-indigo-100 rounded text-[9px]">{SUBSCRIBER_BADGE}</span>
+              <div className="inline-block px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold rounded-md uppercase tracking-wide mb-4">
+                Watchlist
               </div>
               <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                See what&apos;s changing before prices move
+                Set a target. Get told when it drops.
               </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-                Your market command center. Every hour we analyze 170K+ listings and detect momentum shifts, supply changes, volatility spikes, and set-level trends. No more scrolling through marketplaces.
+                Add any card with the price you&apos;d pay. We check the live EU market twice a day and email or Telegram you the moment it hits your target — no daily scrolling.
               </p>
               <ul className="space-y-3">
                 {[
-                  'Momentum: price + volume both rising (buying opportunity)',
-                  'Supply Drop: listings shrinking, price may rise soon',
-                  'Set Trends: see which entire sets are rising or falling',
-                  'Risk Alerts: possible bubbles or manipulation',
-                  'Volatility: unstable prices, trade with caution',
+                  'Target price per card, as many as you want',
+                  'Checked against live EU listings twice daily',
+                  'Email & Telegram alerts when a target is met',
+                  'Browse all sets + sealed prices while you decide',
                 ].map(item => (
                   <li key={item} className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300">
-                    <svg className="w-4 h-4 text-indigo-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     {item}
@@ -334,169 +321,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Feature 3: Portfolio ─── */}
-      <section className="max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-            <div className="inline-block px-2.5 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-[11px] font-semibold rounded-md uppercase tracking-wide mb-4">
-              Portfolio
-            </div>
-            <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              Track your collection. Know your profit.
-            </h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-              Add cards you own with purchase prices. We match them against live market data so you always know your total portfolio value, profit/loss per card, and ROI.
-            </p>
-            <ul className="space-y-3">
-              {[
-                'Live P&L: see exactly how much you\'re up or down',
-                'Watchlist with price targets for cards you want to buy',
-                'Triggered alerts when a card hits your target price',
-                'Search 170K+ cards to add to your collection',
-              ].map(item => (
-                <li key={item} className="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-300">
-                  <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-          {/* Visual */}
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-            <div className="grid grid-cols-3 border-b border-gray-100 dark:border-gray-800">
-              <div className="p-4 text-center border-r border-gray-100 dark:border-gray-800">
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">Portfolio Value</p>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">&euro;1,247</p>
-              </div>
-              <div className="p-4 text-center border-r border-gray-100 dark:border-gray-800">
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">Total P&L</p>
-                <p className="text-xl font-bold text-green-700 dark:text-green-400">+&euro;183</p>
-              </div>
-              <div className="p-4 text-center">
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-0.5">ROI</p>
-                <p className="text-xl font-bold text-green-700 dark:text-green-400">+17.2%</p>
-              </div>
-            </div>
-            <div className="divide-y divide-gray-50 dark:divide-gray-800">
-              {[
-                { name: 'Charizard ex', set: 'OBF', paid: '€35', current: '€48', pl: '+€13', pct: '+37%', up: true },
-                { name: 'Pikachu VMAX', set: 'VIV', paid: '€22', current: '€19', pl: '-€3', pct: '-14%', up: false },
-                { name: 'Mew ex', set: '151', paid: '€28', current: '€34', pl: '+€6', pct: '+21%', up: true },
-              ].map(card => (
-                <div key={card.name} className="flex items-center gap-4 px-5 py-3">
-                  <div className="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-[11px] font-bold text-gray-500 dark:text-gray-400">{card.set}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{card.name}</p>
-                    <p className="text-[11px] text-gray-400 dark:text-gray-500">Paid {card.paid}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-gray-900 dark:text-white">{card.current}</p>
-                    <p className={`text-[11px] font-medium ${card.up ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{card.pl} ({card.pct})</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Feature 3b: Card Valuation ─── */}
-      <section className="bg-gray-50 dark:bg-gray-900 border-y border-gray-100 dark:border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-16">
-            {/* Text */}
-            <div className="flex-1 max-w-xl">
-              <div className="inline-block px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold rounded-md uppercase tracking-wide mb-4">
-                Card Valuation
-              </div>
-              <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                Know exactly what your Pokémon cards are worth
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-                Have a collection and want to know its total value? Search your cards, add them to your list, and see the combined value based on 170K+ live EU listings — in under a minute.
-              </p>
-              <ul className="space-y-3 mb-8">
-                {[
-                  'Search by card name, see market price instantly',
-                  'Set the quantity per card',
-                  'Estimated total value of your entire selection',
-                  'Free — no credit card required',
-                ].map(item => (
-                  <li key={item} className="flex items-center gap-2.5 text-sm text-gray-700 dark:text-gray-300">
-                    <svg className="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/register"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition text-sm"
-              >
-                Create free account
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </Link>
-            </div>
-
-            {/* Visual mock */}
-            <div className="w-full max-w-sm flex-shrink-0">
-              <div className="bg-white dark:bg-gray-950 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-                {/* Search bar mock */}
-                <div className="px-4 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
-                    <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <span className="text-sm text-gray-400">Charizard ex</span>
-                  </div>
-                </div>
-                {/* Results mock */}
-                <div className="divide-y divide-gray-50 dark:divide-gray-800">
-                  {[
-                    { name: 'Charizard ex', set: 'Obsidian Flames', price: '€42.50', qty: 2, total: '€85.00' },
-                    { name: 'Charizard ex', set: '151', price: '€38.00', qty: 1, total: '€38.00' },
-                  ].map((row, i) => (
-                    <div key={i} className="flex items-center gap-3 px-4 py-3">
-                      <div className="w-8 h-11 bg-gradient-to-br from-red-100 to-orange-50 dark:from-red-950/40 dark:to-orange-950/40 rounded flex-shrink-0 flex items-center justify-center">
-                        <span className="text-[8px] font-black text-red-300 dark:text-red-600">CH</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">{row.name}</p>
-                        <p className="text-[10px] text-gray-400">{row.set} · {row.price} avg</p>
-                      </div>
-                      <div className="text-right flex-shrink-0">
-                        <p className="text-xs font-bold text-gray-900 dark:text-white">{row.total}</p>
-                        <p className="text-[10px] text-gray-400">×{row.qty}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {/* Total mock */}
-                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-                  <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">Total value</span>
-                  <span className="text-xl font-bold text-gray-900 dark:text-white">€123.00</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Feature 4: Notifications ─── */}
+      {/* ─── Feature 3: Notifications ─── */}
       <section className="bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 py-20 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Visual */}
             <div className="order-2 lg:order-1 space-y-3">
               {[
-                { channel: 'Email', icon: '📧', msg: 'Momentum Alert: Charizard ex 151. Price +18% and volume +32%. View on dashboard.' },
-                { channel: 'Telegram', icon: '💬', msg: 'Supply Drop: Umbreon VMAX has 40% fewer listings. Price may rise.' },
-                { channel: 'Email', icon: '📧', msg: 'Watchlist: Pikachu VMAX dropped below your target of €20.00. Now €18.90.' },
+                { channel: 'Email', icon: '📧', msg: 'Watchlist: Charizard ex (Obsidian Flames) dropped below your target of €40.00. Now €38.50.' },
+                { channel: 'Telegram', icon: '💬', msg: 'Watchlist: Pikachu VMAX hit your target of €20.00. Now €18.90.' },
+                { channel: 'Email', icon: '📧', msg: 'Daily digest: 8 new deals scored 80+ across the sets you follow.' },
               ].map((n, i) => (
                 <div key={i} className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
                   <div className="flex items-center gap-2 mb-1.5">
@@ -514,17 +348,17 @@ export default function LandingPage() {
                 Notifications
               </div>
               <h3 className="text-3xl font-bold mb-4">
-                Never miss a market move, even offline
+                Never miss a price drop, even offline
               </h3>
               <p className="text-white/60 mb-6 leading-relaxed">
-                Choose exactly which signals matter to you. We send them to your email or Telegram bot so you can act fast without checking the dashboard every hour.
+                We send your watchlist alerts to email or Telegram, so you can act fast without checking the dashboard. Add a daily digest of the best new deals if you want it.
               </p>
               <ul className="space-y-3">
                 {[
                   'Email & Telegram delivery channels',
-                  'Pick which signal types you care about',
-                  'Set minimum priority (critical only, or everything)',
-                  'Watchlist price target alerts included',
+                  'Watchlist price-target alerts',
+                  'Optional daily digest of top deals',
+                  'Turn any of it on or off in settings',
                 ].map(item => (
                   <li key={item} className="flex items-center gap-2.5 text-sm text-white/80">
                     <svg className="w-4 h-4 text-green-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -544,10 +378,10 @@ export default function LandingPage() {
         <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-12">How It Works</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {[
-            { step: '1', title: 'We scrape', desc: 'Every hour we collect 170K+ listings from EU marketplaces' },
-            { step: '2', title: 'AI analyzes', desc: 'Deal scores, trend detection, and signal generation run automatically' },
-            { step: '3', title: 'You act', desc: 'Browse Top Deals, open Signals, or get notified via email/Telegram' },
-            { step: '4', title: 'You profit', desc: 'Buy below market, sell high. Track it all in your Portfolio' },
+            { step: '1', title: 'We scrape', desc: 'Twice a day we collect live singles prices from EU marketplaces' },
+            { step: '2', title: 'AI scores', desc: 'Every listing gets a Deal Score vs the EU market average' },
+            { step: '3', title: 'You act', desc: 'Browse Top Deals or set a watchlist target and get notified' },
+            { step: '4', title: 'You profit', desc: 'Buy below market when your target hits — email or Telegram' },
           ].map(s => (
             <div key={s.step}>
               <div className="w-10 h-10 bg-gray-900 dark:bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold mx-auto mb-3 ring-2 ring-gray-900/10 dark:ring-indigo-500/30">{s.step}</div>
@@ -575,7 +409,7 @@ export default function LandingPage() {
                 <span className="text-gray-400 dark:text-gray-500 text-sm">/month</span>
               </div>
               <ul className="space-y-2.5 mb-6">
-                {['Top 20 deals (score 55+)', 'Basic market stats', 'Portfolio tracking', 'Card search (170K+ cards)'].map(f => (
+                {['Top 20 deals (score 55+)', 'Browse all sets + sealed prices', 'Watchlist price alerts', 'Card search across EU listings'].map(f => (
                   <li key={f} className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                     <svg className="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
