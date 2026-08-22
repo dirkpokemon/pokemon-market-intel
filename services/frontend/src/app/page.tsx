@@ -378,7 +378,7 @@ export default function LandingPage() {
         <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-12">How It Works</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {[
-            { step: '1', title: 'We scrape', desc: 'Twice a day we collect live singles prices from EU marketplaces' },
+            { step: '1', title: 'We scrape', desc: 'Twice a day we collect live singles prices from CardTrader, a pan-EU marketplace' },
             { step: '2', title: 'AI scores', desc: 'Every listing gets a Deal Score vs the EU market average' },
             { step: '3', title: 'You act', desc: 'Browse Top Deals or set a watchlist target and get notified' },
             { step: '4', title: 'You profit', desc: 'Buy below market when your target hits — email or Telegram' },
