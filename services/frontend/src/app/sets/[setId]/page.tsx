@@ -21,19 +21,19 @@ export async function generateMetadata(
   { params }: { params: { setId: string } }
 ): Promise<Metadata> {
   const set = await fetchSetBySlug(params.setId);
-  if (!set) return { title: 'Set | TCG Pulse' };
+  if (!set) return { title: 'Set' };
 
-  const title = `${set.name} | TCG Pulse`;
+  const ogTitle = `${set.name} | TCG Pulse`;
   const description = `Live EU marktprijzen, deal scores en sealed product prijzen voor ${set.name}.${set.deal_count > 0 ? ` ${set.deal_count} actieve deals.` : ''}`;
   const images = set.tcg_api_id
     ? [{ url: `https://images.pokemontcg.io/${set.tcg_api_id}/logo.png`, width: 400, height: 100 }]
     : [];
 
   return {
-    title,
+    title: set.name,
     description,
-    openGraph: { title, description, images },
-    twitter: { card: 'summary', title, description, images: images.map(i => i.url) },
+    openGraph: { title: ogTitle, description, images },
+    twitter: { card: 'summary', title: ogTitle, description, images: images.map(i => i.url) },
   };
 }
 

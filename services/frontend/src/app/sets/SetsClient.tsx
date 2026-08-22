@@ -106,7 +106,7 @@ export default function SetsClient({ initialData }: SetsClientProps) {
       .then(res => { setSets(res.sets); setEras(res.eras); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+  }, [initialData]);
 
   const setsWithData = sets.filter(s => s.deal_count > 0).length;
 

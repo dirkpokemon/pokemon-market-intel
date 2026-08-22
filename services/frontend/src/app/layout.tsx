@@ -7,15 +7,36 @@ import CookieBanner from '@/components/CookieBanner';
 
 const inter = Inter({ subsets: ['latin'] });
 
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL || 'https://charming-contentment-production-ce0e.up.railway.app';
+
 export const metadata: Metadata = {
-  title: 'TCG Pulse',
-  description: 'EU market intelligence for trading card singles',
-  keywords: ['TCG', 'trading cards', 'singles', 'market', 'prices', 'EU', 'CardMarket', 'CardTrader'],
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: 'TCG Pulse — EU Pokémon price alerts',
+    template: '%s | TCG Pulse',
+  },
+  description: 'EU price intelligence and price-drop alerts for Pokémon TCG singles.',
+  keywords: ['TCG', 'Pokémon', 'trading cards', 'singles', 'market', 'prices', 'EU', 'CardTrader', 'price alerts'],
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
     title: 'TCG Pulse',
     statusBarStyle: 'black-translucent',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: 'TCG Pulse',
+    title: 'TCG Pulse — EU Pokémon price alerts',
+    description: 'Find Pokémon singles below market price and get alerted when your target hits.',
+    url: SITE_URL,
+    images: [{ url: '/icon-512.png', width: 512, height: 512, alt: 'TCG Pulse' }],
+  },
+  twitter: {
+    card: 'summary',
+    title: 'TCG Pulse — EU Pokémon price alerts',
+    description: 'Find Pokémon singles below market price and get alerted when your target hits.',
+    images: ['/icon-512.png'],
   },
 };
 

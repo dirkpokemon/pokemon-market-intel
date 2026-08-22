@@ -215,6 +215,8 @@ export default function ProfileModal({ user, onClose, onSave }: ProfileModalProp
                   <button
                     type="button"
                     role="switch"
+                    aria-checked={emailNotifications}
+                    aria-label="E-mailmeldingen"
                     onClick={() => setEmailNotifications(v => !v)}
                     className={`relative inline-flex h-6 w-11 rounded-full border transition-colors ${
                       emailNotifications ? 'bg-emerald-500 border-emerald-600' : 'bg-gray-200 dark:bg-gray-600 border-gray-300 dark:border-gray-500'
