@@ -1,7 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
+/**
+ * CardImage — a copyright-safe, self-rendered card tile.
+ *
+ * We deliberately do NOT fetch or display Pokémon card artwork: that art is
+ * © The Pokémon Company and we have no licence to reproduce it. Instead we
+ * render an original, branded placeholder derived only from the card name
+ * (initials + name), with a deterministic colour so each card looks distinct
+ * and stable. No external image requests, no third-party IP.
+ */
 
 interface CardImageProps {
   cardName: string;
@@ -9,11 +16,30 @@ interface CardImageProps {
   className?: string;
 }
 
-const imageCache: Record<string, string | null> = {};
-const tcgInflight = new Map<string, Promise<string | null>>();
-const LS_PREFIX = 'card_img_v2_';
+// Tasteful gradient pairs (Tailwind from/to). Chosen deterministically per card.
+const GRADIENTS = [
+  'from-indigo-500 to-violet-700',
+  'from-sky-500 to-blue-700',
+  'from-emerald-500 to-teal-700',
+  'from-rose-500 to-pink-700',
+  'from-amber-500 to-orange-700',
+  'from-fuchsia-500 to-purple-700',
+  'from-cyan-500 to-sky-700',
+  'from-lime-500 to-green-700',
+  'from-red-500 to-rose-700',
+  'from-blue-500 to-indigo-700',
+];
 
-function normalizeListingTitle(name: string): string {
+function hashString(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
+function cleanName(name: string): string {
   return name
     .replace(/\[[^\]]*\]\s*/g, '')
     .replace(/\s*\((?:NM|LP|MP|HP|DMG|Near Mint|Lightly Played|Moderately Played)\)\s*$/i, '')
@@ -21,194 +47,43 @@ function normalizeListingTitle(name: string): string {
     .trim();
 }
 
-function cleanCardName(name: string): string {
-  const base = normalizeListingTitle(name);
-  return base
-    .replace(/\s*\([^)]*\)\s*/g, ' ')
-    .replace(
-      /\s*(ex|EX|V|VMAX|VSTAR|GX|Tag Team|Radiant|Full Art|Alt Art|Illustration Rare|Special Illustration Rare|Ultra Rare|Hyper Rare)\s*/gi,
-      ' '
-    )
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function buildQueryAttempts(cardName: string): string[] {
-  const raw = normalizeListingTitle(cardName);
-  const cleaned = cleanCardName(cardName);
-  const beforeDelimiter = raw.split(/\s*[-–|]\s*/)[0]?.trim() || raw;
-  const beforeCleaned = cleanCardName(beforeDelimiter);
-  const attempts: string[] = [];
-  const add = (q: string) => {
-    if (q && !attempts.includes(q)) attempts.push(q);
-  };
-  if (cleaned.length >= 2) add(`name:"${cleaned}"`);
-  if (beforeCleaned.length >= 2 && beforeCleaned !== cleaned) add(`name:"${beforeCleaned}"`);
-  const words = beforeCleaned.split(/\s+/).filter((w) => w.length > 1);
-  if (words.length >= 1) {
-    const slice = words.slice(0, Math.min(4, words.length)).join(' ');
-    if (slice.length >= 3) add(`name:${slice}`);
-  }
-  if (words[0] && words[0].length >= 4) add(`name:${words[0]}`);
-  return attempts;
-}
-
-function cacheKeyFor(name: string): string {
-  return normalizeListingTitle(name).toLowerCase();
-}
-
-function getCachedImage(key: string): string | null {
-  try {
-    const cached = localStorage.getItem(`${LS_PREFIX}${key}`);
-    if (cached) {
-      const { url, timestamp } = JSON.parse(cached);
-      if (Date.now() - timestamp < 7 * 24 * 60 * 60 * 1000) {
-        return url;
-      }
-    }
-  } catch {}
-  return null;
-}
-
-function setCachedImage(key: string, url: string | null) {
-  try {
-    localStorage.setItem(`${LS_PREFIX}${key}`, JSON.stringify({ url, timestamp: Date.now() }));
-  } catch {}
-}
-
-async function fetchPokemonTcgImage(cardName: string): Promise<string | null> {
-  const queries = buildQueryAttempts(cardName);
-  for (const q of queries) {
-    try {
-      const res = await fetch(
-        `https://api.pokemontcg.io/v2/cards?q=${encodeURIComponent(q)}&pageSize=1&select=id,name,images`,
-        { signal: AbortSignal.timeout(4000) }
-      );
-      if (!res.ok) continue;
-      const data = await res.json();
-      const url = data.data?.[0]?.images?.small;
-      if (url) return url as string;
-    } catch {
-      /* try next query */
-    }
-  }
-  return null;
-}
-
-function fetchPokemonTcgImageDeduped(cardName: string): Promise<string | null> {
-  const key = cacheKeyFor(cardName);
-  const hit = tcgInflight.get(key);
-  if (hit) return hit;
-  const p = fetchPokemonTcgImage(cardName).finally(() => tcgInflight.delete(key));
-  tcgInflight.set(key, p);
-  return p;
+function initials(name: string): string {
+  const words = cleanName(name).replace(/[^A-Za-z0-9 ]/g, '').split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '??';
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
 }
 
 export default function CardImage({ cardName, size = 'sm', className = '' }: CardImageProps) {
-  const rootRef = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
   const sizeClasses = {
     xs: 'w-8 h-11',
     sm: 'w-12 h-16',
     md: 'w-16 h-22',
     lg: 'w-24 h-32',
-    xl: 'w-full h-full',
+    xl: 'w-full h-full aspect-[5/7]',
   };
 
-  const sizePx: Record<NonNullable<CardImageProps['size']>, { w: number; h: number }> = {
-    xs: { w: 32, h: 44 },
-    sm: { w: 48, h: 64 },
-    md: { w: 64, h: 88 },
-    lg: { w: 96, h: 128 },
-    xl: { w: 220, h: 308 },
-  };
-
-  useEffect(() => {
-    if (typeof IntersectionObserver === 'undefined') {
-      setVisible(true);
-      return;
-    }
-    const el = rootRef.current;
-    if (!el) {
-      setVisible(true);
-      return;
-    }
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          setVisible(true);
-          io.disconnect();
-        }
-      },
-      { rootMargin: '160px', threshold: 0.01 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!visible) return;
-
-    const key = cacheKeyFor(cardName);
-
-    const run = async () => {
-      if (imageCache[key] !== undefined) {
-        setImageUrl(imageCache[key]);
-        setLoading(false);
-        return;
-      }
-
-      const cached = getCachedImage(key);
-      if (cached !== null) {
-        imageCache[key] = cached;
-        setImageUrl(cached || null);
-        setLoading(false);
-        return;
-      }
-
-      const url = await fetchPokemonTcgImageDeduped(cardName);
-      imageCache[key] = url;
-      setCachedImage(key, url ?? '');
-      setImageUrl(url);
-      setLoading(false);
-    };
-
-    if (!cardName?.trim()) {
-      setImageUrl(null);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    run();
-  }, [cardName, visible]);
+  const name = cleanName(cardName || '');
+  const gradient = GRADIENTS[hashString(name) % GRADIENTS.length];
+  const showName = size === 'lg' || size === 'xl';
+  const initialsSize = size === 'xl' ? 'text-4xl' : size === 'lg' ? 'text-2xl' : size === 'xs' ? 'text-[10px]' : 'text-sm';
 
   return (
     <div
-      ref={rootRef}
-      className={`${sizeClasses[size]} rounded-lg overflow-hidden flex-shrink-0 ${className}`}
+      className={`${sizeClasses[size]} rounded-lg overflow-hidden flex-shrink-0 relative bg-gradient-to-br ${gradient} flex flex-col items-center justify-center text-center px-1 ${className}`}
+      role="img"
+      aria-label={name || 'Card'}
+      title={name || undefined}
     >
-      {loading ? (
-        <div className="w-full h-full bg-gradient-to-br from-gray-200 via-gray-100 to-gray-200 animate-pulse rounded-lg" />
-      ) : imageUrl ? (
-        <Image
-          src={imageUrl}
-          alt={cardName}
-          width={sizePx[size].w}
-          height={sizePx[size].h}
-          unoptimized
-          className={`w-full h-full rounded-lg ${size === 'xl' ? 'object-contain' : 'object-cover'}`}
-        />
-      ) : (
-        <div className="w-full h-full bg-gradient-to-br from-slate-700 via-slate-800 to-slate-900 rounded-lg flex flex-col items-center justify-center border border-slate-600/40 gap-0.5">
-          <span className="text-white/30 font-black text-sm leading-none tracking-tight select-none uppercase">
-            {cardName.replace(/[^A-Za-z]/g, '').slice(0, 2) || '??'}
-          </span>
-          <span className="text-white/20 text-[8px] font-medium select-none leading-none">no img</span>
-        </div>
+      {/* subtle top sheen for a card-like feel */}
+      <div className="absolute inset-x-0 top-0 h-1/3 bg-white/10" />
+      <span className={`relative font-black text-white/90 leading-none tracking-tight select-none ${initialsSize}`}>
+        {initials(name)}
+      </span>
+      {showName && (
+        <span className="relative mt-1.5 text-[10px] leading-tight text-white/80 font-medium line-clamp-2 select-none px-1">
+          {name}
+        </span>
       )}
     </div>
   );
