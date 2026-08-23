@@ -1,16 +1,11 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import CardImage from '@/components/CardImage';
 import { marketApi, sealedApi, setsApi, DealScore, SealedPrice, PokemonSetInfo } from '@/lib/api';
 import Sparkline from '@/components/Sparkline';
-
-function setLogoUrl(set: PokemonSetInfo): string | null {
-  return set.tcg_api_id ? `https://images.pokemontcg.io/${set.tcg_api_id}/logo.png` : null;
-}
 
 function cardmarketSealedUrl(set: PokemonSetInfo): string {
   return `https://www.cardmarket.com/en/Pokemon/Products/Booster-Boxes?searchString=${encodeURIComponent(set.name)}&sortBy=price_asc`;
@@ -108,11 +103,9 @@ export default function SetDetailClient({ params }: { params: { setId: string } 
   const [sealedPrices, setSealedPrices] = useState<SealedPrice[]>([]);
   const [sealedLoading, setSealedLoading] = useState(false);
   const [sparklines, setSparklines] = useState<Record<string, number[]>>({});
-  const [logoError, setLogoError] = useState(false);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortKey>('score-desc');
 
-  const logoUrl = set ? setLogoUrl(set) : null;
   const [shared, setShared] = useState(false);
 
   const handleShare = async () => {
@@ -236,17 +229,9 @@ export default function SetDetailClient({ params }: { params: { setId: string } 
 
         {/* Header */}
         <div className="flex items-start gap-5 mb-6">
-          {logoUrl && !logoError && (
-            <div className="flex-shrink-0 w-28 h-14 hidden sm:flex items-center">
-              <Image
-                src={logoUrl}
-                alt={set.name}
-                width={140}
-                height={56}
-                unoptimized
-                onError={() => setLogoError(true)}
-                className="object-contain max-h-14 w-auto drop-shadow"
-              />
+          {set.set_code && (
+            <div className="flex-shrink-0 w-14 h-14 hidden sm:flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+              <span className="text-xs font-black tracking-wide text-gray-500 dark:text-gray-400 uppercase">{set.set_code}</span>
             </div>
           )}
           <div className="flex-1 min-w-0">

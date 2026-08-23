@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import { setsApi, PokemonSetInfo, EraInfo } from '@/lib/api';
@@ -22,14 +21,8 @@ const ERA_GRADIENTS: Record<string, string> = {
   'original':             'from-yellow-700 to-amber-950',
 };
 
-function setLogoUrl(set: PokemonSetInfo): string | null {
-  return set.tcg_api_id ? `https://images.pokemontcg.io/${set.tcg_api_id}/logo.png` : null;
-}
-
 function SetCard({ set }: { set: PokemonSetInfo }) {
-  const logoUrl = setLogoUrl(set);
   const gradient = ERA_GRADIENTS[set.era] || 'from-gray-800 to-gray-950';
-  const [imgError, setImgError] = useState(false);
   const sealedPrice = set.cheapest_sealed ?? undefined;
 
   return (
@@ -37,25 +30,16 @@ function SetCard({ set }: { set: PokemonSetInfo }) {
       href={`/sets/${set.slug}`}
       className="group block rounded-xl overflow-hidden border border-gray-800 hover:border-gray-600 transition hover:shadow-lg hover:shadow-black/30"
     >
-      {/* Art section with gradient background */}
-      <div className={`relative h-24 bg-gradient-to-br ${gradient} flex items-center justify-center p-3`}>
-        {logoUrl && !imgError ? (
-          <Image
-            src={logoUrl}
-            alt={set.name}
-            width={180}
-            height={64}
-            unoptimized
-            onError={() => setImgError(true)}
-            className="object-contain max-h-16 w-auto drop-shadow-lg group-hover:scale-105 transition-transform duration-200"
-          />
-        ) : (
-          <div className="text-center">
-            <span className="text-2xl font-black text-white/20 tracking-tighter leading-none select-none">
-              {set.name.replace(/[^A-Z0-9]/gi, '').slice(0, 3).toUpperCase()}
-            </span>
-          </div>
+      {/* Art section: self-rendered set tile (no third-party logo artwork) */}
+      <div className={`relative h-24 bg-gradient-to-br ${gradient} flex flex-col items-center justify-center p-3 text-center`}>
+        {set.set_code && (
+          <span className="text-[10px] font-bold text-white/50 tracking-widest uppercase leading-none mb-1 select-none">
+            {set.set_code}
+          </span>
         )}
+        <span className="text-sm font-bold text-white/90 leading-tight line-clamp-2 select-none group-hover:scale-105 transition-transform duration-200">
+          {set.name}
+        </span>
         {set.deal_count > 0 && (
           <span className="absolute top-2 right-2 bg-emerald-500/90 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
             {set.deal_count}

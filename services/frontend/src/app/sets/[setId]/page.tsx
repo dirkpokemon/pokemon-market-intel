@@ -25,15 +25,12 @@ export async function generateMetadata(
 
   const ogTitle = `${set.name} | TCG Pulse`;
   const description = `Live EU marktprijzen, deal scores en sealed product prijzen voor ${set.name}.${set.deal_count > 0 ? ` ${set.deal_count} actieve deals.` : ''}`;
-  const images = set.tcg_api_id
-    ? [{ url: `https://images.pokemontcg.io/${set.tcg_api_id}/logo.png`, width: 400, height: 100 }]
-    : [];
 
   return {
     title: set.name,
     description,
-    openGraph: { title: ogTitle, description, images },
-    twitter: { card: 'summary', title: ogTitle, description, images: images.map(i => i.url) },
+    openGraph: { title: ogTitle, description },
+    twitter: { card: 'summary', title: ogTitle, description },
   };
 }
 
