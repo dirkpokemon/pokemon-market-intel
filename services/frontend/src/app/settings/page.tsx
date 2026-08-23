@@ -94,6 +94,10 @@ export default function SettingsPage() {
   const [telegramLink, setTelegramLink] = useState<TelegramConnectResponse | null>(null);
   const [telegramLoading, setTelegramLoading] = useState(false);
   const [telegramCopied, setTelegramCopied] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -174,6 +178,23 @@ export default function SettingsPage() {
       localStorage.removeItem('price_alerts');
       localStorage.removeItem(NOTIF_PREFS_KEY);
       alert('Cache cleared!');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteError('');
+    if (!deletePassword) {
+      setDeleteError('Vul je wachtwoord in om te bevestigen.');
+      return;
+    }
+    setDeleting(true);
+    try {
+      await authApi.deleteAccount(deletePassword);
+      localStorage.clear();
+      router.push('/register');
+    } catch (e: unknown) {
+      setDeleteError(e instanceof Error ? e.message : 'Verwijderen mislukt.');
+      setDeleting(false);
     }
   };
 
@@ -512,13 +533,61 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Danger zone — account deletion (GDPR erasure) */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-red-200 dark:border-red-900/50 p-6">
+          <h2 className="text-sm font-semibold text-red-700 dark:text-red-400 uppercase tracking-wide mb-1">Account verwijderen</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+            Verwijdert je account en persoonlijke gegevens (e-mail, watchlist) definitief. Dit kan niet ongedaan worden gemaakt.
+          </p>
+
+          {!showDeleteConfirm ? (
+            <button
+              onClick={() => { setShowDeleteConfirm(true); setDeleteError(''); }}
+              className="px-4 py-2 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-sm rounded-lg hover:bg-red-100 dark:hover:bg-red-950/60 border border-red-200 dark:border-red-900/50 transition font-medium"
+            >
+              Account verwijderen
+            </button>
+          ) : (
+            <div className="space-y-3 max-w-sm">
+              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300">
+                Bevestig met je wachtwoord
+              </label>
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="Wachtwoord"
+                autoComplete="current-password"
+                className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-red-500/40 outline-none"
+              />
+              {deleteError && <p className="text-xs text-red-600 dark:text-red-400">{deleteError}</p>}
+              <div className="flex gap-2">
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition font-medium disabled:opacity-60"
+                >
+                  {deleting ? 'Verwijderen…' : 'Definitief verwijderen'}
+                </button>
+                <button
+                  onClick={() => { setShowDeleteConfirm(false); setDeletePassword(''); setDeleteError(''); }}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition font-medium"
+                >
+                  Annuleren
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* About */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-4">About</h2>
           <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
             <p><strong className="text-gray-700 dark:text-gray-300">Version:</strong> 1.0.0</p>
             <p><strong className="text-gray-700 dark:text-gray-300">Platform:</strong> TCG Pulse, EU market intelligence for trading card singles</p>
-            <p><strong className="text-gray-700 dark:text-gray-300">Support:</strong> support@pokemontel.eu</p>
+            <p><strong className="text-gray-700 dark:text-gray-300">Support:</strong> pokemonmarketintel@gmail.com</p>
           </div>
         </div>
       </div>

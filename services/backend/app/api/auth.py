@@ -220,6 +220,38 @@ async def logout():
     return {"message": "Successfully logged out"}
 
 
+@router.delete("/account")
+async def delete_account(
+    data: dict,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Permanently delete the current user's account and personal data (GDPR erasure).
+
+    Requires the account password for confirmation. Removes the user's
+    watchlist items and the user record itself.
+    """
+    from sqlalchemy import text as _sql_text
+
+    password = data.get("password", "")
+    if not verify_password(password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Wachtwoord is onjuist")
+
+    user_id = current_user.id
+    email = current_user.email
+
+    # Delete personal data that references the user, then the user itself.
+    await db.execute(
+        _sql_text("DELETE FROM watchlist_items WHERE user_id = :uid"), {"uid": user_id}
+    )
+    await db.execute(_sql_text("DELETE FROM users WHERE id = :uid"), {"uid": user_id})
+    await db.commit()
+
+    logger.info("Account deleted (GDPR erasure) for user id=%s email=%s", user_id, email)
+    return {"message": "Account en persoonlijke gegevens zijn definitief verwijderd."}
+
+
 @router.get("/notifications/preferences", response_model=NotificationPrefsResponse)
 async def get_notification_prefs(
     current_user: User = Depends(get_current_user),

@@ -32,6 +32,9 @@ export default function SiteFooter({ showMarketingLinks, className = '' }: SiteF
             >
               Contact
             </a>
+            <Link href="/legal" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors rounded-sm">
+              Legal notice
+            </Link>
             <Link href="/terms" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors rounded-sm">
               Terms
             </Link>
@@ -50,6 +53,12 @@ export default function SiteFooter({ showMarketingLinks, className = '' }: SiteF
             )}
           </nav>
         </div>
+        <p className="mt-3 text-[10px] leading-relaxed text-gray-400 dark:text-gray-600 text-center sm:text-left">
+          TCG Pulse is an independent price-tracking tool and is not affiliated with, endorsed, sponsored, or
+          approved by Nintendo, Creatures Inc., GAME FREAK inc., or The Pokémon Company. &ldquo;Pokémon&rdquo; and all
+          related names are trademarks of their respective owners and are used here for identification only. Prices are
+          sourced from CardTrader and are informational — not financial advice.
+        </p>
       </div>
     </footer>
   );

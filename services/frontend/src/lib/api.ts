@@ -197,6 +197,14 @@ export const authApi = {
       body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
     });
   },
+
+  /** GDPR erasure: permanently delete the account. Requires the password. */
+  deleteAccount: async (password: string): Promise<{ message: string }> => {
+    return apiRequest('/api/v1/auth/account', {
+      method: 'DELETE',
+      body: JSON.stringify({ password }),
+    });
+  },
 };
 
 // Market Data
