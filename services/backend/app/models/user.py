@@ -58,10 +58,8 @@ class User(Base):
     # Alert preferences
     alerts_enabled = Column(Boolean, default=True)
     alert_email = Column(String(255))
-    telegram_chat_id = Column(String(255))
-    email_digest_enabled = Column(Boolean, default=True)
-    telegram_connect_token = Column(String(64), index=True)
-    telegram_connect_token_expires = Column(DateTime(timezone=True))
+    # Opt-in: the daily digest is marketing-like mail, so it needs explicit consent (AVG/ePrivacy)
+    email_digest_enabled = Column(Boolean, default=False)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

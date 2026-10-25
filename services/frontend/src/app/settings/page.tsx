@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import ProfileModal from '@/components/ProfileModal';
 import { activateTour } from '@/lib/tour';
-import { authApi, notificationApi, subscriptionApi, BackendNotifPrefs, TelegramConnectResponse } from '@/lib/api';
+import { authApi, notificationApi, subscriptionApi, BackendNotifPrefs } from '@/lib/api';
 import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
 import ThemeToggle from '@/components/ThemeToggle';
 import { tierLabel, UPSELL_SUBSCRIBE } from '@/lib/plans';
@@ -15,8 +15,6 @@ const NOTIF_PREFS_KEY = 'notification_preferences';
 interface NotificationPrefs {
   email_enabled: boolean;
   email_address: string;
-  telegram_enabled: boolean;
-  telegram_chat_id: string;
   notify_momentum: boolean;
   notify_risk: boolean;
   notify_price_drop: boolean;
@@ -30,8 +28,6 @@ interface NotificationPrefs {
 const DEFAULT_PREFS: NotificationPrefs = {
   email_enabled: false,
   email_address: '',
-  telegram_enabled: false,
-  telegram_chat_id: '',
   notify_momentum: true,
   notify_risk: true,
   notify_price_drop: true,
@@ -90,10 +86,6 @@ export default function SettingsPage() {
   const [backendPrefs, setBackendPrefs] = useState<BackendNotifPrefs | null>(null);
   const [digestSaving, setDigestSaving] = useState(false);
 
-  // Telegram connect
-  const [telegramLink, setTelegramLink] = useState<TelegramConnectResponse | null>(null);
-  const [telegramLoading, setTelegramLoading] = useState(false);
-  const [telegramCopied, setTelegramCopied] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -113,25 +105,6 @@ export default function SettingsPage() {
       .then(p => setBackendPrefs(p))
       .catch(() => {});
   }, []);
-
-  const handleConnectTelegram = async () => {
-    setTelegramLoading(true);
-    try {
-      const res = await notificationApi.getTelegramLink();
-      setTelegramLink(res);
-    } catch {
-      // ignore
-    } finally {
-      setTelegramLoading(false);
-    }
-  };
-
-  const copyTelegramLink = async () => {
-    if (!telegramLink) return;
-    await navigator.clipboard.writeText(telegramLink.deep_link);
-    setTelegramCopied(true);
-    setTimeout(() => setTelegramCopied(false), 2000);
-  };
 
   const toggleDigest = async (enabled: boolean) => {
     setDigestSaving(true);
@@ -158,9 +131,8 @@ export default function SettingsPage() {
     localStorage.setItem(NOTIF_PREFS_KEY, JSON.stringify(prefs));
     try {
       await notificationApi.updatePrefs({
-        alerts_enabled: prefs.email_enabled || prefs.telegram_enabled,
+        alerts_enabled: prefs.email_enabled,
         alert_email: prefs.email_enabled ? (prefs.email_address || user?.email) : undefined,
-        telegram_chat_id: prefs.telegram_enabled ? prefs.telegram_chat_id : undefined,
       });
     } catch (err) {
       console.warn('Failed to sync notification prefs to backend:', err);
@@ -320,18 +292,8 @@ export default function SettingsPage() {
             )}
           </div>
 
-          {!isPaid ? (
-            <div className="text-center py-6">
-              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">Notifications are included with Plus and Business.</p>
-              <button
-                onClick={() => router.push('/pricing')}
-                className="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white text-sm rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-400 transition font-medium shadow-sm"
-              >
-                {UPSELL_SUBSCRIBE}
-              </button>
-            </div>
-          ) : (
-            <>
+          {/* Watchlist alerts are part of every plan, so everyone can manage (and turn off) their mail */}
+          <>
               {/* Delivery channels */}
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold mb-2">Delivery Channels</p>
               <div className="mb-6">
@@ -353,56 +315,6 @@ export default function SettingsPage() {
                     />
                   </div>
                 )}
-                {/* Telegram connect */}
-                <div className="py-3 border-b border-gray-100 dark:border-gray-800">
-                  <div className="flex items-center justify-between gap-4 mb-2">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Telegram Meldingen</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Directe prijsalerts via Telegram</p>
-                    </div>
-                    {backendPrefs?.telegram_connected ? (
-                      <span className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 text-xs font-semibold rounded-full">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                        Verbonden
-                      </span>
-                    ) : (
-                      <button
-                        onClick={handleConnectTelegram}
-                        disabled={telegramLoading}
-                        className="shrink-0 px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs rounded-lg transition font-medium disabled:opacity-60"
-                      >
-                        {telegramLoading ? 'Laden…' : 'Verbind Telegram'}
-                      </button>
-                    )}
-                  </div>
-                  {telegramLink && !backendPrefs?.telegram_connected && (
-                    <div className="mt-2 p-3 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 rounded-xl">
-                      <p className="text-xs text-sky-700 dark:text-sky-300 mb-2 font-medium">
-                        Klik op de knop om te verbinden. De link is 15 minuten geldig.
-                      </p>
-                      <div className="flex gap-2">
-                        <a
-                          href={telegramLink.deep_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-sky-600 text-white text-sm font-semibold rounded-lg hover:bg-sky-700 transition"
-                        >
-                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.248-1.97 9.289c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.932z"/>
-                          </svg>
-                          Open in Telegram
-                        </a>
-                        <button
-                          onClick={copyTelegramLink}
-                          className="px-3 py-2 bg-white dark:bg-gray-800 border border-sky-200 dark:border-sky-700 text-sky-700 dark:text-sky-300 text-sm rounded-lg hover:bg-sky-50 dark:hover:bg-sky-950/40 transition"
-                        >
-                          {telegramCopied ? '✓ Gekopieerd' : 'Kopieer link'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
                 {/* Email digest */}
                 <div className="py-3">
                   <div className="flex items-center justify-between gap-4">
@@ -478,7 +390,6 @@ export default function SettingsPage() {
                 {saved && <span className="text-sm text-green-600 dark:text-green-400 font-medium">Saved!</span>}
               </div>
             </>
-          )}
         </div>
 
         {/* Preferences */}

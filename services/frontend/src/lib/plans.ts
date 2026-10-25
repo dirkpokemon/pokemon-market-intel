@@ -59,7 +59,7 @@ export const PLAN_FEATURES = {
   free: [
     'Top 20 deal scores (score ≥ 55)',
     'Browse all sets + sealed prices',
-    'Watchlist with price-drop alerts',
+    'Watchlist with email price-drop alerts',
     'Card search across live EU listings',
     'Community support',
   ],
@@ -67,7 +67,6 @@ export const PLAN_FEATURES = {
     'Unlimited deal scores (all deals, no cap)',
     'All filters: price, set, category, savings',
     'Full market stats & price history',
-    'Email & Telegram price-drop alerts',
     'Priority support',
   ],
   pro: [

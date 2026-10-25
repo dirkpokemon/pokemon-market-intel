@@ -1,27 +1,15 @@
 # PostgreSQL Database
 
-## Schema Overview
+## Schema
 
-The database uses PostgreSQL 16 with the following main tables:
+`init.sql` only enables extensions. Tables are created by the backend's Alembic
+migrations and by each service's additive schema sync on startup
+(`sync_schema` in `services/*/app/database.py`):
 
-### Core Tables
-
-- **users**: User accounts and authentication
-- **subscriptions**: Stripe subscription management
-- **raw_prices**: Append-only price data from scrapers
-- **processed_prices**: Aggregated price statistics
-- **deal_scores**: Calculated deal quality scores
-- **alerts**: User price alerts
-- **scrape_logs**: Scraping session tracking
-- **market_statistics**: Market-wide metrics
-
-## Features
-
-- UUID extension for unique identifiers
-- Full-text search with pg_trgm
-- Automatic timestamp updates
-- Indexes for performance
-- GDPR-compliant structure
+- **users**, **watchlist_items**: accounts, subscriptions, watchlist (backend)
+- **raw_prices**, **scrape_logs**: append-only scraped listings (scraper)
+- **market_statistics**, **deal_scores**: derived per run (analysis)
+- **signals**: legacy, read only by the admin dashboard
 
 ## Migrations
 

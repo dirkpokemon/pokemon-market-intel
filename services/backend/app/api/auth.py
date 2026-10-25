@@ -6,6 +6,7 @@ Handles user registration, login, email verification, and token management
 import logging
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -61,7 +62,8 @@ async def register(
     logger.info("New user registered: %s", new_user.email)
 
     first_name = (user_data.full_name or user_data.email).split()[0]
-    email_sent = send_verification_email(new_user.email, first_name, token)
+    # Email helpers use blocking urllib/smtplib — keep them off the event loop
+    email_sent = await run_in_threadpool(send_verification_email, new_user.email, first_name, token)
 
     frontend_url = settings.FRONTEND_URL.rstrip("/")
     verify_url = f"{frontend_url}/verify?token={token}"
@@ -98,7 +100,7 @@ async def resend_verification(
     await db.commit()
 
     first_name = (user.full_name or user.email).split()[0]
-    send_verification_email(user.email, first_name, token)
+    await run_in_threadpool(send_verification_email, user.email, first_name, token)
 
     return {"message": "Verification email resent. Please check your inbox."}
 
@@ -229,8 +231,9 @@ async def delete_account(
     """
     Permanently delete the current user's account and personal data (GDPR erasure).
 
-    Requires the account password for confirmation. Removes the user's
-    watchlist items and the user record itself.
+    Requires the account password for confirmation. Deletes the Stripe customer
+    (which cancels any subscription), then the user's watchlist items and the
+    user record itself.
     """
     from sqlalchemy import text as _sql_text
 
@@ -240,6 +243,32 @@ async def delete_account(
 
     user_id = current_user.id
     email = current_user.email
+
+    # Stop billing before the user disappears: once the row is gone, Stripe
+    # webhooks can no longer be matched to anyone. Deleting the Stripe customer
+    # cancels its subscriptions immediately and removes the stored card data.
+    # If Stripe fails we abort, so nobody keeps paying for a deleted account.
+    if current_user.stripe_customer_id or current_user.stripe_subscription_id:
+        if not settings.STRIPE_SECRET_KEY:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Je abonnement kan nu niet worden opgezegd. Probeer het later opnieuw of neem contact op.",
+            )
+        try:
+            import stripe
+
+            stripe.api_key = settings.STRIPE_SECRET_KEY
+            if current_user.stripe_customer_id:
+                await run_in_threadpool(stripe.Customer.delete, current_user.stripe_customer_id)
+            else:
+                await run_in_threadpool(stripe.Subscription.cancel, current_user.stripe_subscription_id)
+        except Exception as exc:
+            if getattr(exc, "code", None) != "resource_missing":
+                logger.error("Stripe cleanup failed for user id=%s: %s", user_id, exc, exc_info=True)
+                raise HTTPException(
+                    status_code=status.HTTP_502_BAD_GATEWAY,
+                    detail="Je abonnement kon niet worden opgezegd, je account is niet verwijderd. Probeer het opnieuw of neem contact op.",
+                ) from exc
 
     # Delete personal data that references the user, then the user itself.
     await db.execute(
@@ -259,7 +288,6 @@ async def get_notification_prefs(
     return NotificationPrefsResponse(
         alerts_enabled=current_user.alerts_enabled if current_user.alerts_enabled is not None else True,
         alert_email=current_user.alert_email,
-        telegram_chat_id=current_user.telegram_chat_id,
     )
 
 
@@ -273,8 +301,6 @@ async def update_notification_prefs(
         current_user.alerts_enabled = prefs.alerts_enabled
     if prefs.alert_email is not None:
         current_user.alert_email = prefs.alert_email
-    if prefs.telegram_chat_id is not None:
-        current_user.telegram_chat_id = prefs.telegram_chat_id
 
     await db.commit()
     await db.refresh(current_user)
@@ -284,5 +310,4 @@ async def update_notification_prefs(
     return NotificationPrefsResponse(
         alerts_enabled=current_user.alerts_enabled if current_user.alerts_enabled is not None else True,
         alert_email=current_user.alert_email,
-        telegram_chat_id=current_user.telegram_chat_id,
     )

@@ -16,17 +16,20 @@ depends_on = None
 
 
 def upgrade():
-    # Create user_role enum
-    op.execute("CREATE TYPE userrole AS ENUM ('free', 'paid', 'pro', 'admin')")
-    
-    # Create users table
+    # Databases that predate working migrations already have a users table
+    # (created by the app's create_all) and no alembic_version: skip.
+    if sa.inspect(op.get_bind()).has_table("users"):
+        return
+
+    # Create users table. role is a plain string like the ORM model
+    # (app/models/user.py); an enum here diverged from every existing database.
     op.create_table(
         'users',
         sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
         sa.Column('email', sa.String(length=255), nullable=False),
         sa.Column('hashed_password', sa.String(length=255), nullable=False),
         sa.Column('full_name', sa.String(length=255), nullable=True),
-        sa.Column('role', sa.Enum('free', 'paid', 'pro', 'admin', name='userrole'), nullable=False),
+        sa.Column('role', sa.String(length=50), nullable=False, server_default='free'),
         sa.Column('stripe_customer_id', sa.String(length=255), nullable=True),
         sa.Column('stripe_subscription_id', sa.String(length=255), nullable=True),
         sa.Column('subscription_status', sa.String(length=50), nullable=True),
@@ -54,4 +57,3 @@ def downgrade():
     op.drop_index('ix_users_email', table_name='users')
     op.drop_index('ix_users_id', table_name='users')
     op.drop_table('users')
-    op.execute("DROP TYPE userrole")

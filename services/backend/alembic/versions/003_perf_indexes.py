@@ -11,23 +11,22 @@ branch_labels = None
 depends_on = None
 
 
+INDEXES = [
+    ("ix_deal_scores_active_score", "deal_scores", "(is_active, deal_score DESC)"),
+    ("ix_raw_prices_scraped_at_desc", "raw_prices", "(scraped_at DESC NULLS LAST)"),
+    ("ix_signals_active_priority_detected", "signals", "(is_active, priority DESC, detected_at DESC)"),
+    ("ix_market_stats_calc_set", "market_statistics", "(calculated_at DESC, product_set)"),
+]
+
+
 def upgrade():
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_deal_scores_active_score "
-        "ON deal_scores (is_active, deal_score DESC)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_raw_prices_scraped_at_desc "
-        "ON raw_prices (scraped_at DESC NULLS LAST)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_signals_active_priority_detected "
-        "ON signals (is_active, priority DESC, detected_at DESC)"
-    )
-    op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_market_stats_calc_set "
-        "ON market_statistics (calculated_at DESC, product_set)"
-    )
+    # On a fresh database these tables do not exist yet (the services create
+    # them on startup), so only index tables that are already there.
+    for name, table, cols in INDEXES:
+        op.execute(
+            f"DO $$ BEGIN IF to_regclass('public.{table}') IS NOT NULL THEN "
+            f"CREATE INDEX IF NOT EXISTS {name} ON {table} {cols}; END IF; END $$"
+        )
 
 
 def downgrade():

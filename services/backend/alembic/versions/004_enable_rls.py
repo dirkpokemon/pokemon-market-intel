@@ -2,11 +2,11 @@
 
 Without RLS, Supabase's PostgREST layer exposes every table to anyone who
 knows the project URL + anon key. Our backend connects via a direct
-PostgreSQL superuser connection which bypasses RLS, so this change is
-completely safe and does not affect runtime behaviour.
+PostgreSQL connection as the table owner, which plain (non-forced) RLS does
+not restrict, so this change does not affect runtime behaviour.
 
 With RLS enabled but NO permissive policies, the anon/authenticated roles
-used by PostgREST are denied all access.  The postgres superuser (DATABASE_URL)
+used by PostgREST are denied all access. The owner role (DATABASE_URL)
 continues to read and write freely.
 
 Revision ID: 004_rls
@@ -35,12 +35,13 @@ TABLES = [
 def upgrade():
     for table in TABLES:
         # Enable RLS — no permissive policies means PostgREST gets nothing.
+        # Deliberately NOT "FORCE": forced RLS also applies to the table owner,
+        # which would lock the app itself out unless its role has BYPASSRLS.
+        # Plain RLS never restricts the owner, and anon/authenticated (PostgREST)
+        # are not owners, so they are still denied.
         op.execute(f"ALTER TABLE IF EXISTS {table} ENABLE ROW LEVEL SECURITY")
-        # Force RLS even for table owners (extra safety; doesn't affect superuser).
-        op.execute(f"ALTER TABLE IF EXISTS {table} FORCE ROW LEVEL SECURITY")
 
 
 def downgrade():
     for table in TABLES:
-        op.execute(f"ALTER TABLE IF EXISTS {table} NO FORCE ROW LEVEL SECURITY")
         op.execute(f"ALTER TABLE IF EXISTS {table} DISABLE ROW LEVEL SECURITY")

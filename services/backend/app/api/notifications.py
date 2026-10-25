@@ -1,28 +1,25 @@
 """
-Notifications API — watchlist management, Telegram connect, and notification preferences.
+Notifications API — watchlist management, notification preferences and
+one-click unsubscribe from digest / alert emails.
 """
 import logging
-import os
-import secrets
-from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_user
+from app.core.unsubscribe import verify_token
 from app.database import get_db
 from app.models.user import User
 from app.models.watchlist import WatchlistItem
-from app.utils.telegram import send_message
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "TCGPulseBot")
 
 
 # ---------------------------------------------------------------------------
@@ -31,9 +28,9 @@ BOT_USERNAME = os.environ.get("TELEGRAM_BOT_USERNAME", "TCGPulseBot")
 
 
 class WatchlistCreate(BaseModel):
-    card_name: str
-    card_set: Optional[str] = None
-    target_price: float
+    card_name: str = Field(..., min_length=1, max_length=255)
+    card_set: Optional[str] = Field(default=None, max_length=255)
+    target_price: float = Field(..., gt=0)
 
 
 class WatchlistItemResponse(BaseModel):
@@ -52,11 +49,16 @@ class WatchlistItemResponse(BaseModel):
 
 class NotificationPreferences(BaseModel):
     email_digest_enabled: bool
-    telegram_connected: bool
 
 
 class NotificationPreferencesUpdate(BaseModel):
     email_digest_enabled: bool
+
+
+class UnsubscribeRequest(BaseModel):
+    u: int
+    k: str
+    t: str
 
 
 # ---------------------------------------------------------------------------
@@ -125,90 +127,6 @@ async def delete_watchlist_item(
 
 
 # ---------------------------------------------------------------------------
-# Telegram connect endpoints
-# ---------------------------------------------------------------------------
-
-
-@router.get("/telegram/connect", tags=["Telegram"])
-async def telegram_connect(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-) -> Dict[str, Any]:
-    """
-    Generate a one-time Telegram connect token and return the deep link.
-    The token is valid for 15 minutes.
-    """
-    token = secrets.token_hex(4)  # 8-char hex
-    expires = datetime.now(timezone.utc) + timedelta(minutes=15)
-
-    current_user.telegram_connect_token = token
-    current_user.telegram_connect_token_expires = expires
-    await db.commit()
-
-    return {
-        "token": token,
-        "deep_link": f"https://t.me/{BOT_USERNAME}?start={token}",
-        "expires_in": 900,
-    }
-
-
-@router.post("/telegram/webhook", tags=["Telegram"])
-async def telegram_webhook(request: Request, db: AsyncSession = Depends(get_db)) -> Dict[str, str]:
-    """
-    Telegram Bot webhook handler.
-    Processes /start <token> messages to link a Telegram account.
-    Always returns HTTP 200 so Telegram doesn't retry.
-    """
-    try:
-        update = await request.json()
-    except Exception:
-        # Malformed body — still return 200
-        return {"ok": "true"}
-
-    message = update.get("message") or update.get("edited_message")
-    if not message:
-        return {"ok": "true"}
-
-    text = message.get("text", "")
-    from_info = message.get("from", {})
-    chat_id = str(message.get("chat", {}).get("id", ""))
-
-    if not text.startswith("/start ") or not chat_id:
-        return {"ok": "true"}
-
-    token = text[len("/start "):].strip()
-    if not token:
-        return {"ok": "true"}
-
-    now = datetime.now(timezone.utc)
-    result = await db.execute(
-        select(User).where(
-            User.telegram_connect_token == token,
-            User.telegram_connect_token_expires > now,
-        )
-    )
-    user = result.scalar_one_or_none()
-
-    if user is None:
-        await send_message(
-            chat_id,
-            "Token ongeldig of verlopen. Probeer opnieuw via de website.",
-        )
-        return {"ok": "true"}
-
-    user.telegram_chat_id = str(from_info.get("id", chat_id))
-    user.telegram_connect_token = None
-    user.telegram_connect_token_expires = None
-    await db.commit()
-
-    await send_message(
-        chat_id,
-        "Verbonden met TCG Pulse! Je ontvangt nu prijsalerts.",
-    )
-    return {"ok": "true"}
-
-
-# ---------------------------------------------------------------------------
 # Notification preferences
 # ---------------------------------------------------------------------------
 
@@ -219,13 +137,10 @@ async def update_notification_preferences(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> NotificationPreferences:
-    """Toggle email digest and view Telegram connection status."""
+    """Toggle the daily email digest."""
     current_user.email_digest_enabled = payload.email_digest_enabled
     await db.commit()
-    return NotificationPreferences(
-        email_digest_enabled=current_user.email_digest_enabled,
-        telegram_connected=bool(current_user.telegram_chat_id),
-    )
+    return NotificationPreferences(email_digest_enabled=current_user.email_digest_enabled)
 
 
 @router.get("/notifications/preferences", response_model=NotificationPreferences, tags=["Notifications"])
@@ -233,7 +148,30 @@ async def get_notification_preferences(
     current_user: User = Depends(get_current_user),
 ) -> NotificationPreferences:
     """Get current notification preferences."""
-    return NotificationPreferences(
-        email_digest_enabled=bool(getattr(current_user, "email_digest_enabled", True)),
-        telegram_connected=bool(current_user.telegram_chat_id),
-    )
+    return NotificationPreferences(email_digest_enabled=bool(current_user.email_digest_enabled))
+
+
+@router.post("/notifications/unsubscribe", tags=["Notifications"])
+async def unsubscribe(
+    payload: UnsubscribeRequest,
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """
+    One-click unsubscribe from the link in digest / alert emails (no login).
+    k=digest turns off the daily digest, k=alerts turns off watchlist alerts.
+    """
+    if not verify_token(payload.u, payload.k, payload.t):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ongeldige afmeldlink")
+
+    result = await db.execute(select(User).where(User.id == payload.u))
+    user = result.scalar_one_or_none()
+    if user is not None:
+        if payload.k == "digest":
+            user.email_digest_enabled = False
+        else:
+            user.alerts_enabled = False
+        await db.commit()
+        logger.info("User %s unsubscribed from %s emails", user.id, payload.k)
+
+    # Same answer whether or not the user still exists (deleted accounts)
+    return {"ok": True, "kind": payload.k}

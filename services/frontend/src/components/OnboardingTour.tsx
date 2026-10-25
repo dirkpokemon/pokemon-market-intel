@@ -25,7 +25,7 @@ const GOALS: { id: Goal; icon: string; title: string; description: string; page:
     id: 'watchlist',
     icon: '🔔',
     title: 'Prijsalerts',
-    description: 'Zet target-prijzen en krijg mail/Telegram bij een daling',
+    description: 'Zet target-prijzen en krijg een mail bij een daling',
     page: '/watchlist',
   },
 ];
@@ -122,7 +122,7 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
               <div className="px-7 py-5 space-y-3">
                 {[
                   { icon: '🎯', label: 'Deal Score', desc: 'AI-scoring op 0–100 — hoe goedkoper vs markt, hoe hoger' },
-                  { icon: '🔔', label: 'Prijsalerts', desc: 'Target-prijs per kaart, mail/Telegram bij een daling' },
+                  { icon: '🔔', label: 'Prijsalerts', desc: 'Target-prijs per kaart, mail bij een daling' },
                   { icon: '📦', label: 'Sets & sealed', desc: 'Blader alle sets met live EU prijzen' },
                 ].map(item => (
                   <div key={item.label} className="flex items-start gap-3">

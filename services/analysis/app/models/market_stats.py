@@ -24,7 +24,9 @@ class MarketStats(Base):
     product_set = Column(String(255), index=True)
     category = Column(String(50))  # single, sealed
     
-    # 7-day statistics
+    # 7-day statistics. avg_* hold the median of daily median listing prices
+    # (robust "typical price"); the column names predate that and are kept
+    # because the backend/frontend read them.
     avg_price_7d = Column(Numeric(10, 2))
     min_price_7d = Column(Numeric(10, 2))
     max_price_7d = Column(Numeric(10, 2))
@@ -42,6 +44,12 @@ class MarketStats(Base):
     volume_trend_7d = Column(Numeric(5, 2))
     volume_trend_30d = Column(Numeric(5, 2))
     
+    # Price points used by deal scoring (all EUR, comparable listings only)
+    current_price = Column(Numeric(10, 2))     # cheapest listing on the most recent day
+    floor_price_30d = Column(Numeric(10, 2))   # median of the daily cheapest listing (usual floor)
+    days_observed = Column(Integer)            # distinct days with listings in the long window
+    last_seen_at = Column(DateTime(timezone=True))
+
     # Market metrics
     liquidity_score = Column(Numeric(5, 2))  # 0-100
     volatility = Column(Numeric(5, 2))  # Coefficient of variation

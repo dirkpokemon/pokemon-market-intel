@@ -36,8 +36,8 @@ logger.info(f"Connecting to database: {db_url[:50]}...")
 # Create async engine with conservative pool settings
 engine = create_async_engine(
     db_url,
-    pool_size=5,  # Conservative for Railway free tier
-    max_overflow=5,
+    pool_size=settings.DATABASE_POOL_SIZE,
+    max_overflow=settings.DATABASE_MAX_OVERFLOW,
     pool_timeout=30,
     pool_recycle=1800,  # Recycle connections every 30 min
     pool_pre_ping=True,  # Verify connections before using them
@@ -59,10 +59,39 @@ AsyncSessionLocal = async_sessionmaker(
 Base = declarative_base()
 
 
+def sync_schema(sync_conn) -> None:
+    """
+    Additive schema sync, shared pattern with the scraper and analysis services:
+
+    1. create missing tables from the ORM models,
+    2. add missing (nullable) columns to existing tables — never drop anything,
+    3. enable Row-Level Security so Supabase's public PostgREST API cannot read
+       the tables (the app connects as the owner/postgres role, which RLS
+       without policies does not restrict).
+    """
+    from sqlalchemy import inspect
+
+    Base.metadata.create_all(sync_conn)
+    insp = inspect(sync_conn)
+    preparer = sync_conn.dialect.identifier_preparer
+    for table in Base.metadata.sorted_tables:
+        existing = {c["name"] for c in insp.get_columns(table.name)}
+        for column in table.columns:
+            if column.name in existing:
+                continue
+            col_type = column.type.compile(dialect=sync_conn.dialect)
+            sync_conn.execute(text(
+                f"ALTER TABLE {preparer.quote(table.name)} "
+                f"ADD COLUMN IF NOT EXISTS {preparer.quote(column.name)} {col_type}"
+            ))
+            logger.warning("Schema sync: added missing column %s.%s", table.name, column.name)
+        sync_conn.execute(text(f"ALTER TABLE {preparer.quote(table.name)} ENABLE ROW LEVEL SECURITY"))
+
+
 async def init_db() -> None:
     """
-    Initialize database — create all tables using SQLAlchemy models.
-    Idempotent: create_all() skips tables that already exist.
+    Initialize database — create missing tables/columns from the ORM models.
+    Idempotent and additive; Alembic migrations remain the source of truth.
     """
     try:
         # Import all models so they register themselves with Base.metadata
@@ -72,8 +101,7 @@ async def init_db() -> None:
             await conn.execute(text("SELECT 1"))
             logger.info("Database connection successful")
 
-            # Create every table defined in the ORM models (safe to call repeatedly)
-            await conn.run_sync(Base.metadata.create_all)
+            await conn.run_sync(sync_schema)
             logger.info("Schema created/verified successfully")
     except Exception as e:
         logger.error(f"Database initialization failed: {e}")

@@ -319,13 +319,11 @@ export const publicApi = {
 export interface NotificationPrefs {
   alerts_enabled: boolean;
   alert_email?: string;
-  telegram_chat_id?: string;
 }
 
 // Backend notification preferences (new endpoints)
 export interface BackendNotifPrefs {
   email_digest_enabled: boolean;
-  telegram_connected: boolean;
 }
 
 export interface WatchlistItem {
@@ -339,12 +337,6 @@ export interface WatchlistItem {
   created_at: string;
 }
 
-export interface TelegramConnectResponse {
-  token: string;
-  deep_link: string;
-  expires_in: number;
-}
-
 export const notificationApi = {
   /** Legacy: update signal-alert preferences stored in user profile */
   updatePrefs: async (prefs: Partial<NotificationPrefs>): Promise<NotificationPrefs> => {
@@ -354,7 +346,7 @@ export const notificationApi = {
     });
   },
 
-  /** Get backend notification preferences (email digest + telegram status) */
+  /** Get backend notification preferences (email digest) */
   getNotifPrefs: async (): Promise<BackendNotifPrefs> => {
     return apiRequest<BackendNotifPrefs>('/api/v1/notifications/preferences');
   },
@@ -367,11 +359,6 @@ export const notificationApi = {
     });
   },
 
-  /** Generate a Telegram deep-link connect token */
-  getTelegramLink: async (): Promise<TelegramConnectResponse> => {
-    return apiRequest<TelegramConnectResponse>('/api/v1/telegram/connect');
-  },
-
   /** Get the user's active watchlist items */
   getWatchlist: async (): Promise<WatchlistItem[]> => {
     return apiRequest<WatchlistItem[]>('/api/v1/watchlist');
@@ -380,6 +367,14 @@ export const notificationApi = {
   /** Add a card to the backend watchlist */
   addWatchlistItem: async (payload: { card_name: string; card_set?: string; target_price: number }): Promise<WatchlistItem> => {
     return apiRequest<WatchlistItem>('/api/v1/watchlist', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /** One-click unsubscribe from the link in digest / alert emails (no login needed) */
+  unsubscribe: async (payload: { u: number; k: string; t: string }): Promise<{ ok: boolean; kind: string }> => {
+    return apiRequest<{ ok: boolean; kind: string }>('/api/v1/notifications/unsubscribe', {
       method: 'POST',
       body: JSON.stringify(payload),
     });

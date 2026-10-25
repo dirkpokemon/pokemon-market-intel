@@ -1,11 +1,13 @@
 """
 Email utility — Brevo API (primary) with SMTP fallback.
 """
+import asyncio
 import logging
 import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from typing import Dict, Optional
 
 import httpx
 
@@ -16,28 +18,45 @@ logger = logging.getLogger(__name__)
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 
-async def send_email(to_email: str, subject: str, html: str, text: str = "") -> bool:
-    """Send an email. Returns True on success."""
+async def send_email(
+    to_email: str,
+    subject: str,
+    html: str,
+    text: str = "",
+    unsubscribe_url: Optional[str] = None,
+) -> bool:
+    """Send an email. Returns True on success.
+
+    unsubscribe_url adds a List-Unsubscribe header so mail clients show an
+    "unsubscribe" button that opens the frontend /unsubscribe page.
+    """
+    headers = {}
+    if unsubscribe_url:
+        headers = {"List-Unsubscribe": f"<{unsubscribe_url}>"}
     if settings.BREVO_API_KEY:
-        return await _send_via_brevo(to_email, subject, html, text)
+        return await _send_via_brevo(to_email, subject, html, text, headers)
     elif settings.SMTP_HOST:
-        return _send_via_smtp(to_email, subject, html, text)
+        return await asyncio.to_thread(_send_via_smtp, to_email, subject, html, text, headers)
     else:
         logger.warning(f"No email provider configured — skipping email to {to_email}")
         return False
 
 
-async def _send_via_brevo(to_email: str, subject: str, html: str, text: str) -> bool:
+async def _send_via_brevo(
+    to_email: str, subject: str, html: str, text: str, headers: Dict[str, str]
+) -> bool:
     payload = {
         "sender": {
             "name": "TCG Pulse",
-            "email": settings.SMTP_FROM or "noreply@tcgpulse.com",
+            "email": settings.sender_email,
         },
         "to": [{"email": to_email}],
         "subject": subject,
         "htmlContent": html,
         "textContent": text or subject,
     }
+    if headers:
+        payload["headers"] = headers
     try:
         async with httpx.AsyncClient() as client:
             r = await client.post(
@@ -59,12 +78,16 @@ async def _send_via_brevo(to_email: str, subject: str, html: str, text: str) -> 
         return False
 
 
-def _send_via_smtp(to_email: str, subject: str, html: str, text: str) -> bool:
+def _send_via_smtp(
+    to_email: str, subject: str, html: str, text: str, headers: Dict[str, str]
+) -> bool:
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
+        msg["From"] = settings.sender_email
         msg["To"] = to_email
+        for name, value in headers.items():
+            msg[name] = value
         if text:
             msg.attach(MIMEText(text, "plain"))
         msg.attach(MIMEText(html, "html"))

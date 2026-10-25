@@ -1,404 +1,193 @@
 """
 Market Statistics Calculator
-Calculates market metrics per product from raw price data
+Calculates market metrics per product from raw price data.
+
+Postgres aggregates raw_prices into one row per (product, set, category, day)
+over comparable listings only (see INCLUDED_CONDITIONS / INCLUDED_LANGUAGES);
+the per-product math lives in scoring.product_stats.
 """
 
-import gc
 import logging
-from collections import defaultdict, deque
-from typing import Any, Deque, DefaultDict, Dict, List, Optional, Tuple
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from typing import Any, Dict, List, Optional, Tuple
 
-import pandas as pd
-import numpy as np
-from sqlalchemy import delete, select
+from sqlalchemy import delete, insert, text
 
+from app.calculators.scoring import DayAggregate, product_stats
 from app.config_analysis import analysis_config
 from app.database import AsyncSessionLocal
 from app.models.market_stats import MarketStats
-from app.normalizers.data_normalizer import DataNormalizer
 
 logger = logging.getLogger(__name__)
+
+# Product identity: whitespace-collapsed name and set, compared case-insensitively
+# (CardTrader and CardMarket spell the same card with different casing).
+# Display values keep the scraped spelling — no title-casing or punctuation
+# stripping, so names still match raw_prices / watchlist lookups.
+DAILY_AGGREGATES_SQL = """
+WITH base AS (
+    SELECT
+        regexp_replace(btrim(card_name), '\\s+', ' ', 'g') AS name_clean,
+        COALESCE(NULLIF(regexp_replace(btrim(card_set), '\\s+', ' ', 'g'), ''), 'Unknown Set') AS set_clean,
+        CASE WHEN card_number IS NULL THEN 'sealed' ELSE 'single' END AS category,
+        price * {rate_case} AS price_eur,
+        (scraped_at AT TIME ZONE 'UTC')::date AS day,
+        scraped_at
+    FROM raw_prices
+    WHERE scraped_at >= :since
+      AND price > 0
+      AND card_name IS NOT NULL
+      AND upper(COALESCE(language, 'EN')) = ANY(:languages)
+      AND (
+          card_number IS NULL
+          OR condition IS NULL
+          OR lower(btrim(condition)) = ANY(:conditions)
+      )
+)
+SELECT
+    lower(name_clean) AS name_key,
+    lower(set_clean)  AS set_key,
+    category,
+    day,
+    max(name_clean)   AS product_name,
+    max(set_clean)    AS product_set,
+    percentile_cont(0.5) WITHIN GROUP (ORDER BY price_eur) AS median_price,
+    percentile_cont(0.1) WITHIN GROUP (ORDER BY price_eur) AS p10_price,
+    min(price_eur)    AS min_price,
+    max(price_eur)    AS max_price,
+    count(*)          AS listings,
+    max(scraped_at)   AS last_seen_at
+FROM base
+WHERE price_eur IS NOT NULL
+GROUP BY 1, 2, 3, 4
+ORDER BY 1, 2, 3, 4
+"""
+
+
+def _rate_case(rates: Dict[str, float]) -> Tuple[str, Dict[str, Any]]:
+    """SQL CASE converting currency → EUR factor; unknown currencies become NULL (skipped)."""
+    parts, params = [], {}
+    for i, (code, rate) in enumerate(rates.items()):
+        parts.append(f"WHEN :cur{i} THEN CAST(:rate{i} AS numeric)")
+        params[f"cur{i}"] = code.upper()
+        params[f"rate{i}"] = rate
+    return "(CASE upper(COALESCE(currency, 'EUR')) " + " ".join(parts) + " ELSE NULL END)", params
+
+
+def _dec(value: Optional[float]) -> Optional[Decimal]:
+    if value is None:
+        return None
+    return Decimal(str(round(max(-99999999.99, min(99999999.99, value)), 2)))
 
 
 class MarketStatsCalculator:
     """
     Calculates comprehensive market statistics per product
     """
-    
+
     def __init__(self):
         self.config = analysis_config
-        self.normalizer = DataNormalizer()
-        logger.info("MarketStatsCalculator initialized")
-    
+
     async def calculate_all(self) -> int:
         """
-        Calculate market stats for all products
-        
+        Recalculate market_statistics for all products and replace the table
+        contents in a single transaction, so API readers never see an empty or
+        half-filled snapshot.
+
         Returns:
-            Number of products processed
+            Number of products saved
         """
-        logger.info("Starting market statistics calculation")
+        cfg = self.config
+        now = datetime.now(timezone.utc)
+        since = now - timedelta(days=cfg.LONG_WINDOW_DAYS)
+        rate_case, rate_params = _rate_case(cfg.CURRENCY_RATES)
+        stmt = text(DAILY_AGGREGATES_SQL.format(rate_case=rate_case))
+        params = {
+            "since": since,
+            "languages": [lang.upper() for lang in cfg.INCLUDED_LANGUAGES],
+            "conditions": [c.lower() for c in cfg.INCLUDED_CONDITIONS],
+            **rate_params,
+        }
 
-        cutoff_date = datetime.now(timezone.utc) - timedelta(days=self.config.LONG_WINDOW_DAYS)
+        logger.info(
+            "Aggregating raw_prices since %s (languages=%s, single conditions=%s)",
+            since.date(), params["languages"], params["conditions"],
+        )
 
-        buckets = await self._stream_raw_prices_into_buckets(cutoff_date)
-        if not buckets:
-            logger.warning("No raw price data found in lookback window")
+        records: List[Dict[str, Any]] = []
+        group_rows = 0
+        async with AsyncSessionLocal() as session:
+            result = await session.stream(stmt, params)
+
+            current_key = None
+            display: Tuple[str, str] = ("", "")
+            days: List[DayAggregate] = []
+
+            def flush() -> None:
+                if current_key is None:
+                    return
+                record = self._build_record(current_key[2], display, days, now)
+                if record:
+                    records.append(record)
+
+            async for partition in result.partitions(5000):
+                for row in partition:
+                    group_rows += 1
+                    key = (row.name_key, row.set_key, row.category)
+                    if key != current_key:
+                        flush()
+                        current_key, days = key, []
+                    display = (row.product_name, row.product_set)
+                    days.append(DayAggregate(
+                        day=row.day,
+                        median_price=float(row.median_price),
+                        p10_price=float(row.p10_price),
+                        min_price=float(row.min_price),
+                        max_price=float(row.max_price),
+                        listings=int(row.listings),
+                        last_seen_at=row.last_seen_at,
+                    ))
+            flush()
+
+        logger.info("Aggregated %s product-days into %s products", group_rows, len(records))
+        if not records:
+            logger.warning("No raw price data found in lookback window; keeping existing market_statistics")
             return 0
 
         async with AsyncSessionLocal() as session:
-            # Replace snapshot only after we know we have data (avoid empty table on failed runs).
-            await session.execute(delete(MarketStats))
-            await session.commit()
-            logger.info("Replacing market_statistics snapshot (single generation per run)")
+            async with session.begin():
+                await session.execute(delete(MarketStats))
+                for i in range(0, len(records), 1000):
+                    await session.execute(insert(MarketStats), records[i:i + 1000])
 
-            logger.info(f"Computing stats for {len(buckets)} products (streamed aggregates)")
+        logger.info("Replaced market_statistics with %s rows", len(records))
+        return len(records)
 
-            stats_records: List[MarketStats] = []
-            flush_every = 250
-            saved_total = 0
-
-            for (product_name, product_set, category), pairs in buckets.items():
-                try:
-                    df = pd.DataFrame(list(pairs), columns=["price_eur", "scraped_at"])
-                    stats = await self._calculate_product_stats(
-                        product_name, product_set, category, df
-                    )
-                    if stats:
-                        stats_records.append(stats)
-                except Exception as e:
-                    logger.error(f"Error calculating stats for {product_name}: {e}")
-                    continue
-
-                if len(stats_records) >= flush_every:
-                    session.add_all(stats_records)
-                    await session.commit()
-                    saved_total += len(stats_records)
-                    stats_records = []
-
-            if stats_records:
-                session.add_all(stats_records)
-                await session.commit()
-                saved_total += len(stats_records)
-
-            logger.info(f"Saved {saved_total} market stat records")
-            return saved_total
-
-    async def _stream_raw_prices_into_buckets(
-        self, cutoff_date: datetime
-    ) -> DefaultDict[Tuple[str, str, str], Deque[Tuple[float, Any]]]:
-        """
-        Load raw_prices in ID batches to avoid OOM (single .all() on large tables).
-        Each product keeps at most MAX_LISTINGS_PER_PRODUCT samples (stream ends with higher ids ≈ newer scrapes).
-
-        Uses a fresh DB session per batch so one connection is not held open for tens of minutes
-        (avoids asyncpg "connection is closed" behind PgBouncer / idle timeouts).
-        """
-        from app.models import RawPrice
-
-        batch_size = max(500, int(self.config.RAW_FETCH_BATCH_SIZE))
-        cap = max(100, int(self.config.MAX_LISTINGS_PER_PRODUCT))
-        last_id = 0
-        total_rows = 0
-        buckets: DefaultDict[Tuple[str, str, str], Deque[Tuple[float, Any]]] = defaultdict(
-            lambda: deque(maxlen=cap)
-        )
-
-        logger.info(
-            f"Streaming raw_prices (batch={batch_size}, lookback={self.config.LONG_WINDOW_DAYS}d, "
-            f"max {cap} rows/product, fresh session per batch). "
-            f"Tune ANALYSIS_LONG_WINDOW_DAYS / ANALYSIS_MAX_LISTINGS_PER_PRODUCT."
-        )
-
-        batch_idx = 0
-        while True:
-            stmt = (
-                select(RawPrice)
-                .where(
-                    RawPrice.scraped_at >= cutoff_date,
-                    RawPrice.id > last_id,
-                )
-                .order_by(RawPrice.id.asc())
-                .limit(batch_size)
-            )
-            async with AsyncSessionLocal() as session:
-                result = await session.execute(stmt)
-                rows = result.scalars().all()
-            if not rows:
-                break
-
-            last_id = rows[-1].id
-            total_rows += len(rows)
-            batch_idx += 1
-
-            df_batch = self._normalize_data(self._to_dataframe(rows))
-            pn = df_batch["product_name"].to_numpy()
-            ps = df_batch["product_set"].to_numpy()
-            cat = df_batch["category"].to_numpy()
-            pe = df_batch["price_eur"].to_numpy()
-            sa = df_batch["scraped_at"].to_numpy()
-
-            for i in range(len(df_batch)):
-                pset_raw = ps[i]
-                if pset_raw is None or pd.isna(pset_raw):
-                    pset_s = ""
-                else:
-                    pset_s = str(pset_raw)
-                key = (str(pn[i]), pset_s, str(cat[i]))
-                buckets[key].append((float(pe[i]), sa[i]))
-
-            del df_batch, rows, result
-            if batch_idx % 10 == 0:
-                gc.collect()
-                logger.info(
-                    f"… streamed {total_rows} rows, ~{len(buckets)} products (last id={last_id})"
-                )
-
-        logger.info(f"Stream complete: {total_rows} rows, {len(buckets)} product keys")
-        return buckets
-    
-    def _to_dataframe(self, raw_prices: List) -> pd.DataFrame:
-        """
-        Convert raw price objects to DataFrame
-        """
-        data = []
-        for price in raw_prices:
-            data.append({
-                'product_name': price.card_name,
-                'product_set': price.card_set,
-                'category': 'single' if price.card_number else 'sealed',
-                'price': float(price.price),
-                'currency': price.currency,
-                'condition': price.condition,
-                'scraped_at': price.scraped_at,
-                'source': price.source,
-            })
-        
-        return pd.DataFrame(data)
-    
-    def _normalize_data(self, df: pd.DataFrame) -> pd.DataFrame:
-        """
-        Normalize prices and conditions
-        """
-        # Convert prices to EUR
-        df['price_eur'] = df.apply(
-            lambda row: self.normalizer.normalize_price(row['price'], row['currency']),
-            axis=1
-        )
-        
-        # Normalize conditions
-        df['condition_normalized'] = df['condition'].apply(
-            self.normalizer.normalize_condition
-        )
-        
-        # Normalize product names
-        df['product_name'] = df['product_name'].apply(
-            self.normalizer.normalize_product_name
-        )
-        
-        # Normalize set names
-        df['product_set'] = df['product_set'].apply(
-            self.normalizer.normalize_set_name
-        )
-        
-        return df
-    
-    async def _calculate_product_stats(
+    def _build_record(
         self,
-        product_name: str,
-        product_set: str,
         category: str,
-        df: pd.DataFrame
-    ) -> Optional[MarketStats]:
-        """
-        Calculate statistics for a single product
-        """
-        # Filter out outliers
-        prices = df['price_eur'].values
-        is_outlier = self.normalizer.detect_outliers(prices.tolist())
-        # Ensure boolean array has same index as DataFrame
-        df_clean = df[~pd.Series(is_outlier, index=df.index)]
-        
-        if len(df_clean) < self.config.MIN_SAMPLES_POOR:
-            logger.debug(f"Insufficient data for {product_name}: {len(df_clean)} samples")
+        display: Tuple[str, str],
+        days: List[DayAggregate],
+        now: datetime,
+    ) -> Optional[Dict[str, Any]]:
+        stats = product_stats(days, now.date(), self.config)
+        if stats is None:
             return None
-        
-        # Calculate 7-day stats
-        # Ensure timezone-aware datetime for comparison
-        cutoff_7d = datetime.now(timezone.utc) - timedelta(days=self.config.SHORT_WINDOW_DAYS)
-        df_7d = df_clean[df_clean['scraped_at'] >= cutoff_7d]
-        
-        # Calculate 30-day stats (use all clean data)
-        df_30d = df_clean
-        
-        # 7-day metrics
-        stats_7d = self._calculate_window_stats(df_7d) if len(df_7d) > 0 else {}
-        
-        # 30-day metrics
-        stats_30d = self._calculate_window_stats(df_30d)
-        
-        # Calculate trends (cap at ±999.99 to fit Numeric(5,2) database column)
-        price_trend_7d = max(-999.99, min(999.99, self._calculate_trend(df_7d, 'price_eur'))) if len(df_7d) > 1 else 0
-        price_trend_30d = max(-999.99, min(999.99, self._calculate_trend(df_30d, 'price_eur'))) if len(df_30d) > 1 else 0
-        volume_trend_7d = max(-999.99, min(999.99, self._calculate_volume_trend(df_7d, df_30d)))
-        volume_trend_30d = 0  # Would need longer history
-        
-        # Calculate liquidity score
-        liquidity = self._calculate_liquidity_score(len(df_30d))
-        
-        # Calculate volatility
-        volatility = self._calculate_volatility(df_30d['price_eur'].values)
-        
-        # Determine data quality
-        data_quality = self.normalizer.calculate_quality_score(len(df_30d))
-        
-        # Helper to cap values to database column limits
-        def cap_price(value):
-            return max(0, min(99999999.99, value))  # Numeric(10,2) max
-        
-        def cap_trend(value):
-            return max(-999.99, min(999.99, value))  # Numeric(5,2) max
-        
-        def cap_score(value):
-            return max(0, min(999.99, value))  # Numeric(5,2) max
-        
-        # Create MarketStats record
-        return MarketStats(
-            product_name=product_name,
-            product_set=product_set,
-            category=category,
-            
-            # 7-day stats (cap to Numeric(10,2))
-            avg_price_7d=Decimal(str(round(cap_price(stats_7d.get('mean', 0)), 2))),
-            min_price_7d=Decimal(str(round(cap_price(stats_7d.get('min', 0)), 2))),
-            max_price_7d=Decimal(str(round(cap_price(stats_7d.get('max', 0)), 2))),
-            volume_7d=len(df_7d),
-            
-            # 30-day stats (cap to Numeric(10,2))
-            avg_price_30d=Decimal(str(round(cap_price(stats_30d.get('mean', 0)), 2))),
-            min_price_30d=Decimal(str(round(cap_price(stats_30d.get('min', 0)), 2))),
-            max_price_30d=Decimal(str(round(cap_price(stats_30d.get('max', 0)), 2))),
-            volume_30d=len(df_30d),
-            
-            # Trends (cap to Numeric(5,2))
-            price_trend_7d=Decimal(str(round(cap_trend(price_trend_7d), 2))),
-            price_trend_30d=Decimal(str(round(cap_trend(price_trend_30d), 2))),
-            volume_trend_7d=Decimal(str(round(cap_trend(volume_trend_7d), 2))),
-            volume_trend_30d=Decimal(str(round(cap_trend(volume_trend_30d), 2))),
-            
-            # Metrics (cap to Numeric(5,2))
-            liquidity_score=Decimal(str(round(cap_score(liquidity), 2))),
-            volatility=Decimal(str(round(cap_score(volatility), 2))),
-            
-            # Metadata
-            sample_size=len(df_30d),
-            data_quality=data_quality,
-            calculated_at=datetime.now(timezone.utc),
+        product_name, product_set = display
+        price_cols = (
+            "avg_price_7d", "min_price_7d", "max_price_7d",
+            "avg_price_30d", "min_price_30d", "max_price_30d",
+            "current_price", "floor_price_30d",
+            "price_trend_7d", "price_trend_30d", "volume_trend_7d", "volume_trend_30d",
+            "liquidity_score", "volatility",
         )
-    
-    def _calculate_window_stats(self, df: pd.DataFrame) -> Dict:
-        """
-        Calculate basic statistics for a time window
-        """
-        if len(df) == 0:
-            return {'mean': 0, 'min': 0, 'max': 0, 'median': 0}
-        
-        prices = df['price_eur'].values
-        return {
-            'mean': float(np.mean(prices)),
-            'min': float(np.min(prices)),
-            'max': float(np.max(prices)),
-            'median': float(np.median(prices)),
-            'std': float(np.std(prices)) if len(prices) > 1 else 0,
+        record: Dict[str, Any] = {
+            "product_name": product_name,
+            "product_set": product_set,
+            "category": category,
+            "calculated_at": now,
         }
-    
-    def _calculate_trend(self, df: pd.DataFrame, column: str) -> float:
-        """
-        Calculate trend as percentage change from first to last
-        
-        Returns:
-            Percentage change (positive = increasing, negative = decreasing)
-        """
-        if len(df) < 2:
-            return 0.0
-        
-        # Sort by date
-        df_sorted = df.sort_values('scraped_at')
-        
-        # Get first and last values
-        first_value = df_sorted[column].iloc[0]
-        last_value = df_sorted[column].iloc[-1]
-        
-        if first_value == 0:
-            return 0.0
-        
-        change = ((last_value - first_value) / first_value) * 100
-        return float(change)
-    
-    def _calculate_volume_trend(self, df_short: pd.DataFrame, df_long: pd.DataFrame) -> float:
-        """
-        Calculate volume trend (7d vs 30d average daily volume)
-        """
-        if len(df_short) == 0 or len(df_long) == 0:
-            return 0.0
-        
-        # Average daily volume
-        volume_7d_daily = len(df_short) / self.config.SHORT_WINDOW_DAYS
-        volume_30d_daily = len(df_long) / self.config.LONG_WINDOW_DAYS
-        
-        if volume_30d_daily == 0:
-            return 0.0
-        
-        change = ((volume_7d_daily - volume_30d_daily) / volume_30d_daily) * 100
-        return float(change)
-    
-    def _calculate_liquidity_score(self, volume: int) -> float:
-        """
-        Calculate liquidity score (0-100) based on listing volume
-        
-        Args:
-            volume: Number of listings
-            
-        Returns:
-            Liquidity score 0-100
-        """
-        if volume >= self.config.HIGH_LIQUIDITY_VOLUME:
-            return 100.0
-        elif volume >= self.config.MED_LIQUIDITY_VOLUME:
-            # Linear interpolation between 50-100
-            ratio = (volume - self.config.MED_LIQUIDITY_VOLUME) / \
-                    (self.config.HIGH_LIQUIDITY_VOLUME - self.config.MED_LIQUIDITY_VOLUME)
-            return 50.0 + (ratio * 50.0)
-        elif volume >= self.config.LOW_LIQUIDITY_VOLUME:
-            # Linear interpolation between 20-50
-            ratio = (volume - self.config.LOW_LIQUIDITY_VOLUME) / \
-                    (self.config.MED_LIQUIDITY_VOLUME - self.config.LOW_LIQUIDITY_VOLUME)
-            return 20.0 + (ratio * 30.0)
-        else:
-            # Linear interpolation between 0-20
-            ratio = volume / self.config.LOW_LIQUIDITY_VOLUME
-            return ratio * 20.0
-    
-    def _calculate_volatility(self, prices: np.ndarray) -> float:
-        """
-        Calculate volatility as coefficient of variation
-        
-        Args:
-            prices: Array of prices
-            
-        Returns:
-            Volatility (coefficient of variation as percentage)
-        """
-        if len(prices) < 2:
-            return 0.0
-        
-        mean = np.mean(prices)
-        std = np.std(prices)
-        
-        if mean == 0:
-            return 0.0
-        
-        cv = (std / mean) * 100
-        return float(cv)
+        for col, value in stats.items():
+            record[col] = _dec(value) if col in price_cols else value
+        return record

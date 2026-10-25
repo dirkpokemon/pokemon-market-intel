@@ -1,4 +1,4 @@
-﻿"""
+"""
 Database Configuration for Scraper Service
 """
 
@@ -6,6 +6,7 @@ import ssl
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
+from sqlalchemy import inspect, text
 
 from app.config import settings
 
@@ -32,8 +33,10 @@ def _connect_args(url: str) -> dict:
 engine = create_async_engine(
     _make_async_url(settings.DATABASE_URL),
     connect_args=_connect_args(settings.DATABASE_URL),
-    pool_size=10,
-    max_overflow=5,
+    # Scraper inserts sequentially; keep the shared Postgres connection budget small
+    pool_size=2,
+    max_overflow=2,
+    pool_pre_ping=True,
     echo=False,
     future=True,
 )
@@ -51,13 +54,34 @@ AsyncSessionLocal = async_sessionmaker(
 Base = declarative_base()
 
 
+def sync_schema(sync_conn) -> None:
+    """
+    Additive schema sync (same pattern as backend/app/database.py): create
+    missing tables, add missing nullable columns, never drop anything, and
+    enable Row-Level Security so Supabase's public API cannot read the tables.
+    """
+    Base.metadata.create_all(sync_conn)
+    insp = inspect(sync_conn)
+    preparer = sync_conn.dialect.identifier_preparer
+    for table in Base.metadata.sorted_tables:
+        existing = {c["name"] for c in insp.get_columns(table.name)}
+        for column in table.columns:
+            if column.name not in existing:
+                col_type = column.type.compile(dialect=sync_conn.dialect)
+                sync_conn.execute(text(
+                    f"ALTER TABLE {preparer.quote(table.name)} "
+                    f"ADD COLUMN IF NOT EXISTS {preparer.quote(column.name)} {col_type}"
+                ))
+        sync_conn.execute(text(f"ALTER TABLE {preparer.quote(table.name)} ENABLE ROW LEVEL SECURITY"))
+
+
 async def init_db() -> None:
     """
-    Initialize database — create all tables defined in scraper models.
+    Initialize database — create missing tables/columns for the scraper models.
     """
     import app.models  # noqa: F401 — registers all models with Base.metadata
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(sync_schema)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:

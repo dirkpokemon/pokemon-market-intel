@@ -158,7 +158,7 @@ Your **Pokemon Market Intelligence EU** platform is now fully operational with a
 
 ### Login Credentials
 - **Email**: `demo@pokemontel.eu`
-- **Password**: `Demo2024!`
+- **Password**: `<demo-password>`
 - **Role**: Free (upgrade to test alerts)
 
 ### Docker Commands

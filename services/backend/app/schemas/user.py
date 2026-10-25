@@ -58,14 +58,12 @@ class NotificationPrefsUpdate(BaseModel):
     """Schema for updating notification preferences"""
     alerts_enabled: Optional[bool] = None
     alert_email: Optional[str] = None
-    telegram_chat_id: Optional[str] = None
 
 
 class NotificationPrefsResponse(BaseModel):
     """Schema for notification preferences response"""
     alerts_enabled: bool
     alert_email: Optional[str] = None
-    telegram_chat_id: Optional[str] = None
 
     class Config:
         from_attributes = True

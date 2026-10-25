@@ -299,13 +299,13 @@ export default function LandingPage() {
                 Set a target. Get told when it drops.
               </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6 leading-relaxed">
-                Add any card with the price you&apos;d pay. We check the live EU market twice a day and email or Telegram you the moment it hits your target — no daily scrolling.
+                Add any card with the price you&apos;d pay. We check the live EU market twice a day and email you the moment it hits your target — no daily scrolling.
               </p>
               <ul className="space-y-3">
                 {[
                   'Target price per card, as many as you want',
                   'Checked against live EU listings twice daily',
-                  'Email & Telegram alerts when a target is met',
+                  'Email alerts when a target is met',
                   'Browse all sets + sealed prices while you decide',
                 ].map(item => (
                   <li key={item} className="flex items-start gap-2.5 text-sm text-gray-700 dark:text-gray-300">
@@ -329,7 +329,7 @@ export default function LandingPage() {
             <div className="order-2 lg:order-1 space-y-3">
               {[
                 { channel: 'Email', icon: '📧', msg: 'Watchlist: Charizard ex (Obsidian Flames) dropped below your target of €40.00. Now €38.50.' },
-                { channel: 'Telegram', icon: '💬', msg: 'Watchlist: Pikachu VMAX hit your target of €20.00. Now €18.90.' },
+                { channel: 'Email', icon: '📧', msg: 'Watchlist: Pikachu VMAX hit your target of €20.00. Now €18.90.' },
                 { channel: 'Email', icon: '📧', msg: 'Daily digest: 8 new deals scored 80+ across the sets you follow.' },
               ].map((n, i) => (
                 <div key={i} className="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/10">
@@ -351,11 +351,11 @@ export default function LandingPage() {
                 Never miss a price drop, even offline
               </h3>
               <p className="text-white/60 mb-6 leading-relaxed">
-                We send your watchlist alerts to email or Telegram, so you can act fast without checking the dashboard. Add a daily digest of the best new deals if you want it.
+                We email your watchlist alerts, so you can act fast without checking the dashboard. Add a daily digest of the best new deals if you want it.
               </p>
               <ul className="space-y-3">
                 {[
-                  'Email & Telegram delivery channels',
+                  'One-click unsubscribe in every email',
                   'Watchlist price-target alerts',
                   'Optional daily digest of top deals',
                   'Turn any of it on or off in settings',
@@ -381,7 +381,7 @@ export default function LandingPage() {
             { step: '1', title: 'We scrape', desc: 'Twice a day we collect live singles prices from CardTrader, a pan-EU marketplace' },
             { step: '2', title: 'AI scores', desc: 'Every listing gets a Deal Score vs the EU market average' },
             { step: '3', title: 'You act', desc: 'Browse Top Deals or set a watchlist target and get notified' },
-            { step: '4', title: 'You profit', desc: 'Buy below market when your target hits — email or Telegram' },
+            { step: '4', title: 'You profit', desc: 'Buy below market when your target hits — straight to your inbox' },
           ].map(s => (
             <div key={s.step}>
               <div className="w-10 h-10 bg-gray-900 dark:bg-indigo-600 text-white rounded-full flex items-center justify-center text-sm font-bold mx-auto mb-3 ring-2 ring-gray-900/10 dark:ring-indigo-500/30">{s.step}</div>

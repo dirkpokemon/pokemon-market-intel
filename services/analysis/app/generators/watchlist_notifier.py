@@ -1,72 +1,76 @@
 """
 Watchlist alert checker — runs after each analysis pipeline cycle.
 
-Compares market prices against user target prices and sends
-Telegram / email alerts when a target is hit.
+Compares the current cheapest comparable listing (market_statistics.current_price)
+against user target prices and sends an email alert when a target is hit.
 """
+import hashlib
+import hmac
+import html as html_module
 import logging
-import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from urllib.parse import urlencode
 
 import httpx
-from sqlalchemy import select, text
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
 
+from app.config import settings
 from app.database import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
 
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
-DEALS_URL = "https://charming-contentment-production-ce0e.up.railway.app/deals"
+
+# Name/set comparison key in SQL: lowercase, punctuation stripped, whitespace
+# collapsed. Older watchlist items were saved from title-cased, punctuation-
+# stripped deal names ("Professors Research"); current names keep the scraped
+# spelling ("Professor's Research"). Comparing keys matches both.
+_KEY_SQL = "regexp_replace(regexp_replace(lower({col}), '[^[:alnum:][:space:]-]', '', 'g'), '\\s+', ' ', 'g')"
+
+
+def _key(col: str) -> str:
+    return "btrim(" + _KEY_SQL.format(col=col) + ")"
 
 
 # ---------------------------------------------------------------------------
-# Standalone messaging helpers (no shared utils — analysis is a separate service)
+# Standalone helpers (no shared utils — analysis is a separate service)
 # ---------------------------------------------------------------------------
 
 
-async def _send_telegram_message(chat_id: str, text_msg: str) -> bool:
-    """Send a Telegram message using the bot token from environment."""
-    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-    if not token:
-        return False
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    try:
-        async with httpx.AsyncClient() as client:
-            r = await client.post(
-                url,
-                json={"chat_id": chat_id, "text": text_msg, "parse_mode": "HTML"},
-                timeout=10.0,
-            )
-            if r.status_code == 200:
-                return True
-            logger.error(f"Telegram error {r.status_code}: {r.text}")
-            return False
-    except Exception as e:
-        logger.error(f"Telegram send failed: {e}")
-        return False
+def _unsubscribe_url(user_id: int) -> Optional[str]:
+    """
+    One-click unsubscribe link for alert emails. Must produce the same token as
+    backend/app/core/unsubscribe.py (requires the backend SECRET_KEY).
+    """
+    if not settings.SECRET_KEY:
+        return None
+    msg = f"unsubscribe:{user_id}:alerts".encode()
+    token = hmac.new(settings.SECRET_KEY.encode(), msg, hashlib.sha256).hexdigest()[:32]
+    query = urlencode({"u": user_id, "k": "alerts", "t": token})
+    return f"{settings.FRONTEND_URL.rstrip('/')}/unsubscribe?{query}"
 
 
-async def _send_email_alert(to_email: str, subject: str, html: str) -> bool:
-    """Send an email via Brevo API using credentials from environment."""
-    api_key = os.environ.get("BREVO_API_KEY", "")
-    if not api_key:
+async def _send_email_alert(to_email: str, subject: str, html: str, text_body: str, unsub_url: Optional[str]) -> bool:
+    """Send an email via the Brevo API."""
+    if not settings.BREVO_API_KEY:
+        logger.warning("BREVO_API_KEY not set — watchlist alert emails are disabled")
         return False
-    sender_email = os.environ.get("SMTP_FROM", "noreply@tcgpulse.com")
     payload = {
-        "sender": {"name": "TCG Pulse Alerts", "email": sender_email},
+        "sender": {"name": "TCG Pulse Alerts", "email": settings.sender_email},
         "to": [{"email": to_email}],
         "subject": subject,
         "htmlContent": html,
-        "textContent": subject,
+        "textContent": text_body,
     }
+    if unsub_url:
+        payload["headers"] = {"List-Unsubscribe": f"<{unsub_url}>"}
     try:
         async with httpx.AsyncClient() as client:
             r = await client.post(
                 BREVO_API_URL,
                 json=payload,
-                headers={"api-key": api_key, "Content-Type": "application/json"},
+                headers={"api-key": settings.BREVO_API_KEY, "Content-Type": "application/json"},
                 timeout=15.0,
             )
             if r.status_code in (200, 201, 202):
@@ -83,8 +87,16 @@ async def _send_email_alert(to_email: str, subject: str, html: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def _build_alert_html(card_name: str, card_set: Optional[str], price: float, target: float) -> str:
-    set_label = f" ({card_set})" if card_set else ""
+def _build_alert_html(
+    card_name: str, card_set: Optional[str], price: float, target: float, unsub_url: Optional[str]
+) -> str:
+    esc = html_module.escape
+    app_url = settings.FRONTEND_URL.rstrip("/")
+    set_label = f" ({esc(card_set)})" if card_set else ""
+    unsub_link = (
+        f'<a href="{esc(unsub_url)}" style="color:#94a3b8;">Afmelden voor prijsalerts</a> &middot; '
+        if unsub_url else ""
+    )
     return f"""<!DOCTYPE html>
 <html lang="nl">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -102,8 +114,8 @@ def _build_alert_html(card_name: str, card_set: Optional[str], price: float, tar
           <tr>
             <td style="padding:32px;">
               <p style="margin:0 0 16px;font-size:16px;color:#cbd5e1;">
-                De prijs van <strong style="color:#ffffff;">{card_name}{set_label}</strong>
-                is gedaald naar je doelprijs.
+                De goedkoopste aanbieding van <strong style="color:#ffffff;">{esc(card_name)}{set_label}</strong>
+                zit op of onder je doelprijs.
               </p>
               <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;border-radius:8px;margin-bottom:24px;">
                 <tr>
@@ -118,7 +130,7 @@ def _build_alert_html(card_name: str, card_set: Optional[str], price: float, tar
                 </tr>
               </table>
               <div style="text-align:center;">
-                <a href="{DEALS_URL}"
+                <a href="{app_url}/deals"
                    style="display:inline-block;background:#10b981;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;">
                   Bekijk deals &#8594;
                 </a>
@@ -128,7 +140,7 @@ def _build_alert_html(card_name: str, card_set: Optional[str], price: float, tar
           <tr>
             <td style="padding:16px 32px;border-top:1px solid #334155;">
               <p style="margin:0;font-size:12px;color:#475569;text-align:center;">
-                Stuur <strong>STOP</strong> naar de TCG Pulse bot om alerts te stoppen.
+                {unsub_link}<a href="{app_url}/watchlist" style="color:#94a3b8;">Beheer je watchlist</a>
               </p>
             </td>
           </tr>
@@ -140,15 +152,38 @@ def _build_alert_html(card_name: str, card_set: Optional[str], price: float, tar
 </html>"""
 
 
+def _build_alert_text(card_name: str, card_set: Optional[str], price: float, target: float, unsub_url: Optional[str]) -> str:
+    set_label = f" ({card_set})" if card_set else ""
+    lines = [
+        f"Prijsalert: {card_name}{set_label}",
+        f"Huidige prijs: EUR {price:.2f} (jouw doelprijs: EUR {target:.2f})",
+        f"Bekijk deals: {settings.FRONTEND_URL.rstrip('/')}/deals",
+    ]
+    if unsub_url:
+        lines.append(f"Afmelden voor prijsalerts: {unsub_url}")
+    return "\n".join(lines)
+
+
 # ---------------------------------------------------------------------------
 # Main checker
 # ---------------------------------------------------------------------------
 
 
+PRICE_LOOKUP_SQL = f"""
+    SELECT COALESCE(current_price, avg_price_7d) AS price
+    FROM market_statistics
+    WHERE {_key('product_name')} = btrim({_KEY_SQL.format(col=':name')})
+      AND (CAST(:set AS text) IS NULL OR {_key('product_set')} = btrim({_KEY_SQL.format(col='CAST(:set AS text)')}))
+      AND COALESCE(current_price, avg_price_7d) IS NOT NULL
+    ORDER BY COALESCE(current_price, avg_price_7d) ASC
+    LIMIT 1
+"""
+
+
 async def check_watchlist_alerts() -> int:
     """
-    Check all active watchlist items and send alerts where the market price
-    has dropped to or below the user's target price.
+    Check all active watchlist items and send alerts where the current market
+    price is at or below the user's target price.
 
     Cooldown: at most one alert per item per 24 hours.
 
@@ -159,7 +194,6 @@ async def check_watchlist_alerts() -> int:
     cooldown = timedelta(hours=24)
 
     async with AsyncSessionLocal() as session:
-        # Load all active watchlist items together with user data
         rows = await session.execute(text("""
             SELECT
                 wi.id            AS item_id,
@@ -168,14 +202,13 @@ async def check_watchlist_alerts() -> int:
                 wi.target_price,
                 wi.notified_at,
                 u.id             AS user_id,
-                u.telegram_chat_id,
                 u.alert_email,
-                u.email,
-                u.alerts_enabled
+                u.email
             FROM watchlist_items wi
             JOIN users u ON u.id = wi.user_id
             WHERE wi.is_active = TRUE
               AND u.is_active = TRUE
+              AND u.is_verified = TRUE
               AND u.alerts_enabled = TRUE
         """))
         items = rows.fetchall()
@@ -185,87 +218,48 @@ async def check_watchlist_alerts() -> int:
             card_set = item.card_set
             target = float(item.target_price)
 
-            # Check cooldown
+            price_row = await session.execute(
+                text(PRICE_LOOKUP_SQL), {"name": card_name, "set": card_set}
+            )
+            price_result = price_row.fetchone()
+            if price_result is None:
+                continue
+
+            market_price = float(price_result.price)
+            await session.execute(
+                text("UPDATE watchlist_items SET current_price = :price WHERE id = :id"),
+                {"price": market_price, "id": item.item_id},
+            )
+
+            if market_price > target:
+                continue
+
             if item.notified_at is not None:
                 notified_at = item.notified_at
-                # Make timezone-aware if naive
                 if notified_at.tzinfo is None:
                     notified_at = notified_at.replace(tzinfo=timezone.utc)
                 if now - notified_at < cooldown:
                     continue
 
-            # Look up current market price from market_statistics (use 7-day avg)
-            price_row = await session.execute(text("""
-                SELECT avg_price_7d AS market_avg_price
-                FROM market_statistics
-                WHERE product_name = :name
-                  AND (:set IS NULL OR product_set = :set)
-                ORDER BY calculated_at DESC
-                LIMIT 1
-            """), {"name": card_name, "set": card_set})
-            price_result = price_row.fetchone()
-
-            if price_result is None:
-                # Also try deal_scores as fallback
-                price_row2 = await session.execute(text("""
-                    SELECT market_avg_price
-                    FROM deal_scores
-                    WHERE product_name = :name
-                      AND (:set IS NULL OR product_set = :set)
-                      AND is_active = TRUE
-                    ORDER BY calculated_at DESC
-                    LIMIT 1
-                """), {"name": card_name, "set": card_set})
-                price_result = price_row2.fetchone()
-
-            if price_result is None:
-                continue
-
-            market_price = float(price_result[0])
-
-            if market_price > target:
-                # Price has not reached target yet — update cached price and move on
-                await session.execute(text("""
-                    UPDATE watchlist_items
-                    SET current_price = :price
-                    WHERE id = :id
-                """), {"price": market_price, "id": item.item_id})
-                continue
-
-            # Target hit — send alerts
-            item_alerts = 0
-            tg_chat = item.telegram_chat_id
             to_email = item.alert_email or item.email
+            if not to_email:
+                continue
 
-            if tg_chat:
-                set_label = f" ({card_set})" if card_set else ""
-                tg_text = (
-                    f"Prijsalert: <b>{card_name}</b>\n\n"
-                    f"De prijs van <b>{card_name}</b>{set_label} is gedaald naar "
-                    f"<b>€{market_price:.2f}</b>.\n"
-                    f"Je doelprijs was <b>€{target:.2f}</b>.\n\n"
-                    f'<a href="{DEALS_URL}">Bekijk deals →</a>'
+            unsub_url = _unsubscribe_url(item.user_id)
+            subject = f"Prijsalert: {card_name} nu €{market_price:.2f}"
+            ok = await _send_email_alert(
+                to_email,
+                subject,
+                _build_alert_html(card_name, card_set, market_price, target, unsub_url),
+                _build_alert_text(card_name, card_set, market_price, target, unsub_url),
+                unsub_url,
+            )
+            if ok:
+                await session.execute(
+                    text("UPDATE watchlist_items SET notified_at = :now WHERE id = :id"),
+                    {"now": now, "id": item.item_id},
                 )
-                ok = await _send_telegram_message(tg_chat, tg_text)
-                if ok:
-                    item_alerts += 1
-
-            if to_email:
-                subject = f"Prijsalert: {card_name} nu €{market_price:.2f}"
-                html = _build_alert_html(card_name, card_set, market_price, target)
-                ok = await _send_email_alert(to_email, subject, html)
-                if ok:
-                    item_alerts += 1
-
-            if item_alerts > 0:
-                # Update notified_at and cached price
-                await session.execute(text("""
-                    UPDATE watchlist_items
-                    SET notified_at = :now,
-                        current_price = :price
-                    WHERE id = :id
-                """), {"now": now, "price": market_price, "id": item.item_id})
-                alerts_sent += item_alerts
+                alerts_sent += 1
                 logger.info(
                     f"Watchlist alert sent for {card_name} "
                     f"(price={market_price:.2f}, target={target:.2f}, user={item.user_id})"

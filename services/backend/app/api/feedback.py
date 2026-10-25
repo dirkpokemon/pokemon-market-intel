@@ -7,6 +7,7 @@ import logging
 from typing import Literal
 
 from fastapi import APIRouter, Depends
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 from app.core.dependencies import get_current_user
@@ -40,7 +41,8 @@ async def submit_feedback(
         submitter,
         body.message[:500].replace("\n", " "),
     )
-    sent = send_feedback_inbox_email(
+    sent = await run_in_threadpool(
+        send_feedback_inbox_email,
         submitter_email=submitter,
         feedback_type=body.type,
         message=body.message.strip(),

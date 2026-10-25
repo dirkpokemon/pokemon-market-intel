@@ -211,7 +211,7 @@ export default function WatchlistPage() {
 
             {/* Help text */}
             <p className="text-xs text-gray-400 dark:text-gray-500 text-center pt-4">
-              Meldingen worden verstuurd via Telegram en/of e-mail.{' '}
+              Meldingen worden per e-mail verstuurd.{' '}
               <Link href="/settings" className="underline hover:text-gray-600 dark:hover:text-gray-300">
                 Stel in via Instellingen.
               </Link>

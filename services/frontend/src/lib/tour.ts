@@ -28,7 +28,7 @@ export function getTourSteps(role: TourRole): TourStep[] {
       page: '/watchlist',
       pageLabel: 'Watchlist',
       title: 'Price alerts on your cards',
-      body: 'Add any card with a target price. When the EU market drops to your target, we email or Telegram you automatically. No need to check back daily.',
+      body: 'Add any card with a target price. When the EU market drops to your target, we email you automatically. No need to check back daily.',
     },
   ];
 }

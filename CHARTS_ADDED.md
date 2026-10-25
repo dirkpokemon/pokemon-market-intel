@@ -78,7 +78,7 @@ http://localhost:3000
 ### **2. Login:**
 ```
 Email:    demo@pokemontel.eu
-Password: demo123
+Password: <demo-password>
 ```
 
 ### **3. Hard Refresh (Clear Cache):**

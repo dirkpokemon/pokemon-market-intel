@@ -5,6 +5,7 @@ dockerfilePath = "Dockerfile"
 [deploy]
 startCommand = "bash start.sh"
 healthcheckPath = "/health"
-healthcheckTimeout = 100
+# start.sh runs Alembic migrations before uvicorn starts
+healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10

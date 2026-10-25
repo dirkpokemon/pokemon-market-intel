@@ -9,7 +9,7 @@ This monorepo contains four main services and supporting infrastructure:
 ```
 ├── services/
 │   ├── backend/          # FastAPI REST API
-│   ├── scraper/          # Playwright-based price scraper
+│   ├── scraper/          # CardTrader / CardMarket API price scraper
 │   ├── analysis/         # Market analysis and deal scoring
 │   └── frontend/         # Next.js dashboard
 └── infrastructure/
@@ -27,15 +27,14 @@ This monorepo contains four main services and supporting infrastructure:
 - **Migrations**: Alembic
 
 ### Scraper Service
-- **Browser**: Playwright (headless Chrome)
-- **Parsing**: BeautifulSoup4, Requests
-- **Proxy**: EU proxy support
-- **Rate Limiting**: Token bucket algorithm
+- **Sources**: CardTrader REST API, CardMarket MKM API (price guide)
+- **HTTP**: httpx with retry/backoff on 429/5xx
+- **Scheduling**: Railway cron (`python -m app.main --once`, 06:00/18:00 UTC)
 
 ### Analysis Service
-- **Processing**: Pandas, NumPy
-- **Scheduling**: APScheduler
-- **Tasks**: Market stats, deal scores, signals
+- **Processing**: daily aggregates in PostgreSQL + pure-Python scoring (`app/calculators/scoring.py`)
+- **Scheduling**: Railway cron (`python -m app.main --once`, 07:30/19:30 UTC)
+- **Tasks**: market stats, deal scores, watchlist email alerts
 
 ### Frontend
 - **Framework**: Next.js 14 (App Router)
@@ -122,11 +121,8 @@ python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Install Playwright browsers
-playwright install chromium
-
-# Run scraper
-python -m app.main
+# Run one scrape cycle
+python -m app.main --once
 ```
 
 ### Analysis Development
@@ -137,8 +133,12 @@ python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Run analysis jobs
-python -m app.main
+# Run the analysis pipeline once
+python -m app.main --once
+
+# Unit tests for the scoring math
+pip install -r requirements-dev.txt
+DATABASE_URL=postgresql://x/y python -m pytest tests
 ```
 
 ### Frontend Development
@@ -178,9 +178,8 @@ RESTful API providing:
 ### Scraper Service (`services/scraper`)
 
 Automated data collection:
-- Scheduled scraping of EU retailers
-- Playwright for dynamic content
-- Rate limiting and proxy rotation
+- Scheduled scraping of the CardTrader and CardMarket APIs
+- Retries with backoff on rate limits and server errors
 - Raw data storage to PostgreSQL
 
 ### Analysis Service (`services/analysis`)
