@@ -33,7 +33,7 @@ python -m app.main          # long-running with APScheduler
 python -m app.main --once   # single cycle then exit
 ```
 
-The `railway.toml` files of scraper and analysis declare `--once` + `cronSchedule`, but the Railway dashboard settings win there: production runs both long-running (no cron). Only the backend's `railway.toml` (Dockerfile, `start.sh`, health check) is in effect.
+Each service's `railway.toml` (start command, cron schedule, health check) is what production runs; the Railway API's service description may show stale dashboard values. Cron services show 0 running replicas between runs.
 
 Analysis unit tests (pure scoring math, no DB needed; `DATABASE_URL` only has to be set):
 ```bash
@@ -50,8 +50,8 @@ There are no backend/scraper/frontend test suites; verify frontend changes with 
 
 Data flows one way through the shared database:
 
-1. **Scraper** (in production a long-running process, `python -m app.main`, scheduled by `SCRAPE_INTERVAL`, ~twice a day, ~340k listings per run): `CardTraderScraperV2` (`cardtrader_scraper_new.py`) stores every CardTrader marketplace listing for the target sets in `raw_prices`, then `CardMarketAPIClient` adds the MKM price guide (skipped without `CARDMARKET_*` credentials). Sealed products are stored with `card_number = NULL`, detected by `SEALED_KEYWORDS` on word boundaries. Each run writes a `scrape_logs` row.
-2. **Analysis** (in production long-running, `python -m app.main`, scheduled by `ANALYSIS_SCHEDULE`, twice a day): `AnalysisService._run_full_analysis_locked` prunes `raw_prices` older than 60 days, then:
+1. **Scraper** (Railway cron `0 6,18 * * *`, `--once`, ~340k listings and ~45-60 min per run): `CardTraderScraperV2` (`cardtrader_scraper_new.py`) stores every CardTrader marketplace listing for the target sets in `raw_prices`, then `CardMarketAPIClient` adds the MKM price guide (skipped without `CARDMARKET_*` credentials). Sealed products are stored with `card_number = NULL`, detected by `SEALED_KEYWORDS` on word boundaries. Each run writes a `scrape_logs` row.
+2. **Analysis** (Railway cron `30 7,19 * * *`, `--once`): `AnalysisService._run_full_analysis_locked` prunes `raw_prices` older than 60 days, then:
    - `MarketStatsCalculator` lets Postgres aggregate comparable listings (single NM listings in `INCLUDED_LANGUAGES`, prices in EUR) into one row per product per day, and `scoring.product_stats` turns those into `market_statistics`.
    - `DealScoreCalculator` → `deal_scores`. A deal is the cheapest listing on the latest day vs. the product's usual floor (median of the daily cheapest listing). `avg_price_*` columns hold medians, not means.
    - Both tables are fully replaced in one transaction per run.
