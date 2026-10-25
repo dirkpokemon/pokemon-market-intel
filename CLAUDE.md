@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 "TCG Pulse" — an EU Pokémon TCG price-intelligence SaaS. Monorepo with four services under `services/` sharing one PostgreSQL database: Railway Postgres in production since late April 2026 (it was briefly on Supabase before; the code still handles both). Production runs on Railway (each service has its own `railway.toml`). Railway service names: backend `pokemon-market-intel`, `Scraper`, `analysis`, frontend `charming-contentment` (see `scripts/update_railway_db.sh`); `docker-compose.yml` + `infrastructure/` (nginx, postgres init) are for local dev.
 
+Product direction, the market research behind it and the prioritised feature roadmap live in `docs/product/roadmap.md` — read it before proposing or building new features.
+
 The many `*.md` status files at the repo root (`*_COMPLETE.md`, `*_FIXED.md`, `ARCHITECTURE.md`, etc.) are historical notes from earlier development sessions and are often stale — trust the code over them.
 
 ## Commands
