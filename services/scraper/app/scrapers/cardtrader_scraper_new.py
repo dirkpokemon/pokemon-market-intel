@@ -8,6 +8,8 @@ API Structure:
 3. GET /api/v2/marketplace/products?blueprint_id={id} (actual listings with prices)
 """
 
+import hashlib
+import hmac
 import logging
 import asyncio
 import re
@@ -19,6 +21,7 @@ import httpx
 
 from app.models.raw_price import RawPrice
 from app.models.scrape_log import ScrapeLog
+from app.config import settings
 from app.config_cardtrader import config
 from app.database import AsyncSessionLocal
 
@@ -125,6 +128,26 @@ def _describe_listing(listing: Dict[str, Any]) -> Dict[str, Any]:
     return describe(listing)
 
 
+def _seller_fields(listing: Dict[str, Any], is_sealed: bool) -> tuple:
+    """
+    (seller_key, seller_country, ships_via_zero) for the list-price optimizer.
+    seller_key is an HMAC of the CardTrader user id, so listings of one seller
+    can be bundled without storing who the seller is.
+    """
+    user = listing.get('user') or {}
+    user_id = user.get('id')
+    seller_key = None
+    if user_id is not None:
+        seller_key = hmac.new(
+            settings.SELLER_KEY_SECRET.encode(), f"cardtrader:{user_id}".encode(), hashlib.sha256,
+        ).hexdigest()[:16]
+    country = user.get('country_code')
+    country = str(country).upper()[:2] if country else None
+    zero_flag = user.get('can_sell_sealed_with_ct_zero') if is_sealed else user.get('can_sell_via_hub')
+    ships_via_zero = bool(zero_flag) if zero_flag is not None else None
+    return seller_key, country, ships_via_zero
+
+
 def _is_target_set(name: str) -> bool:
     return any(phrase.lower() in name.lower() for phrase in ENGLISH_SET_PHRASES)
 
@@ -157,6 +180,7 @@ class CardTraderScraperV2:
             "Content-Type": "application/json"
         }
         self.total_listings_scraped = 0
+        self.skipped_on_vacation = 0
         self.total_blueprints_processed = 0
         self.errors_count = 0
         self.last_error: Optional[str] = None
@@ -177,6 +201,7 @@ class CardTraderScraperV2:
         logger.info("=" * 60)
         
         self.total_listings_scraped = 0
+        self.skipped_on_vacation = 0
         self.total_blueprints_processed = 0
         self.errors_count = 0
         self.last_error = None
@@ -269,6 +294,7 @@ class CardTraderScraperV2:
         logger.info(f"CardTrader scrape finished: {status}")
         logger.info(f"   Blueprints processed: {self.total_blueprints_processed}")
         logger.info(f"   Listings scraped: {self.total_listings_scraped}")
+        logger.info(f"   Skipped (seller on vacation): {self.skipped_on_vacation}")
         logger.info(f"   Errors: {self.errors_count}")
         logger.info(f"   Duration: {duration:.1f}s")
         logger.info("=" * 60)
@@ -382,6 +408,10 @@ class CardTraderScraperV2:
         """
         async with AsyncSessionLocal() as session:
             for listing in listings:
+                # A seller on vacation can't ship: not a real offer
+                if listing.get('on_vacation'):
+                    self.skipped_on_vacation += 1
+                    continue
                 try:
                     # Extract data
                     price_cents = listing.get('price_cents', 0)
@@ -404,6 +434,7 @@ class CardTraderScraperV2:
                     is_sealed = _is_sealed_product(card_name)
                     card_number = None if is_sealed else str(blueprint.get('id'))
                     collector_number, rarity = (None, None) if is_sealed else _blueprint_details(blueprint)
+                    seller_key, seller_country, ships_via_zero = _seller_fields(listing, is_sealed)
 
                     # Create raw_price entry
                     raw_price = RawPrice(
@@ -418,9 +449,12 @@ class CardTraderScraperV2:
                         currency=currency,
                         source="CardTrader",
                         source_url=f"https://www.cardtrader.com/cards/{blueprint.get('id')}",
-                        seller_name=None,  # Not available in API response
+                        seller_name=None,  # personal data: never stored
                         seller_rating=None,
                         stock_quantity=quantity,
+                        seller_key=seller_key,
+                        seller_country=seller_country,
+                        ships_via_zero=ships_via_zero,
                         scraped_at=datetime.utcnow()
                     )
                     
