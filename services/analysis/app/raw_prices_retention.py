@@ -77,3 +77,28 @@ async def prune_raw_prices_older_than_retention() -> int:
         )
 
     return total
+
+
+async def log_database_size() -> None:
+    """Log the database and largest table sizes; warn when nearing the volume limit."""
+    async with AsyncSessionLocal() as session:
+        db_bytes = (await session.execute(text("SELECT pg_database_size(current_database())"))).scalar() or 0
+        tables = (await session.execute(text(
+            """
+            SELECT relname, pg_total_relation_size(relid) AS bytes
+            FROM pg_catalog.pg_statio_user_tables
+            ORDER BY bytes DESC
+            LIMIT 4
+            """
+        ))).fetchall()
+
+    gb = db_bytes / 1024 ** 3
+    sizes = ", ".join(f"{t.relname} {t.bytes / 1024 ** 2:.0f} MB" for t in tables)
+    if gb >= analysis_config.DB_SIZE_WARN_GB:
+        logger.warning(
+            "Database size %.2f GB is above ANALYSIS_DB_SIZE_WARN_GB=%.1f (%s): lower "
+            "ANALYSIS_RAW_PRICES_RETENTION_DAYS or grow the volume",
+            gb, analysis_config.DB_SIZE_WARN_GB, sizes,
+        )
+    else:
+        logger.info("Database size %.2f GB (%s)", gb, sizes)
