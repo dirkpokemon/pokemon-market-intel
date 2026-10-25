@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { marketApi, sparklineKey, DealScore } from '@/lib/api';
+import SignalBadge from '@/components/MarketSignal';
 import DashboardLayout from '@/components/DashboardLayout';
 import DealModal from '@/components/DealModal';
 import CardImage from '@/components/CardImage';
@@ -75,9 +76,12 @@ function DealCard({ deal, watchlist, toggleWatchlist, setSelectedDeal, getScoreC
         {/* Bottom: card name overlaid on gradient */}
         <div className="absolute bottom-0 left-0 right-0 px-3.5 pb-3 z-10">
           <h3 className="text-sm font-bold text-white line-clamp-1 leading-snug">{deal.product_name}</h3>
-          {deal.product_set && (
-            <p className="text-[11px] text-gray-400 truncate mt-0.5">{deal.product_set}</p>
-          )}
+          <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+            {deal.product_set && (
+              <p className="text-[11px] text-gray-400 truncate">{deal.product_set}</p>
+            )}
+            <SignalBadge signal={deal.market_signal} floorChange={deal.floor_change_7d} supplyChange={deal.supply_change_7d} lang="en" className="flex-shrink-0" />
+          </div>
         </div>
       </div>
 

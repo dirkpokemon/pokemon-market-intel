@@ -278,7 +278,7 @@ class MarketStatsCalculator:
             "avg_price_30d", "min_price_30d", "max_price_30d",
             "current_price", "floor_price_30d",
             "price_trend_7d", "price_trend_30d", "volume_trend_7d", "volume_trend_30d",
-            "liquidity_score", "volatility",
+            "liquidity_score", "volatility", "floor_change_7d", "supply_change_7d",
         )
         record: Dict[str, Any] = {
             "product_name": display["product_name"],

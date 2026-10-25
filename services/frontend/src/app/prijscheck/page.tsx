@@ -12,6 +12,7 @@ import Link from 'next/link';
 import BrandMark from '@/components/BrandMark';
 import SiteFooter from '@/components/SiteFooter';
 import { ThemeIconButton } from '@/components/ThemeToggle';
+import SignalBadge, { signalExplanation } from '@/components/MarketSignal';
 import {
   notificationApi,
   priceCheckApi,
@@ -326,6 +327,24 @@ export default function PriceCheckPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">Goedkoopste aanbieding nu</p>
                   <p className="text-xl font-bold mt-1">{fmt(result.reference.current_price)}</p>
                 </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-semibold">Kopen of wachten?</h3>
+                  <SignalBadge
+                    signal={result.reference.market_signal}
+                    floorChange={result.reference.floor_change_7d}
+                    supplyChange={result.reference.supply_change_7d}
+                  />
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                  {signalExplanation(
+                    result.reference.market_signal,
+                    result.reference.floor_change_7d,
+                    result.reference.supply_change_7d,
+                  )}
+                </p>
               </div>
 
               <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">

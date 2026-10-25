@@ -45,5 +45,9 @@ class MarketStats(Base):
     sample_size = Column(Integer)
     data_quality = Column(String(20))
     last_seen_at = Column(DateTime(timezone=True))
+    # Buy/wait signal (written by analysis): buy | wait | rising | falling | stable, NULL = too little history
+    market_signal = Column(String(20))
+    floor_change_7d = Column(Numeric(6, 2))
+    supply_change_7d = Column(Numeric(6, 2))
     
     calculated_at = Column(DateTime(timezone=True))

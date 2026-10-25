@@ -54,6 +54,11 @@ class MarketStats(Base):
     days_observed = Column(Integer)            # distinct days with listings in the long window
     last_seen_at = Column(DateTime(timezone=True))
 
+    # Buy/wait signal (scoring.market_signal): buy | wait | rising | falling | stable, NULL = too little history
+    market_signal = Column(String(20))
+    floor_change_7d = Column(Numeric(6, 2))    # % change of the usual cheapest listing, last 7 days vs before
+    supply_change_7d = Column(Numeric(6, 2))   # % change of listings per day, last 7 days vs before
+
     # Market metrics
     liquidity_score = Column(Numeric(5, 2))  # 0-100
     volatility = Column(Numeric(5, 2))  # Coefficient of variation

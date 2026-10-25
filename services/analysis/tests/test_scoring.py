@@ -8,6 +8,7 @@ from datetime import date, datetime, timedelta, timezone
 from app.calculators.scoring import (
     DayAggregate,
     deal_score,
+    market_signal,
     popularity_score,
     price_deviation_score,
     product_stats,
@@ -101,3 +102,48 @@ def test_trend_uses_daily_medians():
     days[-1] = DayAggregate(TODAY, 12.0, 8.5, 8.0, 20.0, 40, NOW)
     stats = product_stats(days, TODAY, cfg)
     assert round(stats["price_trend_7d"], 2) == 20.0
+
+
+def _trend_days(n, floor_before, floor_recent, supply_before, supply_recent):
+    """n completed days ending yesterday; the last 7 use the recent values."""
+    out = []
+    for i in range(n):
+        day = TODAY - timedelta(days=n - i)
+        recent = day >= TODAY - timedelta(days=7)
+        low = floor_recent if recent else floor_before
+        out.append(DayAggregate(day=day, median_price=low * 1.3, p10_price=low * 1.05, min_price=low,
+                                max_price=low * 3, listings=supply_recent if recent else supply_before))
+    return out
+
+
+def test_signal_needs_two_weeks_of_history():
+    assert market_signal(_trend_days(10, 10, 8, 40, 60), TODAY, cfg)["market_signal"] is None
+
+
+def test_signal_wait_when_floor_falls_and_supply_grows():
+    s = market_signal(_trend_days(20, 10.0, 8.0, 40, 60), TODAY, cfg)
+    assert s["market_signal"] == "wait"
+    assert round(s["floor_change_7d"]) == -20
+    assert round(s["supply_change_7d"]) == 50
+
+
+def test_signal_buy_when_floor_rises_and_supply_shrinks():
+    assert market_signal(_trend_days(20, 10.0, 12.0, 60, 40), TODAY, cfg)["market_signal"] == "buy"
+
+
+def test_signal_rising_falling_stable():
+    assert market_signal(_trend_days(20, 10.0, 12.0, 40, 40), TODAY, cfg)["market_signal"] == "rising"
+    assert market_signal(_trend_days(20, 10.0, 8.0, 40, 40), TODAY, cfg)["market_signal"] == "falling"
+    assert market_signal(_trend_days(20, 10.0, 10.2, 40, 70), TODAY, cfg)["market_signal"] == "stable"
+
+
+def test_signal_ignores_today_partial_scrape():
+    days = _trend_days(20, 10.0, 10.0, 40, 40)
+    # today: only the morning scrape so far, half the listings and a cheap outlier
+    days.append(DayAggregate(day=TODAY, median_price=13, p10_price=10, min_price=5, max_price=30, listings=20))
+    assert market_signal(days, TODAY, cfg)["market_signal"] == "stable"
+
+
+def test_product_stats_includes_signal():
+    stats = product_stats(_trend_days(20, 10.0, 8.0, 40, 60), TODAY, cfg)
+    assert stats["market_signal"] == "wait"

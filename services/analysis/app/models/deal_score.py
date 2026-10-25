@@ -51,6 +51,11 @@ class DealScore(Base):
     # Quality metrics
     confidence = Column(Numeric(5, 2))  # Confidence in score (0-100)
     data_quality = Column(String(20))
+
+    # Buy/wait signal (scoring.market_signal): buy | wait | rising | falling | stable, NULL = too little history
+    market_signal = Column(String(20))
+    floor_change_7d = Column(Numeric(6, 2))    # % change of the usual cheapest listing, last 7 days vs before
+    supply_change_7d = Column(Numeric(6, 2))   # % change of listings per day, last 7 days vs before
     
     # Metadata
     is_active = Column(Boolean, default=True, index=True)

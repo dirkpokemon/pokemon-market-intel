@@ -41,6 +41,15 @@ class AnalysisConfig(BaseSettings):
     # a likely data error (mislabelled card/proxy); the day's 10th percentile is used instead.
     SUSPICIOUS_LOW_RATIO: float = 0.3
 
+    # Buy/wait signal (scoring.market_signal): last SIGNAL_WINDOW_DAYS completed
+    # days vs. the days before, needing SIGNAL_MIN_DAYS of history and at least
+    # SIGNAL_MIN_PERIOD_DAYS on each side. A trend counts from these changes (%).
+    SIGNAL_MIN_DAYS: int = 14
+    SIGNAL_WINDOW_DAYS: int = 7
+    SIGNAL_MIN_PERIOD_DAYS: int = 5
+    SIGNAL_PRICE_PCT: float = 5.0
+    SIGNAL_SUPPLY_PCT: float = 10.0
+
     # Currency conversion to EUR. Rows in other currencies are skipped.
     CURRENCY_RATES: Dict[str, float] = {
         'EUR': 1.0,

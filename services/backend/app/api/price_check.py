@@ -61,6 +61,9 @@ class Reference(BaseModel):
     observations: int
     last_seen_at: Optional[datetime] = None
     calculated_at: Optional[datetime] = None
+    market_signal: Optional[str] = None
+    floor_change_7d: Optional[float] = None
+    supply_change_7d: Optional[float] = None
 
 
 class VerdictOut(BaseModel):
@@ -163,7 +166,8 @@ async def check_price(
             SELECT product_name, product_set, category, card_number, collector_number, rarity,
                    floor_price_30d, avg_price_30d,
                    current_price, min_price_30d, max_price_30d, price_trend_30d,
-                   days_observed, sample_size, last_seen_at, calculated_at
+                   days_observed, sample_size, last_seen_at, calculated_at,
+                   market_signal, floor_change_7d, supply_change_7d
             FROM market_statistics
             WHERE lower(product_name) = lower(:name)
               AND lower(COALESCE(product_set, '')) = lower(COALESCE(:set, ''))
@@ -211,5 +215,8 @@ async def check_price(
             observations=observations,
             last_seen_at=row.last_seen_at,
             calculated_at=row.calculated_at,
+            market_signal=row.market_signal,
+            floor_change_7d=_f(row.floor_change_7d),
+            supply_change_7d=_f(row.supply_change_7d),
         ),
     )

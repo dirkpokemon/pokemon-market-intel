@@ -29,6 +29,9 @@ class DealScoreResponse(BaseModel):
     popularity_score: Optional[float] = None
     confidence: Optional[float] = None
     data_quality: Optional[str] = None
+    market_signal: Optional[str] = None
+    floor_change_7d: Optional[float] = None
+    supply_change_7d: Optional[float] = None
     calculated_at: datetime
     
     class Config:

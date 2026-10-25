@@ -130,6 +130,57 @@ def product_stats(days: List[DayAggregate], today: date, cfg: Any) -> Optional[D
         "last_seen_at": latest.last_seen_at,
         "sample_size": observations,
         "data_quality": data_quality(len(days), cfg),
+        **market_signal(days, today, cfg),
+    }
+
+
+def market_signal(days: List[DayAggregate], today: date, cfg: Any) -> Dict[str, Any]:
+    """
+    Buy/wait signal from asking-price supply (roadmap #3).
+
+    Compares the last SIGNAL_WINDOW_DAYS completed days with the days before
+    them (today is left out: at the morning run only one of the two daily
+    scrapes is in, which would look like a supply drop):
+
+    - floor change:  median daily cheapest listing, recent vs. before (%)
+    - supply change: average listing observations per day, recent vs. before (%)
+
+    Codes: "buy" (floor rising while supply shrinks), "wait" (floor falling
+    while supply grows), "rising", "falling", "stable"; None with too little
+    history. These are trends in ASKING prices, not advice.
+    """
+    empty = {"market_signal": None, "floor_change_7d": None, "supply_change_7d": None}
+    done = sorted((d for d in days if d.day < today), key=lambda d: d.day)
+    if len(done) < cfg.SIGNAL_MIN_DAYS:
+        return empty
+    split = today - timedelta(days=cfg.SIGNAL_WINDOW_DAYS)
+    recent = [d for d in done if d.day >= split]
+    before = [d for d in done if d.day < split]
+    if len(recent) < cfg.SIGNAL_MIN_PERIOD_DAYS or len(before) < cfg.SIGNAL_MIN_PERIOD_DAYS:
+        return empty
+
+    floor_before = median(d.min_price for d in before)
+    floor_recent = median(d.min_price for d in recent)
+    supply_before = sum(d.listings for d in before) / len(before)
+    supply_recent = sum(d.listings for d in recent) / len(recent)
+    floor_change = _pct_change(floor_before, floor_recent)
+    supply_change = _pct_change(supply_before, supply_recent)
+
+    price_pct, supply_pct = cfg.SIGNAL_PRICE_PCT, cfg.SIGNAL_SUPPLY_PCT
+    if floor_change >= price_pct and supply_change <= -supply_pct:
+        code = "buy"
+    elif floor_change <= -price_pct and supply_change >= supply_pct:
+        code = "wait"
+    elif floor_change >= price_pct:
+        code = "rising"
+    elif floor_change <= -price_pct:
+        code = "falling"
+    else:
+        code = "stable"
+    return {
+        "market_signal": code,
+        "floor_change_7d": _clamp(floor_change, -999.99, 999.99),
+        "supply_change_7d": _clamp(supply_change, -999.99, 999.99),
     }
 
 
