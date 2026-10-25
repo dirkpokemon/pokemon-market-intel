@@ -100,6 +100,31 @@ def _blueprint_details(blueprint: Dict[str, Any]) -> tuple:
     return (str(number)[:50] if number else None, str(rarity)[:100] if rarity else None)
 
 
+# Listing fields whose values are safe to log: shipping/hub capabilities and
+# seller type/location. Seller names and ids are personal data and are never logged.
+_LOGGABLE_LISTING_HINTS = ("country", "hub", "zero", "ship", "type", "level", "graded", "language", "condition")
+
+
+def _describe_listing(listing: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Field names (and only non-identifying values) of one marketplace listing,
+    logged once per run to learn which seller/shipping fields CardTrader sends
+    before the list-price optimizer (roadmap #2) relies on them.
+    """
+    def describe(obj: Dict[str, Any]) -> Dict[str, Any]:
+        out: Dict[str, Any] = {}
+        for key, value in obj.items():
+            if isinstance(value, dict):
+                out[key] = describe(value)
+            elif any(hint in key.lower() for hint in _LOGGABLE_LISTING_HINTS):
+                out[key] = value
+            else:
+                out[key] = type(value).__name__
+        return out
+
+    return describe(listing)
+
+
 def _is_target_set(name: str) -> bool:
     return any(phrase.lower() in name.lower() for phrase in ENGLISH_SET_PHRASES)
 
@@ -137,6 +162,7 @@ class CardTraderScraperV2:
         self.last_error: Optional[str] = None
         self._consecutive_failures = 0
         self._logged_blueprint_shape = False
+        self._logged_listing_shape = False
     
     async def scrape_all(self) -> int:
         """
@@ -214,6 +240,9 @@ class CardTraderScraperV2:
                         )
 
                         if listings:
+                            if not self._logged_listing_shape:
+                                logger.info("Listing shape: %s", _describe_listing(listings[0]))
+                                self._logged_listing_shape = True
                             await self._save_listings(listings, blueprint, expansion)
                             self.total_blueprints_processed += 1
 
