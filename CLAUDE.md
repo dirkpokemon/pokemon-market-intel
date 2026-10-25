@@ -35,9 +35,6 @@ python -m app.main --once   # single cycle then exit
 
 The `railway.toml` files of scraper and analysis declare `--once` + `cronSchedule`, but the Railway dashboard settings win there: production runs both long-running (no cron). Only the backend's `railway.toml` (Dockerfile, `start.sh`, health check) is in effect.
 
-```bash
-```
-
 Analysis unit tests (pure scoring math, no DB needed; `DATABASE_URL` only has to be set):
 ```bash
 cd services/analysis && pip install -r requirements-dev.txt
