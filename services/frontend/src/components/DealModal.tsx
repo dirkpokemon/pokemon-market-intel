@@ -6,6 +6,7 @@ import { DealScore, marketApi, notificationApi, PriceHistoryPoint, ConditionBrea
 import CardImage from '@/components/CardImage';
 import { UPSELL_SUBSCRIBE } from '@/lib/plans';
 
+import SignalBadge, { signalExplanation } from '@/components/MarketSignal';
 const CardHistoryChart = dynamic(() => import('@/components/CardHistoryChart'), { ssr: false });
 
 // ─── Portfolio helpers ────────────────────────────────────────────────────────
@@ -321,6 +322,17 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
           <div className={`mx-6 mt-4 rounded-xl border p-4 ${border}`}>
             <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">What this means</p>
             <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">{text}</p>
+          </div>
+
+          {/* ── Buy/wait signal ── */}
+          <div className="mx-6 mt-4 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Market trend</p>
+              <SignalBadge signal={deal.market_signal} floorChange={deal.floor_change_7d} supplyChange={deal.supply_change_7d} lang="en" />
+            </div>
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+              {signalExplanation(deal.market_signal, deal.floor_change_7d, deal.supply_change_7d, 'en')}
+            </p>
           </div>
 
           {/* ── Stats ── */}

@@ -39,6 +39,10 @@ class DealScore(Base):
     deal_score = Column(Numeric(5, 2))
     confidence = Column(Numeric(5, 2))
     data_quality = Column(String(20))
+    # Buy/wait signal (written by analysis): buy | wait | rising | falling | stable, NULL = too little history
+    market_signal = Column(String(20))
+    floor_change_7d = Column(Numeric(6, 2))
+    supply_change_7d = Column(Numeric(6, 2))
     
     is_active = Column(Boolean)
     calculated_at = Column(DateTime(timezone=True))

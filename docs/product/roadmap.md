@@ -42,7 +42,9 @@ Probleem 2. Plak een wantlist of decklist → goedkoopste combinatie over CardTr
 - Stap 2: optimizer (`backend/app/core/list_price.py`) en pagina. Verzendkosten zijn een schatting (brief/aangetekend per verkoper, vast Zero-tarief): CardTrader levert geen tarieven in de listing-data. Alleen CardTrader; Cardmarket heeft bij ons alleen de prijsgids.
 - Vervolg: echte verzendtarieven ijken (testbestellingen of CardTrader-checkout), Cardmarket-listings toevoegen zodra er API-toegang is, en de verkopers per land herkenbaar maken in de CardTrader-link.
 
-### 3. Koop-/wachtsignaal op basis van aanbod
+### 3. Koop-/wachtsignaal op basis van aanbod — *gebouwd (oktober 2026), zichtbaar vanaf ~14 dagen geschiedenis*
+
+`scoring.market_signal` vergelijkt de laatste 7 afgeronde dagen met de dagen daarvoor (laagste vraagprijs en aanbod per dag). Labels: Koopmoment / Wachten / Stijgend / Dalend / Stabiel, op de dealkaarten, in de deal-popup en in de prijscheck.
 Probleem 4. Stijgt het aantal listings terwijl de laagste prijs zakt → wachten is waarschijnlijk slim. Die data hebben we al (`volume_*`, `volume_trend_7d`, daily aggregates). Past beter bij een correctiejaar dan alleen "deal scores".
 
 ### 4. Graden: wel of niet?

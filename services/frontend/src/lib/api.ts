@@ -60,6 +60,10 @@ export interface DealScore {
   market_avg_price?: number;
   deal_score: number;
   confidence?: number;
+  /** Buy/wait signal: buy | wait | rising | falling | stable; null = too little history */
+  market_signal?: string | null;
+  floor_change_7d?: number | null;
+  supply_change_7d?: number | null;
   calculated_at: string;
 }
 
@@ -370,6 +374,9 @@ export interface PriceCheckResponse {
     observations: number;
     last_seen_at?: string | null;
     calculated_at?: string | null;
+    market_signal?: string | null;
+    floor_change_7d?: number | null;
+    supply_change_7d?: number | null;
   };
   basis: string;
 }

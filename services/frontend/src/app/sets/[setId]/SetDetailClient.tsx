@@ -5,6 +5,7 @@ import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import CardImage from '@/components/CardImage';
 import { marketApi, sealedApi, setsApi, sparklineKey, DealScore, SealedPrice, PokemonSetInfo } from '@/lib/api';
+import SignalBadge from '@/components/MarketSignal';
 import Sparkline from '@/components/Sparkline';
 
 function cardmarketSealedUrl(set: PokemonSetInfo): string {
@@ -68,6 +69,7 @@ function DealCard({ deal, sparkline }: { deal: DealScore; sparkline?: number[] }
         <h3 className="text-xs font-semibold text-gray-900 dark:text-white line-clamp-2 leading-snug mb-auto">
           {deal.product_name}
         </h3>
+        <SignalBadge signal={deal.market_signal} floorChange={deal.floor_change_7d} supplyChange={deal.supply_change_7d} lang="en" className="mt-1.5 self-start" />
         <div className="mt-2 flex items-end justify-between gap-2">
           <div className="min-w-0">
             <p className="text-sm font-bold text-gray-900 dark:text-white">€{deal.current_price.toFixed(2)}</p>
