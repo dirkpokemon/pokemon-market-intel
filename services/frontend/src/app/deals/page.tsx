@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { marketApi, DealScore } from '@/lib/api';
+import { marketApi, sparklineKey, DealScore } from '@/lib/api';
 import DashboardLayout from '@/components/DashboardLayout';
 import DealModal from '@/components/DealModal';
 import CardImage from '@/components/CardImage';
@@ -157,7 +157,7 @@ function DealsPageInner() {
         setDealScores(scores);
         // Load sparklines in background — don't block the deals display
         if (scores.length > 0) {
-          marketApi.getSparklines(scores.map(s => s.product_name), 7)
+          marketApi.getSparklines(scores, 7)
             .then(setSparklines)
             .catch(() => {});
         }
@@ -394,7 +394,7 @@ function DealsPageInner() {
               /* ── Subscribers: full paginated grid ── */
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-8">
-                  {paginatedDeals.map((deal) => <DealCard key={deal.id} deal={deal} watchlist={watchlist} toggleWatchlist={toggleWatchlist} setSelectedDeal={setSelectedDeal} getScoreColor={getScoreColor} getScoreBg={getScoreBg} sparkline={sparklines[deal.product_name]} />)}
+                  {paginatedDeals.map((deal) => <DealCard key={deal.id} deal={deal} watchlist={watchlist} toggleWatchlist={toggleWatchlist} setSelectedDeal={setSelectedDeal} getScoreColor={getScoreColor} getScoreBg={getScoreBg} sparkline={sparklines[sparklineKey(deal)]} />)}
                 </div>
                 {totalPages > 1 && (
                   <div className="flex justify-center gap-1 flex-wrap">
@@ -433,7 +433,7 @@ function DealsPageInner() {
               <div className="relative">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-2">
                   {filteredAndSortedDeals.slice(0, FREE_VISIBLE).map((deal) => (
-                    <DealCard key={deal.id} deal={deal} watchlist={watchlist} toggleWatchlist={toggleWatchlist} setSelectedDeal={setSelectedDeal} getScoreColor={getScoreColor} getScoreBg={getScoreBg} sparkline={sparklines[deal.product_name]} />
+                    <DealCard key={deal.id} deal={deal} watchlist={watchlist} toggleWatchlist={toggleWatchlist} setSelectedDeal={setSelectedDeal} getScoreColor={getScoreColor} getScoreBg={getScoreBg} sparkline={sparklines[sparklineKey(deal)]} />
                   ))}
                   {/* Blurred preview cards */}
                   {filteredAndSortedDeals.slice(FREE_VISIBLE, FREE_VISIBLE + 5).map((deal) => (

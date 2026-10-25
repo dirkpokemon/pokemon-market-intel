@@ -612,48 +612,62 @@ class PriceHistoryResponse(BaseModel):
     conditions: List[ConditionBreakdown]
 
 
+# Same normalization as the analysis service's daily_prices.name_key
+_NAME_KEY_SQL = "lower(regexp_replace(btrim({col}), '\\s+', ' ', 'g'))"
+
+
+def _pick_product(rows) -> List:
+    """
+    Rows of several products (variants) for one requested name: keep the one
+    with the most observed days, so the chart never mixes a regular card with
+    its special illustration rare.
+    """
+    by_product: Dict[tuple, List] = {}
+    for r in rows:
+        by_product.setdefault((r.set_key, r.category, r.card_key), []).append(r)
+    if not by_product:
+        return []
+    return max(by_product.values(), key=lambda pts: (len(pts), sum(p.listings for p in pts)))
+
+
 @router.get("/price_history", response_model=PriceHistoryResponse)
 async def get_price_history(
     card_name: str = Query(..., description="Exact card name to look up"),
-    days: int = Query(default=30, ge=7, le=90, description="Number of days of history"),
+    days: int = Query(default=30, ge=7, le=180, description="Number of days of history"),
+    product_set: Optional[str] = Query(default=None, max_length=255),
+    card_number: Optional[str] = Query(default=None, max_length=100, description="Variant (CardTrader blueprint id)"),
     current_user: User = Depends(get_current_premium_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Returns daily average, min, and max prices for a specific card over the past N days,
-    derived from the raw_prices append-only table (real scraped data, not simulated).
-    Plus/Business only. Also returns a condition breakdown (NM / LP / HP etc.) for context.
+    Daily price history of one product from daily_prices (written by the
+    analysis service; comparable listings only: singles near-mint in the
+    analysed languages, EUR). avg_price is the daily median listing price,
+    min_price the cheapest listing that day. Plus/Business only.
+
+    Also returns a condition breakdown of the current listings (raw_prices,
+    last few days) for context.
     """
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-
-    # Fuzzy match: exact first, fall back to ILIKE if no results
-    exact_check = await db.execute(
-        text("SELECT 1 FROM raw_prices WHERE LOWER(card_name) = LOWER(:name) LIMIT 1"),
-        {"name": card_name},
-    )
-    use_exact = exact_check.fetchone() is not None
-    name_filter = "LOWER(card_name) = LOWER(:name)" if use_exact else "LOWER(card_name) LIKE LOWER(:name)"
-    fuzzy_name = card_name if use_exact else f"%{card_name}%"
-
+    since_day = datetime.now(timezone.utc).date() - timedelta(days=days)
+    params = {"name": card_name, "since_day": since_day,
+              "set": product_set or "", "card": card_number or ""}
+    name_key = _NAME_KEY_SQL.format(col="CAST(:name AS text)")
     history_result = await db.execute(
         text(f"""
-            SELECT
-                DATE(scraped_at AT TIME ZONE 'UTC') AS day,
-                ROUND(AVG(price)::numeric, 2)        AS avg_price,
-                ROUND(MIN(price)::numeric, 2)        AS min_price,
-                ROUND(MAX(price)::numeric, 2)        AS max_price,
-                COUNT(*)                             AS listing_count
-            FROM raw_prices
-            WHERE {name_filter}
-              AND scraped_at >= :cutoff
-              AND price > 0
-            GROUP BY day
+            SELECT set_key, category, card_key, day,
+                   median_price, min_price, max_price, listings
+            FROM daily_prices
+            WHERE name_key = {name_key}
+              AND day > :since_day
+              AND (CAST(:card AS text) = '' OR card_key = CAST(:card AS text))
+              AND (CAST(:set AS text) = '' OR set_key = lower(btrim(CAST(:set AS text))))
             ORDER BY day ASC
         """),
-        {"name": fuzzy_name, "cutoff": cutoff},
+        params,
     )
-    rows = history_result.fetchall()
+    rows = _pick_product(history_result.fetchall())
 
+    variant_filter = "AND card_number = CAST(:card AS text)" if card_number else ""
     cond_result = await db.execute(
         text(f"""
             SELECT
@@ -661,13 +675,14 @@ async def get_price_history(
                 COUNT(*)                       AS count,
                 ROUND(AVG(price)::numeric, 2)  AS avg_price
             FROM raw_prices
-            WHERE {name_filter}
+            WHERE LOWER(card_name) = LOWER(:name)
               AND price > 0
+              {variant_filter}
             GROUP BY condition
             ORDER BY count DESC
             LIMIT 6
         """),
-        {"name": fuzzy_name},
+        params,
     )
     cond_rows = cond_result.fetchall()
 
@@ -676,10 +691,10 @@ async def get_price_history(
         history=[
             PriceHistoryPoint(
                 date=str(r.day),
-                avg_price=float(r.avg_price),
+                avg_price=float(r.median_price),
                 min_price=float(r.min_price),
                 max_price=float(r.max_price),
-                listing_count=int(r.listing_count),
+                listing_count=int(r.listings),
             )
             for r in rows
         ],
@@ -733,59 +748,56 @@ async def get_public_top_deals(
 @router.get("/price_sparklines")
 async def get_price_sparklines(
     card_names: List[str] = Query(..., description="Card names to fetch sparkline data for"),
+    card_numbers: Optional[List[str]] = Query(
+        default=None,
+        description="Variant per card name (same order; '' when unknown). Keys the result as 'name#card_number'.",
+    ),
     days: int = Query(default=7, ge=3, le=30, description="Number of days of history"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Batch endpoint: returns daily avg price per card for the past N days.
-    Used for sparkline charts on deal cards. Returns a dict of {card_name: [avg_price, ...]}.
+    Batch endpoint: daily median listing price per product for the past N days
+    (from daily_prices), for the sparklines on deal cards.
+
+    Returns {key: [price, ...]} oldest first, where key is the card name, or
+    'name#card_number' when a variant was given for it. A name without a
+    variant uses its most observed product.
     """
     if not card_names:
         return {}
 
     # Limit to 200 cards per request to avoid abuse
     card_names = card_names[:200]
+    numbers = list(card_numbers or [])[:len(card_names)]
+    numbers += [""] * (len(card_names) - len(numbers))
+    keys = [f"{n}#{c}" if c else n for n, c in zip(card_names, numbers)]
 
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    lower_names = [n.lower() for n in card_names]
-
+    since_day = datetime.now(timezone.utc).date() - timedelta(days=days)
+    name_key = _NAME_KEY_SQL.format(col="r.name")
     result = await db.execute(
-        text("""
-            SELECT
-                LOWER(card_name) AS card_key,
-                DATE(scraped_at AT TIME ZONE 'UTC') AS day,
-                ROUND(AVG(price)::numeric, 2) AS avg_price
-            FROM raw_prices
-            WHERE LOWER(card_name) = ANY(:names)
-              AND scraped_at >= :cutoff
-              AND price > 0
-            GROUP BY LOWER(card_name), day
-            ORDER BY LOWER(card_name), day ASC
+        text(f"""
+            WITH req AS (
+                SELECT {name_key} AS name_key, r.card, r.k
+                FROM unnest(CAST(:names AS text[]), CAST(:cards AS text[]), CAST(:keys AS text[]))
+                     AS r(name, card, k)
+            )
+            SELECT req.k, d.set_key, d.category, d.card_key, d.day, d.median_price, d.listings
+            FROM req
+            JOIN daily_prices d
+              ON d.name_key = req.name_key
+             AND (req.card = '' OR d.card_key = req.card)
+            WHERE d.day > :since_day
+            ORDER BY req.k, d.day
         """),
-        {"names": lower_names, "cutoff": cutoff},
+        {"names": card_names, "cards": numbers, "keys": keys, "since_day": since_day},
     )
-    rows = result.fetchall()
 
-    # Build lookup: lowercase card_name → list of daily avg prices
-    grouped: Dict[str, List[float]] = {}
-    for row in rows:
-        key = row.card_key
-        if key not in grouped:
-            grouped[key] = []
-        grouped[key].append(float(row.avg_price))
+    grouped: Dict[str, List] = {}
+    for row in result.fetchall():
+        grouped.setdefault(row.k, []).append(row)
 
-    # Return keyed by original card_name (match on lowercase)
-    output: Dict[str, List[float]] = {}
-    for name in card_names:
-        key = name.lower()
-        if key in grouped:
-            output[name] = grouped[key]
-
-    return output
-
-
-
-
-
-
+    return {
+        key: [float(p.median_price) for p in _pick_product(rows)]
+        for key, rows in grouped.items()
+    }

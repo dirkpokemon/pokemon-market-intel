@@ -126,7 +126,7 @@ interface DealModalProps {
   onClose: () => void;
 }
 
-type HistoryDays = 7 | 30 | 60;
+type HistoryDays = 7 | 30 | 90;
 
 export default function DealModal({ deal, onClose }: DealModalProps) {
   const [inWatchlist, setInWatchlist] = useState(false);
@@ -170,7 +170,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
   useEffect(() => {
     if (!historyOpen) return;
     setHistoryLoading(true);
-    marketApi.getPriceHistory(deal.product_name, historyDays)
+    marketApi.getPriceHistory(deal.product_name, historyDays, deal)
       .then(r => { setHistoryData(r.history); setConditions(r.conditions); setHistoryLocked(false); })
       .catch((e: unknown) => {
         setHistoryData([]);
@@ -178,7 +178,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
         setHistoryLocked((e as { status?: number })?.status === 403);
       })
       .finally(() => setHistoryLoading(false));
-  }, [historyOpen, historyDays, deal.product_name]);
+  }, [historyOpen, historyDays, deal]);
 
   const toggleWatchlist = () => {
     const list = getWatchlist();
@@ -358,7 +358,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
               <div className="p-4">
                 {/* Day range tabs */}
                 <div className="flex gap-1 mb-4">
-                  {([7, 30, 60] as HistoryDays[]).map(d => (
+                  {([7, 30, 90] as HistoryDays[]).map(d => (
                     <button
                       key={d}
                       onClick={() => setHistoryDays(d)}
@@ -394,7 +394,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                 {conditions.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">
-                      Condition breakdown (EU listings)
+                      Current listings by condition
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {conditions.map(c => (

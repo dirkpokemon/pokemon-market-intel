@@ -43,7 +43,7 @@ export default function CardHistoryChart({ history }: CardHistoryChartProps) {
     labels,
     datasets: [
       {
-        label: 'Avg price',
+        label: 'Median price',
         data: history.map(p => p.avg_price),
         borderColor: 'rgb(59, 130, 246)',
         backgroundColor: 'rgba(59, 130, 246, 0.08)',
