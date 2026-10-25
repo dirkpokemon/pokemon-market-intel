@@ -58,10 +58,11 @@ There are no scraper/frontend test suites; verify frontend changes with `npm run
 Data flows one way through the shared database:
 
 1. **Scraper** (Railway cron `0 6,18 * * *`, `--once`, ~340k listings and ~45-60 min per run): `CardTraderScraperV2` (`cardtrader_scraper_new.py`) stores every CardTrader marketplace listing for the target sets in `raw_prices`, then `CardMarketAPIClient` adds the MKM price guide (skipped without `CARDMARKET_*` credentials). Sealed products are stored with `card_number = NULL`, detected by `SEALED_KEYWORDS` on word boundaries. Each run writes a `scrape_logs` row.
-2. **Analysis** (Railway cron `30 7,19 * * *`, `--once`): `AnalysisService._run_full_analysis_locked` prunes `raw_prices` older than 60 days, then:
-   - `MarketStatsCalculator` lets Postgres aggregate comparable listings (single NM listings in `INCLUDED_LANGUAGES`, prices in EUR) into one row per product per day, and `scoring.product_stats` turns those into `market_statistics`.
+2. **Analysis** (Railway cron `30 7,19 * * *`, `--once`): `AnalysisService._run_full_analysis_locked` prunes `raw_prices` older than `RAW_PRICES_RETENTION_DAYS` (3: ~340k rows per scrape, the Railway volume is 5 GB), then:
+   - `MarketStatsCalculator` lets Postgres aggregate comparable listings (single NM listings in `INCLUDED_LANGUAGES`, prices in EUR) into one row per product per day and upserts them into `daily_prices`, the long-term price history (kept 180 days, under 1 MB per day). Days that raw_prices no longer fully covers are never overwritten. `scoring.product_stats` turns the last `LONG_WINDOW_DAYS` (30) of `daily_prices` into `market_statistics`.
+   - Each run logs the database size and warns above `DB_SIZE_WARN_GB`.
    - `DealScoreCalculator` → `deal_scores`. A deal is the cheapest listing on the latest day vs. the product's usual floor (median of the daily cheapest listing). `avg_price_*` columns hold medians, not means.
-   - Both tables are fully replaced in one transaction per run.
+   - `market_statistics` and `deal_scores` are fully replaced in one transaction per run.
    - `watchlist_notifier` emails users (via Brevo) whose target is at or below `market_statistics.current_price`.
 3. **Backend** serves everything under `/api/v1` (routers in `app/api/`). It also runs the daily email digest in-process (APScheduler, 08:00 UTC).
 4. **Frontend** calls the backend via `src/lib/api.ts`. The JWT is stored in `localStorage` as `access_token`. `NEXT_PUBLIC_API_URL` is inlined at build time, so the frontend must be rebuilt when it changes.

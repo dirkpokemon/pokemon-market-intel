@@ -149,9 +149,16 @@ class AnalysisService:
         except Exception as e:
             logger.error(f"raw_prices retention step failed (continuing pipeline): {e}", exc_info=True)
 
-        # Step 1: Market statistics
+        # Step 1: Market statistics (also updates the daily_prices history)
         stats_count = await self.calculate_market_stats()
-        
+
+        try:
+            from app.raw_prices_retention import log_database_size
+
+            await log_database_size()
+        except Exception as e:
+            logger.error(f"Database size check failed (non-fatal): {e}")
+
         # Step 2: Deal scores (depends on market stats)
         deal_count = 0
         if stats_count > 0:
