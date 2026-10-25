@@ -21,7 +21,9 @@ class RawPrice(Base):
     # Card Information
     card_name = Column(String(500), nullable=False, index=True)
     card_set = Column(String(255), index=True)
-    card_number = Column(String(100))
+    card_number = Column(String(100))  # CardTrader: blueprint id (unique per card variant); NULL = sealed
+    collector_number = Column(String(50))  # printed number, e.g. "199"
+    rarity = Column(String(100))
     condition = Column(String(50))  # Near Mint, Lightly Played, etc.
     language = Column(String(10), default="EN")
     

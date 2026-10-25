@@ -24,6 +24,10 @@ class DealScore(Base):
     product_name = Column(String(500), nullable=False, index=True)
     product_set = Column(String(255), index=True)
     category = Column(String(50))
+    # Variant identity within a set (CardTrader blueprint id; '' for sealed) and its labels
+    card_number = Column(String(100))
+    collector_number = Column(String(50))
+    rarity = Column(String(100))
     
     # Current listing info
     current_price = Column(Numeric(10, 2), nullable=False)

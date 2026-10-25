@@ -196,6 +196,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
       await notificationApi.addWatchlistItem({
         card_name: deal.product_name,
         card_set: deal.product_set ?? undefined,
+        card_number: deal.card_number ?? undefined,
         target_price: price,
       });
       setAlertSaved(true);
@@ -269,6 +270,11 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                 {deal.product_set && (
                   <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
                     {deal.product_set}
+                  </span>
+                )}
+                {(deal.collector_number || deal.rarity) && (
+                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                    {[deal.collector_number && `#${deal.collector_number}`, deal.rarity].filter(Boolean).join(' · ')}
                   </span>
                 )}
               </div>

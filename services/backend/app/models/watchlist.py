@@ -23,6 +23,7 @@ class WatchlistItem(Base):
     )
     card_name = Column(String(255), nullable=False)
     card_set = Column(String(255))
+    card_number = Column(String(100))  # variant (CardTrader blueprint id); NULL = any variant
     target_price = Column(Numeric(10, 2), nullable=False)
     current_price = Column(Numeric(10, 2))  # cached by analysis service
     is_active = Column(Boolean, default=True, nullable=False)

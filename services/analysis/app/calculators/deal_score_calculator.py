@@ -102,6 +102,9 @@ class DealScoreCalculator:
             "product_name": stats.product_name,
             "product_set": stats.product_set,
             "category": stats.category,
+            "card_number": stats.card_number,
+            "collector_number": stats.collector_number,
+            "rarity": stats.rarity,
             "current_price": _dec(float(stats.current_price)),
             "currency": "EUR",
             # Singles are scored on comparable (near mint) listings only

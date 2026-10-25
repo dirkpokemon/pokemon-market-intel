@@ -24,7 +24,9 @@
 
 ## Roadmap (volgorde = impact)
 
-### 1. Gratis "Is dit een eerlijke prijs?"-check — *eerst bouwen*
+### 1. Gratis "Is dit een eerlijke prijs?"-check — *gebouwd (oktober 2026)*
+
+Live als `/prijscheck`. Daarbij ook opgelost: varianten met dezelfde naam in één set (gewone vs. SIR) worden niet meer samengevoegd.
 Probleem 1 en 3. Gebruiker plakt een prijs (of advertentietekst) van Marktplaats/Vinted/Facebook en ziet direct:
 - de gebruikelijke laagste prijs en de normale prijs in de EU (uit `market_statistics`: `floor_price_30d`, `avg_price_30d`, `current_price`);
 - een rode vlag bij "veel te goedkoop" (fraudesignaal) of "duur";

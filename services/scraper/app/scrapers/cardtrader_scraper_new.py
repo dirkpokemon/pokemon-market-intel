@@ -84,6 +84,22 @@ ENGLISH_SET_PHRASES = [
 ]
 
 
+def _blueprint_details(blueprint: Dict[str, Any]) -> tuple:
+    """
+    Printed collector number and rarity of a blueprint. Several cards in one
+    set share a name ("Charizard ex" regular vs. special illustration rare),
+    so these tell the variants apart for users. CardTrader keeps them in
+    fixed_properties; the exact keys are read defensively.
+    """
+    fixed = blueprint.get("fixed_properties") or {}
+    number = fixed.get("collector_number") or fixed.get("number") or blueprint.get("collector_number")
+    rarity = (
+        fixed.get("pokemon_rarity") or fixed.get("rarity")
+        or blueprint.get("rarity") or blueprint.get("version")
+    )
+    return (str(number)[:50] if number else None, str(rarity)[:100] if rarity else None)
+
+
 def _is_target_set(name: str) -> bool:
     return any(phrase.lower() in name.lower() for phrase in ENGLISH_SET_PHRASES)
 
@@ -120,6 +136,7 @@ class CardTraderScraperV2:
         self.errors_count = 0
         self.last_error: Optional[str] = None
         self._consecutive_failures = 0
+        self._logged_blueprint_shape = False
     
     async def scrape_all(self) -> int:
         """
@@ -181,6 +198,14 @@ class CardTraderScraperV2:
                     if blueprints is None:
                         continue
                     logger.info(f"  Found {len(blueprints)} blueprints")
+                    if blueprints and not self._logged_blueprint_shape:
+                        # Once per run, to verify which fields CardTrader sends
+                        first = blueprints[0]
+                        logger.info(
+                            "Blueprint shape: keys=%s fixed_properties=%s",
+                            sorted(first.keys()), first.get("fixed_properties"),
+                        )
+                        self._logged_blueprint_shape = True
 
                     for blueprint in blueprints:
                         listings = await self._fetch_or_skip(
@@ -349,12 +374,15 @@ class CardTraderScraperV2:
                     # analysis engine sets category='sealed' automatically.
                     is_sealed = _is_sealed_product(card_name)
                     card_number = None if is_sealed else str(blueprint.get('id'))
+                    collector_number, rarity = (None, None) if is_sealed else _blueprint_details(blueprint)
 
                     # Create raw_price entry
                     raw_price = RawPrice(
                         card_name=card_name,
                         card_set=expansion.get('name_en') or expansion.get('name'),
                         card_number=card_number,
+                        collector_number=collector_number,
+                        rarity=rarity,
                         condition=condition,
                         language=language,
                         price=float(price),

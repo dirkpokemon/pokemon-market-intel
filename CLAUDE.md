@@ -46,7 +46,12 @@ DATABASE_URL=postgresql://x/y python -m pytest tests/test_scoring.py::test_drop_
 
 Each service has a `.env.example`. Docker: `docker-compose up -d`, or `./scripts/dev.sh {start|logs|shell <svc>}`. Pinned Python deps need Python 3.11 (they don't build on 3.13).
 
-There are no backend/scraper/frontend test suites; verify frontend changes with `npm run lint` and `npm run type-check`.
+Backend unit tests (pure functions, e.g. the price-check verdict; no DB needed):
+```bash
+cd services/backend && DATABASE_URL=postgresql+asyncpg://x/y SECRET_KEY=x python -m pytest tests
+```
+
+There are no scraper/frontend test suites; verify frontend changes with `npm run lint` and `npm run type-check`.
 
 ## Architecture
 
@@ -64,6 +69,8 @@ Data flows one way through the shared database:
 Cross-service gotchas:
 - **Schema ownership**: each Python service has its own copy of the SQLAlchemy models for the shared tables. On startup every service runs `sync_schema` (`app/database.py`), which creates missing tables, adds missing nullable columns and enables RLS. It never drops anything. Alembic migrations in `services/backend/alembic/versions/` run first (`start.sh`) and must be idempotent, because production tables predate working migrations.
 - **RLS**: every public table has RLS enabled without policies (added while the DB was on Supabase, where PostgREST would otherwise expose it; harmless on Railway). Don't use `FORCE ROW LEVEL SECURITY`: it would also lock out the app, which connects as the table owner.
+- **Card variants**: one set can hold several cards with the same name ("Charizard ex" regular vs. special illustration rare, 10-100x price difference). A product is therefore name + set + category + `card_number` (for CardTrader the blueprint id; `''` for sealed); `collector_number` and `rarity` are display labels. `market_statistics`, `deal_scores` and `watchlist_items` all carry `card_number` — always filter on it when you have it. CardMarket rows use the printed number as `card_number`, so they don't merge with CardTrader variants.
+- **Price check** (`/prijscheck` page, public `GET /api/v1/price-check/search` and `GET /api/v1/price-check`, rate-limited per IP): thresholds live in `backend/app/core/price_check.py`. It compares against ASKING prices, so the wording is "gebruikelijke laagste vraagprijs", and it never calls a listing fraud — only "ongebruikelijk laag, wees voorzichtig".
 - **Product names**: names keep the scraped spelling (no title-casing or punctuation stripping). Matching across sources and tables is case-insensitive (`lower(...)`). The watchlist notifier additionally strips punctuation, so watchlist items saved under old normalized names still match.
 - **Set names**: `services/backend/app/data/set_registry.py` is the single source of truth. Each entry's `aliases` lists every name variant seen in `deal_scores.product_set` / `raw_prices.card_set`, and endpoints match case-insensitively. The frontend gets sets from `/api/v1/sets`, so never hardcode a set list there. `GET /api/v1/sets/unmatched` (admin) lists scraped sets missing from the registry.
 - **Subscription tiers**: the DB/API roles are `free` | `paid` | `pro` (+ `admin`), displayed as Free / Plus / Business (`src/lib/plans.ts`). Business is waitlist-only. Server-side gates use `get_current_premium_user` / `get_current_admin_user` from `app/core/dependencies.py`:

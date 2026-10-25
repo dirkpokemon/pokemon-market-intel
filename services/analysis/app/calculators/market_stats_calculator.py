@@ -22,7 +22,10 @@ from app.models.market_stats import MarketStats
 logger = logging.getLogger(__name__)
 
 # Product identity: whitespace-collapsed name and set, compared case-insensitively
-# (CardTrader and CardMarket spell the same card with different casing).
+# (CardTrader and CardMarket spell the same card with different casing), plus
+# the card variant (card_number = CardTrader blueprint id) for singles: one set
+# can hold several cards with the same name ("Charizard ex" regular vs. special
+# illustration rare) whose prices differ by 10-100x.
 # Display values keep the scraped spelling — no title-casing or punctuation
 # stripping, so names still match raw_prices / watchlist lookups.
 DAILY_AGGREGATES_SQL = """
@@ -31,6 +34,9 @@ WITH base AS (
         regexp_replace(btrim(card_name), '\\s+', ' ', 'g') AS name_clean,
         COALESCE(NULLIF(regexp_replace(btrim(card_set), '\\s+', ' ', 'g'), ''), 'Unknown Set') AS set_clean,
         CASE WHEN card_number IS NULL THEN 'sealed' ELSE 'single' END AS category,
+        COALESCE(card_number, '') AS card_key,
+        collector_number,
+        rarity,
         price * {rate_case} AS price_eur,
         (scraped_at AT TIME ZONE 'UTC')::date AS day,
         scraped_at
@@ -49,9 +55,12 @@ SELECT
     lower(name_clean) AS name_key,
     lower(set_clean)  AS set_key,
     category,
+    card_key,
     day,
     max(name_clean)   AS product_name,
     max(set_clean)    AS product_set,
+    max(collector_number) AS collector_number,
+    max(rarity)       AS rarity,
     percentile_cont(0.5) WITHIN GROUP (ORDER BY price_eur) AS median_price,
     percentile_cont(0.1) WITHIN GROUP (ORDER BY price_eur) AS p10_price,
     min(price_eur)    AS min_price,
@@ -60,8 +69,8 @@ SELECT
     max(scraped_at)   AS last_seen_at
 FROM base
 WHERE price_eur IS NOT NULL
-GROUP BY 1, 2, 3, 4
-ORDER BY 1, 2, 3, 4
+GROUP BY 1, 2, 3, 4, 5
+ORDER BY 1, 2, 3, 4, 5
 """
 
 
@@ -121,24 +130,31 @@ class MarketStatsCalculator:
             result = await session.stream(stmt, params)
 
             current_key = None
-            display: Tuple[str, str] = ("", "")
+            display: Dict[str, Any] = {}
             days: List[DayAggregate] = []
 
             def flush() -> None:
                 if current_key is None:
                     return
-                record = self._build_record(current_key[2], display, days, now)
+                record = self._build_record(current_key[2], current_key[3], display, days, now)
                 if record:
                     records.append(record)
 
             async for partition in result.partitions(5000):
                 for row in partition:
                     group_rows += 1
-                    key = (row.name_key, row.set_key, row.category)
+                    key = (row.name_key, row.set_key, row.category, row.card_key)
                     if key != current_key:
                         flush()
-                        current_key, days = key, []
-                    display = (row.product_name, row.product_set)
+                        current_key, days, display = key, [], {}
+                    # Rows come oldest day first: later days win, but a label
+                    # missing on newer rows keeps the last known value.
+                    display["product_name"] = row.product_name
+                    display["product_set"] = row.product_set
+                    if row.collector_number:
+                        display["collector_number"] = row.collector_number
+                    if row.rarity:
+                        display["rarity"] = row.rarity
                     days.append(DayAggregate(
                         day=row.day,
                         median_price=float(row.median_price),
@@ -167,14 +183,14 @@ class MarketStatsCalculator:
     def _build_record(
         self,
         category: str,
-        display: Tuple[str, str],
+        card_key: str,
+        display: Dict[str, Any],
         days: List[DayAggregate],
         now: datetime,
     ) -> Optional[Dict[str, Any]]:
         stats = product_stats(days, now.date(), self.config)
         if stats is None:
             return None
-        product_name, product_set = display
         price_cols = (
             "avg_price_7d", "min_price_7d", "max_price_7d",
             "avg_price_30d", "min_price_30d", "max_price_30d",
@@ -183,9 +199,12 @@ class MarketStatsCalculator:
             "liquidity_score", "volatility",
         )
         record: Dict[str, Any] = {
-            "product_name": product_name,
-            "product_set": product_set,
+            "product_name": display["product_name"],
+            "product_set": display["product_set"],
             "category": category,
+            "card_number": card_key,
+            "collector_number": display.get("collector_number"),
+            "rarity": display.get("rarity"),
             "calculated_at": now,
         }
         for col, value in stats.items():
