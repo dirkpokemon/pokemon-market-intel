@@ -1,6 +1,6 @@
 # Productrichting & roadmap — TCG Pulse
 
-*Vastgelegd: 25 oktober 2026, op basis van marktonderzoek (zie onderaan voor bronnen en beperkingen).*
+*Vastgelegd: 25 oktober 2026, op basis van marktonderzoek (zie onderaan voor bronnen en beperkingen). De propositie (voor wie, waarom, wat is uniek) staat in [`propositie.md`](propositie.md).*
 
 ## Positionering
 
