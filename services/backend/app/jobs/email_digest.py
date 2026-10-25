@@ -1,11 +1,14 @@
 """
 Daily email digest — top deals for all opted-in users.
 """
+import html as html_module
 import logging
 from datetime import datetime, timezone
 
 from sqlalchemy import select, desc
 
+from app.config import settings
+from app.core.unsubscribe import unsubscribe_url
 from app.database import AsyncSessionLocal
 from app.models.deal_score import DealScore
 from app.models.user import User
@@ -14,8 +17,10 @@ from app.utils.email import send_email
 logger = logging.getLogger(__name__)
 
 
-def _build_html(deals: list) -> str:
+def _build_html(deals: list, unsub_url: str) -> str:
     """Build a dark-themed HTML email with a top-deals table."""
+    esc = html_module.escape
+    app_url = settings.FRONTEND_URL.rstrip("/")
 
     # --- Deals rows ---
     deal_rows = ""
@@ -26,8 +31,8 @@ def _build_html(deals: list) -> str:
         score = float(d.deal_score or 0)
         deal_rows += f"""
             <tr>
-              <td style="padding:8px 12px;border-bottom:1px solid #1e293b;">{d.product_name or ""}</td>
-              <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#94a3b8;">{d.product_set or ""}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid #1e293b;">{esc(d.product_name or "")}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#94a3b8;">{esc(d.product_set or "")}</td>
               <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#34d399;">&euro;{current:.2f}</td>
               <td style="padding:8px 12px;border-bottom:1px solid #1e293b;text-align:center;">
                 <span style="background:#064e3b;color:#34d399;padding:2px 8px;border-radius:12px;font-size:12px;">{score:.0f}</span>
@@ -85,7 +90,7 @@ def _build_html(deals: list) -> str:
 
               <!-- CTA -->
               <div style="text-align:center;margin-bottom:32px;">
-                <a href="https://charming-contentment-production-ce0e.up.railway.app/deals"
+                <a href="{app_url}/deals"
                    style="display:inline-block;background:#10b981;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;font-size:15px;">
                   Bekijk alle deals &#8594;
                 </a>
@@ -94,8 +99,9 @@ def _build_html(deals: list) -> str:
               <!-- Footer -->
               <hr style="border:none;border-top:1px solid #334155;margin:0 0 20px;">
               <p style="margin:0;font-size:12px;color:#475569;text-align:center;">
-                Je ontvangt deze email omdat je aangemeld bent voor de dagelijkse digest.<br>
-                Stuur <strong>STOP</strong> naar de TCG Pulse bot om te stoppen, of pas je voorkeuren aan via de website.
+                Je ontvangt deze email omdat je je hebt aangemeld voor de dagelijkse digest.<br>
+                <a href="{esc(unsub_url)}" style="color:#94a3b8;">Afmelden voor de digest</a>
+                &middot; <a href="{app_url}/settings" style="color:#94a3b8;">Voorkeuren</a>
               </p>
 
             </td>
@@ -109,7 +115,7 @@ def _build_html(deals: list) -> str:
 </html>"""
 
 
-def _build_text(deals: list) -> str:
+def _build_text(deals: list, unsub_url: str) -> str:
     """Plain-text fallback for the digest email."""
     lines = ["TCG Pulse — Dagelijkse Marktupdate", "=" * 40, ""]
     lines.append("TOP DEALS")
@@ -118,13 +124,13 @@ def _build_text(deals: list) -> str:
         avg = float(d.market_avg_price or 0)
         saving_pct = round((avg - current) / avg * 100, 1) if avg > 0 else 0
         lines.append(f"  {d.product_name} ({d.product_set}) — EUR{current:.2f} | Score: {d.deal_score:.0f} | -{saving_pct}%")
-    lines += ["", "Stuur STOP naar de TCG Pulse bot om te stoppen."]
+    lines += ["", f"Afmelden voor de digest: {unsub_url}"]
     return "\n".join(lines)
 
 
 async def send_daily_digest() -> int:
     """
-    Send the daily digest to all active opted-in users.
+    Send the daily digest to verified, active users who opted in.
     Returns the number of emails successfully sent.
     """
     logger.info("Starting daily email digest job")
@@ -144,6 +150,7 @@ async def send_daily_digest() -> int:
         users_result = await session.execute(
             select(User).where(
                 User.is_active == True,
+                User.is_verified == True,
                 User.email_digest_enabled == True,
             )
         )
@@ -157,15 +164,20 @@ async def send_daily_digest() -> int:
         logger.info("No recipients for daily digest")
         return 0
 
-    html = _build_html(deals)
-    text = _build_text(deals)
     today = datetime.now(timezone.utc).strftime("%d %b %Y")
     subject = f"TCG Pulse — Marktupdate {today}"
 
     for user in users:
         to_email = user.alert_email or user.email
+        unsub_url = unsubscribe_url(user.id, "digest")
         try:
-            ok = await send_email(to_email, subject, html, text)
+            ok = await send_email(
+                to_email,
+                subject,
+                _build_html(deals, unsub_url),
+                _build_text(deals, unsub_url),
+                unsubscribe_url=unsub_url,
+            )
             if ok:
                 sent_count += 1
         except Exception as e:

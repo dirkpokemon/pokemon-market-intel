@@ -6,6 +6,10 @@ from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+# Verified Brevo sender used when SMTP_FROM is not configured
+DEFAULT_SENDER_EMAIL = "pokemonmarketintel@gmail.com"
+
+
 class Settings(BaseSettings):
     """
     Application settings loaded from environment variables
@@ -21,8 +25,9 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str
-    DATABASE_POOL_SIZE: int = 20
-    DATABASE_MAX_OVERFLOW: int = 10
+    # Keep small: backend, scraper and analysis share one Postgres (Supabase/Railway)
+    DATABASE_POOL_SIZE: int = 5
+    DATABASE_MAX_OVERFLOW: int = 5
 
     # Security
     SECRET_KEY: str  # Required for JWT tokens
@@ -59,25 +64,15 @@ class Settings(BaseSettings):
 
     # Email (optional)
     BREVO_API_KEY: str = ""
-    RESEND_API_KEY: str = ""
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
+    # Sender address for all mail. Must be a verified sender in Brevo.
     SMTP_FROM: str = ""
 
     # Product feedback: Brevo/SMTP sends submissions here (see POST /api/v1/feedback)
     FEEDBACK_INBOX_EMAIL: str = ""
-
-    # Telegram Bot
-    TELEGRAM_BOT_TOKEN: str = ""
-    TELEGRAM_BOT_USERNAME: str = "TCGPulseBot"
-
-    # Public backend URL (used for Telegram webhook registration)
-    BACKEND_URL: str = ""
-
-    # Redis (optional)
-    REDIS_URL: str = ""
 
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60
@@ -86,6 +81,10 @@ class Settings(BaseSettings):
     # EU Compliance
     DATA_RETENTION_DAYS: int = 730
     ENABLE_GDPR_FEATURES: bool = True
+
+    @property
+    def sender_email(self) -> str:
+        return (self.SMTP_FROM or self.SMTP_USER or DEFAULT_SENDER_EMAIL).strip()
 
     @property
     def stripe_paid_price_id(self) -> str:

@@ -5,12 +5,12 @@ FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-    # Install dependencies
-    COPY package.json package-lock.json* ./
-    RUN npm config set fetch-retry-maxtimeout 120000 && \
-        npm config set fetch-retry-mintimeout 10000 && \
-        npm config set fetch-retries 5 && \
-        npm install --legacy-peer-deps --verbose || echo "Install completed with warnings"
+# Install exactly what package-lock.json pins; a failed install must fail the build
+COPY package.json package-lock.json ./
+RUN npm config set fetch-retry-maxtimeout 120000 && \
+    npm config set fetch-retry-mintimeout 10000 && \
+    npm config set fetch-retries 5 && \
+    npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder

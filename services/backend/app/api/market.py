@@ -17,7 +17,7 @@ from app.schemas.market import (
     DealScoreResponse, MarketStatsResponse,
     CardSearchResult, SearchResponse,
 )
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_admin_user, get_current_premium_user, get_current_user
 from app.data.set_registry import SETS, ERAS as SET_ERAS, aliases_for
 from app.utils.cache import public_cache
 
@@ -252,13 +252,13 @@ async def get_sets(
 
 @router.get("/sets/unmatched")
 async def get_unmatched_sets(
+    _: User = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Returns distinct product_set values in market_stats that don't match
     any alias in the set registry. Use to discover newly scraped sets that
-    need to be added to set_registry.py.
-    No auth required — maintenance endpoint.
+    need to be added to set_registry.py. Admin only (maintenance endpoint).
     """
     from app.models.market_stats import MarketStats
 
@@ -349,13 +349,13 @@ async def get_market_stats(
     limit: int = Query(default=50, le=100, description="Maximum number of stats to return"),
     set_slug: Optional[str] = Query(default=None, description="Canonical set slug (preferred)."),
     product_set: Optional[str] = Query(default=None, description="[DEPRECATED] Filter by product set. Prefer set_slug."),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_premium_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
     Get market statistics for products
     
-    **Available to all users**
+    **Plus/Business only** ("Full market stats & price history" on the pricing page)
     
     Returns market statistics sorted by calculation time (most recent first)
     
@@ -413,7 +413,7 @@ async def search_cards(
     from app.models.raw_price import RawPrice
     from app.models.deal_score import DealScore
     
-    search_term = f"%{q.lower()}%"
+    search_term = f"%{_escape_ilike_pattern(q.lower())}%"
     
     # Aggregate raw_prices by (card_name, card_set) — returns unique products
     # with min/avg/max prices, listing count, and most recent scrape time
@@ -430,8 +430,8 @@ async def search_cards(
             MAX(source_url) AS source_url,
             MAX(scraped_at) AS last_seen
         FROM raw_prices
-        WHERE LOWER(card_name) LIKE :search_term
-           OR LOWER(card_set) LIKE :search_term
+        WHERE LOWER(card_name) LIKE :search_term ESCAPE '\\'
+           OR LOWER(card_set) LIKE :search_term ESCAPE '\\'
         GROUP BY card_name, card_set
         ORDER BY
             CASE WHEN :sort_by = 'price_asc'  THEN MIN(price) END ASC,
@@ -452,30 +452,35 @@ async def search_cards(
     count_query = text("""
         SELECT COUNT(DISTINCT (card_name, card_set))::int AS total
         FROM raw_prices
-        WHERE LOWER(card_name) LIKE :search_term
-           OR LOWER(card_set) LIKE :search_term
+        WHERE LOWER(card_name) LIKE :search_term ESCAPE '\\'
+           OR LOWER(card_set) LIKE :search_term ESCAPE '\\'
     """)
     count_result = await db.execute(count_query, {"search_term": search_term})
     total_count = count_result.scalar() or 0
     
     # Enrich results with deal scores if available
-    card_names = [row.card_name for row in rows]
+    # Deal names keep the scraped spelling but may differ in case/whitespace
+    # between sources, so match on a lowercased, whitespace-collapsed key.
+    def _name_key(name: Optional[str]) -> str:
+        return " ".join((name or "").split()).lower()
+
+    card_keys = list({_name_key(row.card_name) for row in rows})
     deal_score_map = {}
-    if card_names:
+    if card_keys:
         deal_query = select(DealScore).where(
             and_(
-                DealScore.product_name.in_(card_names),
+                func.lower(DealScore.product_name).in_(card_keys),
                 DealScore.is_active == True
             )
         )
         deal_result = await db.execute(deal_query)
         for ds in deal_result.scalars().all():
-            deal_score_map[ds.product_name] = ds
+            deal_score_map[_name_key(ds.product_name)] = ds
     
     # Build response
     results = []
     for row in rows:
-        ds = deal_score_map.get(row.card_name)
+        ds = deal_score_map.get(_name_key(row.card_name))
         results.append(CardSearchResult(
             card_name=row.card_name,
             card_set=row.card_set,
@@ -523,10 +528,12 @@ class RawPriceImport(BaseModel):
 async def import_raw_prices(
     records: List[RawPriceImport],
     clear_existing: bool = Query(default=False, description="Clear existing records first"),
+    _: User = Depends(get_current_admin_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Bulk import raw_prices records (for data migration)
+    Bulk import raw_prices records (for data migration). Admin only —
+    clear_existing wipes the whole raw_prices table.
     """
     logger.info(f"Importing {len(records)} raw_price records (clear={clear_existing})")
     
@@ -569,8 +576,11 @@ async def import_raw_prices(
 
 
 @router.get("/import/status")
-async def import_status(db: AsyncSession = Depends(get_db)):
-    """Check current raw_prices count"""
+async def import_status(
+    _: User = Depends(get_current_admin_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Check current raw_prices count (admin only)"""
     result = await db.execute(text("SELECT COUNT(*) FROM raw_prices"))
     total = result.scalar()
     result2 = await db.execute(text("SELECT COUNT(DISTINCT card_name) FROM raw_prices"))
@@ -606,13 +616,13 @@ class PriceHistoryResponse(BaseModel):
 async def get_price_history(
     card_name: str = Query(..., description="Exact card name to look up"),
     days: int = Query(default=30, ge=7, le=90, description="Number of days of history"),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_premium_user),
     db: AsyncSession = Depends(get_db),
 ):
     """
     Returns daily average, min, and max prices for a specific card over the past N days,
     derived from the raw_prices append-only table (real scraped data, not simulated).
-    Also returns a condition breakdown (NM / LP / HP etc.) for context.
+    Plus/Business only. Also returns a condition breakdown (NM / LP / HP etc.) for context.
     """
     cutoff = datetime.now(timezone.utc) - timedelta(days=days)
 

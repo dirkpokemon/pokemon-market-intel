@@ -64,14 +64,11 @@ services:
       PYTHONUNBUFFERED: 1
     volumes:
       - ./services/scraper/app:/app/app
-      - scraper_cache:/app/.cache
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - pokemon-network
-    # Shared memory size for Playwright
-    shm_size: '2gb'
 
   # Analysis Service
   analysis:
@@ -87,27 +84,6 @@ services:
       PYTHONUNBUFFERED: 1
     volumes:
       - ./services/analysis/app:/app/app
-      - analysis_data:/app/data
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - pokemon-network
-
-  # Alert Engine Service
-  alerts:
-    build:
-      context: ./services/alerts
-      dockerfile: Dockerfile
-    container_name: pokemon-intel-alerts
-    restart: unless-stopped
-    env_file:
-      - ./services/alerts/.env
-    environment:
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-pokemon_user}:${POSTGRES_PASSWORD:-pokemon_password}@postgres:5432/${POSTGRES_DB:-pokemon_intel}
-      PYTHONUNBUFFERED: 1
-    volumes:
-      - ./services/alerts/app:/app/app
     depends_on:
       postgres:
         condition: service_healthy
@@ -163,13 +139,5 @@ networks:
 volumes:
   postgres_data:
     name: pokemon-intel-postgres-data
-  scraper_cache:
-    name: pokemon-intel-scraper-cache
-  analysis_data:
-    name: pokemon-intel-analysis-data
-  frontend_node_modules:
-    name: pokemon-intel-frontend-node-modules
-  frontend_next:
-    name: pokemon-intel-frontend-next
   nginx_cache:
     name: pokemon-intel-nginx-cache

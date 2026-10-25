@@ -11,7 +11,7 @@ All services are running and your account is created.
 | Field | Value |
 |-------|-------|
 | **Email** | `demo@pokemontel.eu` |
-| **Password** | `Demo2024!` |
+| **Password** | `<demo-password>` |
 | **Role** | Free (access to top 10 deals) |
 
 ---
@@ -39,7 +39,7 @@ All services are running and your account is created.
 1. **Click this link**: http://localhost:3000/login
 2. **Enter**:
    - Email: `demo@pokemontel.eu`
-   - Password: `Demo2024!`
+   - Password: `<demo-password>`
 3. **Click "Sign In"**
 4. **You're in!** 🎉
 
@@ -111,7 +111,7 @@ curl -X POST http://localhost:8000/api/v1/auth/register \
 # Test login
 curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=demo@pokemontel.eu&password=Demo2024!"
+  -d "username=demo@pokemontel.eu&password=<demo-password>"
 ```
 
 ### Check All Services
@@ -132,7 +132,7 @@ Should show all services as "Up":
 
 ### Login Not Working?
 - Double-check email: `demo@pokemontel.eu` (not gmail!)
-- Password is case-sensitive: `Demo2024!`
+- Password is case-sensitive: `<demo-password>`
 - Clear browser cache (Cmd+Shift+R or Ctrl+Shift+R)
 
 ### Page Shows 404?
@@ -155,7 +155,7 @@ Should show all services as "Up":
 **You're all set!** 
 
 👉 **Go to**: http://localhost:3000/login  
-👉 **Login with**: `demo@pokemontel.eu` / `Demo2024!`  
+👉 **Login with**: `demo@pokemontel.eu` / `<demo-password>`  
 👉 **View dashboard**: Market intelligence data
 
 **Enjoy!** 🎮🃏📊

@@ -103,7 +103,7 @@ The dashboard will now show real Pokémon card deals!
 # Login to get a fresh token
 curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"demo@pokemontel.eu","password":"Demo2024!"}'
+  -d '{"email":"demo@pokemontel.eu","password":"<demo-password>"}'
 
 # Copy the access_token, then test deal_scores
 curl "http://localhost:8000/api/v1/deal_scores?limit=10" \

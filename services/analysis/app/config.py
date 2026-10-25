@@ -7,10 +7,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     """
-    Analysis settings loaded from environment variables
+    Analysis settings loaded from environment variables.
+    Analysis tuning parameters live in config_analysis.py (ANALYSIS_* env vars).
     """
 
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True)
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
 
     # Application
     APP_VERSION: str = "1.0.0"
@@ -19,34 +20,19 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
 
-    # Scheduling
+    # Scheduling (long-running mode only; Railway runs `--once` on a cron)
     ANALYSIS_SCHEDULE: str = "0 * * * *"  # Every hour
-    DEAL_SCORE_SCHEDULE: str = "*/30 * * * *"  # Every 30 minutes
-    SIGNAL_SCHEDULE: str = "*/15 * * * *"  # Every 15 minutes
 
-    # Analysis Parameters
-    LOOKBACK_DAYS: int = 30  # Days of historical data to analyze
-    MIN_DATA_POINTS: int = 10  # Minimum data points required for analysis
-    OUTLIER_THRESHOLD: float = 3.0  # Standard deviations for outlier detection
+    # Watchlist alert emails (Brevo). Same values as on the backend service.
+    BREVO_API_KEY: str = ""
+    SMTP_FROM: str = ""
+    FRONTEND_URL: str = "https://charming-contentment-production-ce0e.up.railway.app"
+    # Must equal the backend SECRET_KEY: signs the one-click unsubscribe links
+    SECRET_KEY: str = ""
 
-    # Deal Score Weights
-    WEIGHT_PRICE_VS_AVG: float = 0.4
-    WEIGHT_PRICE_TREND: float = 0.3
-    WEIGHT_AVAILABILITY: float = 0.2
-    WEIGHT_SELLER_RATING: float = 0.1
-
-    # Signal Detection
-    PRICE_DROP_THRESHOLD: float = 0.15  # 15% drop
-    PRICE_SPIKE_THRESHOLD: float = 0.25  # 25% increase
-    VOLATILITY_THRESHOLD: float = 0.20  # 20% volatility
-
-    # Performance
-    BATCH_SIZE: int = 1000
-    PARALLEL_WORKERS: int = 4
-
-    # Storage
-    EXPORT_ENABLED: bool = False
-    EXPORT_PATH: str = "/app/data/exports"
+    @property
+    def sender_email(self) -> str:
+        return (self.SMTP_FROM or "pokemonmarketintel@gmail.com").strip()
 
 
 settings = Settings()

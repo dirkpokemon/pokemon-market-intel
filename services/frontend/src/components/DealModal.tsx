@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { DealScore, marketApi, notificationApi, PriceHistoryPoint, ConditionBreakdown } from '@/lib/api';
 import CardImage from '@/components/CardImage';
+import { UPSELL_SUBSCRIBE } from '@/lib/plans';
 
 const CardHistoryChart = dynamic(() => import('@/components/CardHistoryChart'), { ssr: false });
 
@@ -145,6 +146,8 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
   const [conditions, setConditions] = useState<ConditionBreakdown[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  // Price history is a Plus feature: the API answers 403 for Free accounts
+  const [historyLocked, setHistoryLocked] = useState(false);
 
   // Portfolio add
   const [portfolioOpen, setPortfolioOpen] = useState(false);
@@ -168,8 +171,12 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
     if (!historyOpen) return;
     setHistoryLoading(true);
     marketApi.getPriceHistory(deal.product_name, historyDays)
-      .then(r => { setHistoryData(r.history); setConditions(r.conditions); })
-      .catch(() => { setHistoryData([]); setConditions([]); })
+      .then(r => { setHistoryData(r.history); setConditions(r.conditions); setHistoryLocked(false); })
+      .catch((e: unknown) => {
+        setHistoryData([]);
+        setConditions([]);
+        setHistoryLocked((e as { status?: number })?.status === 403);
+      })
       .finally(() => setHistoryLoading(false));
   }, [historyOpen, historyDays, deal.product_name]);
 
@@ -362,6 +369,16 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                       <div className="w-5 h-5 border-2 border-gray-200 border-t-gray-600 dark:border-gray-700 dark:border-t-gray-300 rounded-full animate-spin mr-2" />
                       Loading...
                     </div>
+                  ) : historyLocked ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center gap-3">
+                      <p className="text-sm text-gray-600 dark:text-gray-300">Full price history is included with Plus.</p>
+                      <a
+                        href="/pricing"
+                        className="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white text-sm rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-400 transition font-medium"
+                      >
+                        {UPSELL_SUBSCRIBE}
+                      </a>
+                    </div>
                   ) : (
                     <CardHistoryChart history={historyData} />
                   )}
@@ -438,7 +455,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
             <div className="mx-6 mt-4 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4 bg-emerald-50 dark:bg-emerald-950/30">
               <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Prijsalert instellen</p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                Je ontvangt een Telegram- of e-mailbericht zodra de marktprijs jouw doelprijs bereikt.
+                Je ontvangt een e-mail zodra de goedkoopste aanbieding jouw doelprijs bereikt.
               </p>
               <div className="flex items-end gap-3 mb-3">
                 <div className="flex-1">

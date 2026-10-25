@@ -1,6 +1,7 @@
 """
 Email service for sending verification and notification emails.
-Supports Resend (HTTPS API) with SMTP fallback.
+Uses the Brevo HTTPS API with SMTP fallback. These helpers block (urllib /
+smtplib): call them through run_in_threadpool from async code.
 """
 
 import html as html_module
@@ -136,7 +137,7 @@ def _send_via_brevo(
     if not api_key:
         return False
 
-    sender_email = settings.SMTP_FROM or settings.SMTP_USER or "pokemonmarketintel@gmail.com"
+    sender_email = settings.sender_email
 
     body: dict = {
         "sender": {"name": "TCG Pulse", "email": sender_email},
@@ -270,7 +271,7 @@ def send_subscription_success_email(to_email: str, first_name: str, plan_label: 
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
+    msg["From"] = settings.sender_email
     if not msg["From"]:
         logger.warning("No SMTP_FROM/SMTP_USER for subscription success email")
         return False
@@ -300,7 +301,7 @@ def send_verification_email(to_email: str, first_name: str, token: str) -> bool:
     # 2) Try SMTP (works locally)
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
+    msg["From"] = settings.sender_email
     msg["To"] = to_email
     msg.attach(MIMEText(text, "plain"))
     msg.attach(MIMEText(html, "html"))
@@ -357,7 +358,7 @@ def send_feedback_inbox_email(
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = settings.SMTP_FROM or settings.SMTP_USER
+    msg["From"] = settings.sender_email
     if not msg["From"]:
         logger.error(
             "Feedback email failed: no BREVO_API_KEY and no SMTP_FROM/SMTP_USER. "

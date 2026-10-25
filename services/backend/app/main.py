@@ -47,26 +47,6 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Scheduler startup failed: {e}")
 
-    # Register Telegram webhook
-    if settings.TELEGRAM_BOT_TOKEN:
-        try:
-            from app.utils.telegram import set_webhook
-
-            backend_public = settings.BACKEND_URL
-            if not backend_public and settings.FRONTEND_URL:
-                # Derive backend URL from frontend URL as a fallback
-                backend_public = (
-                    settings.FRONTEND_URL
-                    .replace("frontend", "backend")
-                    .replace(":3000", ":8000")
-                )
-            if backend_public:
-                await set_webhook(f"{backend_public}/api/v1/telegram/webhook")
-            else:
-                logger.warning("BACKEND_URL not set — skipping Telegram webhook registration")
-        except Exception as e:
-            logger.error(f"Telegram webhook registration failed: {e}")
-
     yield
 
     # Shutdown

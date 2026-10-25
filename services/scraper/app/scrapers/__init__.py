@@ -1,12 +1,6 @@
 """
-Scraper Implementations
+Scraper implementations used by app.main:
 
-Available scrapers:
-- CardMarketScraper: Largest European trading card marketplace
-- CardTraderScraper: Popular international marketplace
+- CardTraderScraperV2 (cardtrader_scraper_new.py): CardTrader REST API, every listing
+- CardMarketAPIClient (cardmarket_api.py): CardMarket MKM API price guide (LOW price)
 """
-
-from app.scrapers.cardmarket import CardMarketScraper
-from app.scrapers.cardtrader import CardTraderScraper
-
-__all__ = ["CardMarketScraper", "CardTraderScraper"]

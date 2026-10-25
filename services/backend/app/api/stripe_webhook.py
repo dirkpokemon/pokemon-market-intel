@@ -4,8 +4,9 @@ Processes Stripe events for subscription management
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Request, HTTPException, status, Depends
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -29,6 +30,37 @@ def _stripe_ref_id(value) -> str | None:
     if isinstance(value, dict) and value.get("id"):
         return value["id"]
     return None
+
+
+# Subscription statuses where Stripe will not collect any more money and the
+# user must lose paid access (customer.subscription.deleted covers "canceled"
+# too, but updated events can arrive with these statuses first).
+ENDED_STATUSES = ("canceled", "unpaid", "incomplete_expired")
+
+
+def _period_end(subscription: dict) -> datetime | None:
+    """
+    current_period_end moved from the subscription to its items in Stripe API
+    2025-03-31 ("basil"). Webhook payloads use the account/endpoint API version,
+    so support both shapes instead of failing with a KeyError.
+    """
+    ts = subscription.get("current_period_end")
+    if ts is None:
+        items = (subscription.get("items") or {}).get("data") or []
+        ts = max(
+            (i.get("current_period_end") for i in items if i.get("current_period_end")),
+            default=None,
+        )
+    return datetime.fromtimestamp(ts, tz=timezone.utc) if ts else None
+
+
+def _invoice_subscription_id(invoice: dict) -> str | None:
+    """invoice.subscription moved to invoice.parent.subscription_details in API 2025-03-31."""
+    sub = _stripe_ref_id(invoice.get("subscription"))
+    if sub:
+        return sub
+    details = (invoice.get("parent") or {}).get("subscription_details") or {}
+    return _stripe_ref_id(details.get("subscription"))
 
 
 @router.post("/webhook")
@@ -79,6 +111,7 @@ async def stripe_webhook(
             )
         
         logger.info("Received Stripe event: %s", event["type"])
+        event = event.to_dict_recursive() if hasattr(event, "to_dict_recursive") else event
 
         if event["type"] == "checkout.session.completed":
             await handle_checkout_session_completed(event["data"]["object"], db)
@@ -100,6 +133,8 @@ async def stripe_webhook(
         
         return {"status": "success"}
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Webhook error: {e}", exc_info=True)
         raise HTTPException(
@@ -159,7 +194,7 @@ async def handle_checkout_session_completed(session: dict, db: AsyncSession):
         try:
             first_name = (user.full_name or user.email or "there").split()[0]
             plan_label = "Business" if user.role == "pro" else "Plus"
-            if send_subscription_success_email(user.email, first_name, plan_label):
+            if await run_in_threadpool(send_subscription_success_email, user.email, first_name, plan_label):
                 logger.info("Subscription success email sent to %s", user.email)
         except Exception as exc:
             logger.warning("Subscription success email failed for %s: %s", user.email, exc)
@@ -193,11 +228,12 @@ async def handle_subscription_created(subscription: dict, db: AsyncSession):
     user.stripe_subscription_id = subscription_id
     user.subscription_status = status_value
     if user.role != "admin":
-        user.role = role_from_subscription(subscription)
+        user.role = "free" if status_value in ENDED_STATUSES else role_from_subscription(subscription)
     
     # Set subscription end date
-    current_period_end = subscription["current_period_end"]
-    user.subscription_end_date = datetime.fromtimestamp(current_period_end)
+    period_end = _period_end(subscription)
+    if period_end:
+        user.subscription_end_date = period_end
     
     await db.commit()
     
@@ -221,11 +257,15 @@ async def handle_subscription_updated(subscription: dict, db: AsyncSession):
     
     user.subscription_status = status_value
 
-    current_period_end = subscription["current_period_end"]
-    user.subscription_end_date = datetime.fromtimestamp(current_period_end)
+    period_end = _period_end(subscription)
+    if period_end:
+        user.subscription_end_date = period_end
 
-    if status_value in ("active", "trialing", "past_due") and user.role != "admin":
-        user.role = role_from_subscription(subscription)
+    if user.role != "admin":
+        if status_value in ("active", "trialing", "past_due"):
+            user.role = role_from_subscription(subscription)
+        elif status_value in ENDED_STATUSES:
+            user.role = "free"
 
     if subscription.get("cancel_at_period_end"):
         logger.info("Subscription will cancel at period end for %s", user.email)
@@ -252,7 +292,7 @@ async def handle_subscription_deleted(subscription: dict, db: AsyncSession):
     if user.role != "admin":
         user.role = "free"
     user.subscription_status = "canceled"
-    user.subscription_end_date = datetime.utcnow()
+    user.subscription_end_date = datetime.now(timezone.utc)
     
     await db.commit()
     
@@ -264,7 +304,7 @@ async def handle_payment_succeeded(invoice: dict, db: AsyncSession):
     customer_id = _stripe_ref_id(invoice.get("customer"))
     if not customer_id:
         return
-    subscription_id = invoice.get("subscription")
+    subscription_id = _invoice_subscription_id(invoice)
     
     if not subscription_id:
         return

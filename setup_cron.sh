@@ -29,7 +29,7 @@ cat > "$CRON_FILE" << EOF
 # CARDTRADER SCRAPER - Daily at 2 AM
 # Full scrape of 100 expansions (~40 minutes)
 # ============================================================
-0 2 * * * cd $PROJECT_PATH && docker compose exec -T scraper python run_cardtrader.py >> $LOG_PATH/cardtrader.log 2>&1
+0 2 * * * cd $PROJECT_PATH && docker compose exec -T scraper python -m app.main --once >> $LOG_PATH/cardtrader.log 2>&1
 
 # ============================================================
 # CARDMARKET SCRAPER - Every hour

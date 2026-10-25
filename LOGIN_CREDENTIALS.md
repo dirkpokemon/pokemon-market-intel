@@ -5,7 +5,7 @@
 Your account has been created successfully!
 
 **Email:** `demo@pokemontel.eu`  
-**Password:** `Demo2024!`
+**Password:** `<demo-password>`
 
 ---
 
@@ -16,7 +16,7 @@ Your account has been created successfully!
 1. **Open your browser**: http://localhost:3000/login
 2. **Enter credentials**:
    - Email: `demo@pokemontel.eu`
-   - Password: `Demo2024!`
+   - Password: `<demo-password>`
 3. **Click "Sign In"**
 4. **You'll be redirected to**: http://localhost:3000/dashboard
 
@@ -61,7 +61,7 @@ You can also test the backend directly:
 # First login to get token
 curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=demo@pokemontel.eu&password=Demo2024!"
+  -d "username=demo@pokemontel.eu&password=<demo-password>"
 
 # Copy the access_token from response, then:
 curl http://localhost:8000/api/v1/auth/me \
@@ -83,7 +83,7 @@ The API paths have been fixed. Rebuilding the frontend now...
 
 ### If login doesn't work:
 - Make sure you're using the correct email: `demo@pokemontel.eu`
-- Password is case-sensitive: `Demo2024!`
+- Password is case-sensitive: `<demo-password>`
 - Check backend is running: `docker compose ps`
 
 ### If dashboard is empty:

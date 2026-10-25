@@ -176,7 +176,7 @@ Deploy these services separately:
 - [ ] Backend domain generated
 - [ ] Frontend service deployed with NEXT_PUBLIC_API_URL
 - [ ] Frontend domain generated
-- [ ] Test login: `demo@pokemontel.eu` / `demo123`
+- [ ] Test login: `demo@pokemontel.eu` / `<demo-password>`
 - [ ] (Optional) Background workers deployed
 
 ---
@@ -214,7 +214,7 @@ For testing, free tier should be enough!
 
 1. **Test your platform:**
    - Visit frontend URL
-   - Login with `demo@pokemontel.eu` / `demo123`
+   - Login with `demo@pokemontel.eu` / `<demo-password>`
    - Check all pages work
 
 2. **Run initial data collection:**

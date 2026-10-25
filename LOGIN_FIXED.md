@@ -54,7 +54,7 @@ catch (err: any) {
 
 ### Your Credentials:
 - **Email**: `demo@pokemontel.eu`
-- **Password**: `Demo2024!`
+- **Password**: `<demo-password>`
 
 ### How to Login:
 1. **Go to**: http://localhost:3000/login
@@ -73,7 +73,7 @@ http://localhost:3000/login
 ```bash
 curl -X POST http://localhost:8000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"demo@pokemontel.eu","password":"Demo2024!"}'
+  -d '{"email":"demo@pokemontel.eu","password":"<demo-password>"}'
 ```
 
 **Expected Response:**
@@ -114,6 +114,6 @@ curl -X POST http://localhost:8000/api/v1/auth/login \
 http://localhost:3000/login
 
 Email: `demo@pokemontel.eu`  
-Password: `Demo2024!`
+Password: `<demo-password>`
 
 After login, you'll see the dashboard with market data and deal scores!

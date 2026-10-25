@@ -5,7 +5,7 @@
 ### **Login Credentials:**
 ```
 Email:    demo@pokemontel.eu
-Password: demo123
+Password: <demo-password>
 Role:     PAID
 Status:   ACTIVE ✅
 Alerts:   ENABLED
@@ -27,7 +27,7 @@ http://localhost:3000
 2. Go to `http://localhost:3000`
 3. Click "Login" or "Get Started"
 4. Enter email: `demo@pokemontel.eu`
-5. Enter password: `demo123`
+5. Enter password: `<demo-password>`
 6. Click "Login"
 
 ---
@@ -44,7 +44,6 @@ http://localhost:3000
 
 ### **Alert System (Already Configured):**
 - 📧 **Email**: pokemonmarketintel@gmail.com
-- 📱 **Telegram**: Chat ID 1477997156
 - ⏰ **Frequency**: Every 5 minutes
 - 🎯 **Alert Types**:
   - High deal scores (≥80)
@@ -67,7 +66,7 @@ curl -X POST http://localhost:8000/auth/login \
   -H 'Content-Type: application/json' \
   -d '{
     "email": "demo@pokemontel.eu",
-    "password": "demo123"
+    "password": "<demo-password>"
   }'
 ```
 
@@ -193,17 +192,12 @@ This paid account sends alerts to:
    - Gmail SMTP configured
    - App Password: Active
 
-2. **Telegram:**
-   - Bot Token: 8417057036:AAE0EnCKrJ_lUTUO9xZMFhNmBQwSZX3bv2g
-   - Chat ID: 1477997156
-   - Active and receiving messages
-
 ---
 
 ## 🚀 **Quick Start Summary**
 
 1. **Open:** http://localhost:3000
-2. **Login:** demo@pokemontel.eu / demo123
+2. **Login:** demo@pokemontel.eu / <demo-password>
 3. **Explore:** Dashboard, charts, signals
 4. **Check:** Email & Telegram for alerts
 

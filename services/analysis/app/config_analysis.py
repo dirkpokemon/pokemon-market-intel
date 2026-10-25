@@ -3,7 +3,7 @@ Analysis Service Configuration
 Thresholds and parameters for market analysis and deal scoring
 """
 
-from typing import Dict
+from typing import Dict, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -16,17 +16,32 @@ class AnalysisConfig(BaseSettings):
 
     # Time windows (days)
     SHORT_WINDOW_DAYS: int = 7
-    # Must stay aligned with volume_trend baseline in market_stats (_calculate_volume_trend divides by this).
-    # Shorter windows shrink volume_trend % and starve strict signal rules (e.g. momentum +30% volume).
     LONG_WINDOW_DAYS: int = 30
-    
-    # Data quality thresholds
-    MIN_SAMPLES_EXCELLENT: int = 50
-    MIN_SAMPLES_GOOD: int = 20
-    MIN_SAMPLES_FAIR: int = 10
-    MIN_SAMPLES_POOR: int = 5
-    
-    # Currency conversion (to EUR)
+
+    # Which listings are comparable. Mixing conditions (NM vs heavily played)
+    # and languages made the "cheapest listing" a damaged or foreign copy.
+    # Singles: only these normalized conditions; sealed products ignore condition.
+    # Rows without a condition (e.g. CardMarket price guide = NM) are kept.
+    INCLUDED_CONDITIONS: List[str] = ['near mint', 'nm', 'mint', 'm']
+    INCLUDED_LANGUAGES: List[str] = ['EN']
+
+    # Data quality by number of distinct days a product was seen in the long window
+    MIN_DAYS_EXCELLENT: int = 20
+    MIN_DAYS_GOOD: int = 10
+    MIN_DAYS_FAIR: int = 5
+    MIN_DAYS_POOR: int = 2
+    # Minimum listing observations in the long window to store stats at all
+    MIN_OBSERVATIONS: int = 5
+
+    # Deal scoring needs a "usual floor price", so require some history
+    MIN_DAYS_FOR_DEAL: int = 3
+    # Only score products seen in a recent scrape (scrapes run twice a day)
+    CURRENT_MAX_AGE_HOURS: int = 36
+    # A cheapest listing below this fraction of the typical price is treated as
+    # a likely data error (mislabelled card/proxy); the day's 10th percentile is used instead.
+    SUSPICIOUS_LOW_RATIO: float = 0.3
+
+    # Currency conversion to EUR. Rows in other currencies are skipped.
     CURRENCY_RATES: Dict[str, float] = {
         'EUR': 1.0,
         'USD': 0.92,  # Update with real rates
@@ -34,81 +49,49 @@ class AnalysisConfig(BaseSettings):
         'CHF': 1.06,
         'PLN': 0.23,
     }
-    
-    # Condition normalization mapping
-    CONDITION_MAP: Dict[str, str] = {
-        'mint': 'NM',
-        'near mint': 'NM',
-        'nm': 'NM',
-        'm': 'NM',
-        'lightly played': 'LP',
-        'light play': 'LP',
-        'lp': 'LP',
-        'moderately played': 'MP',
-        'mp': 'MP',
-        'played': 'PL',
-        'pl': 'PL',
-        'heavily played': 'HP',
-        'hp': 'HP',
-        'poor': 'PO',
-        'po': 'PO',
-        'damaged': 'DM',
-    }
-    
-    # Deal Score Weights (must sum to 1.0)
+
+    # Deal score weights (sum = 1.0)
     WEIGHT_PRICE_DEVIATION: float = 0.4
     WEIGHT_VOLUME_TREND: float = 0.3
     WEIGHT_LIQUIDITY: float = 0.2
     WEIGHT_POPULARITY: float = 0.1
-    
-    # Signal thresholds (tuned to avoid noise with limited history)
-    MOMENTUM_PRICE_CHANGE: float = 15.0   # % increase
-    MOMENTUM_VOLUME_CHANGE: float = 30.0  # % increase
-    
-    RISK_VOLUME_DROP: float = -40.0  # % decrease
-    RISK_PRICE_RISE: float = 25.0    # % increase
-    
-    PRICE_DROP_THRESHOLD: float = -20.0        # % decrease in 7d
-    SUPPLY_INCREASE_THRESHOLD: float = 80.0    # % more listings vs 30d avg
-    SUPPLY_DECREASE_THRESHOLD: float = -50.0   # % fewer listings vs 30d avg
-    VOLATILITY_SPIKE_THRESHOLD: float = 100.0  # coefficient of variation %
-    SET_TREND_THRESHOLD: float = 12.0          # % set-wide avg price change
-    
-    # Liquidity scoring
-    HIGH_LIQUIDITY_VOLUME: int = 100   # listings
-    MED_LIQUIDITY_VOLUME: int = 50
-    LOW_LIQUIDITY_VOLUME: int = 20
-    
-    # Popularity scoring (by set)
+
+    # Current cheapest listing this far below the usual floor (%) scores 100 on price
+    PRICE_DEVIATION_FULL_SCORE_PCT: float = 30.0
+
+    # Liquidity: average listing observations per observed day. Each scrape
+    # stores every active listing, and there are two scrapes a day, so 60
+    # observations/day is roughly 30 listings on the market.
+    HIGH_LIQUIDITY_DAILY: float = 60.0
+    MED_LIQUIDITY_DAILY: float = 20.0
+    LOW_LIQUIDITY_DAILY: float = 6.0
+
+    # Set popularity: case-insensitive substring match on the set name
+    # (CardTrader names look like "Scarlet & Violet—151"), first match wins.
     POPULAR_SETS: Dict[str, float] = {
-        'Base Set': 100.0,
+        'Prismatic Evolutions': 100.0,
         '151': 95.0,
+        'Evolving Skies': 95.0,
+        'Base Set': 95.0,
+        'Hidden Fates': 90.0,
+        'Shining Fates': 85.0,
         'Paldean Fates': 90.0,
-        'Obsidian Flames': 85.0,
-        'Scarlet-Violet-151': 95.0,
-        'Paradox Rift': 80.0,
+        'Crown Zenith': 85.0,
+        'Surging Sparks': 85.0,
+        'Destined Rivals': 85.0,
+        'Journey Together': 80.0,
+        'Obsidian Flames': 80.0,
+        'Paradox Rift': 75.0,
+        'Lost Origin': 75.0,
+        'Silver Tempest': 75.0,
     }
     DEFAULT_POPULARITY: float = 50.0
-    
-    # Outlier detection
-    OUTLIER_THRESHOLD: float = 3.0  # Standard deviations
-    
-    # Performance
-    BATCH_SIZE: int = 1000
-    MAX_CONCURRENT_TASKS: int = 4
-    # Stream raw_prices in chunks (ORM .all() on huge tables OOMs on Railway)
-    RAW_FETCH_BATCH_SIZE: int = 6000
-    # Per product: keep only the last N points (by stream order ≈ rising id ≈ recent scrapes). Stops RAM from growing with millions of duplicate listings.
-    MAX_LISTINGS_PER_PRODUCT: int = 1500
 
-    # Disk: append-only raw_prices fills small Postgres volumes. Each full analysis run
-    # deletes rows older than this many days (batched). Set ANALYSIS_RAW_PRICES_RETENTION_DAYS=0 to disable.
-    # Default 60 keeps ~2× the default LONG_WINDOW (30) for safety + price-history headroom.
+    # raw_prices retention (keeps the shared Postgres small)
     RAW_PRICES_RETENTION_DAYS: int = 60
     RAW_PRICES_PRUNE_BATCH_ROWS: int = 40000
     RAW_PRICES_PRUNE_MAX_BATCHES_PER_RUN: int = 25
     
-    # Logging
     LOG_LEVEL: str = "INFO"
 
 

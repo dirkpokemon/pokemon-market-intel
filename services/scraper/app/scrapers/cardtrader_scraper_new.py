@@ -10,12 +10,12 @@ API Structure:
 
 import logging
 import asyncio
+import re
 from datetime import datetime
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from decimal import Decimal
 
 import httpx
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.raw_price import RawPrice
 from app.models.scrape_log import ScrapeLog
@@ -51,10 +51,56 @@ SEALED_KEYWORDS = [
     'league battle deck',
 ]
 
+_SEALED_RE = re.compile(
+    r"\b(" + "|".join(re.escape(kw) for kw in SEALED_KEYWORDS) + r")\b",
+    re.IGNORECASE,
+)
+
+
 def _is_sealed_product(name: str) -> bool:
     """Return True if the blueprint name looks like a sealed product."""
-    lower = name.lower()
-    return any(kw in lower for kw in SEALED_KEYWORDS)
+    return bool(_SEALED_RE.search(name or ""))
+
+
+# Target modern English TCG sets using multi-word fragments that are unique to English releases
+# Single-word keywords cause false positives ("Black" matches "Wizards Black Star Promos", etc.)
+ENGLISH_SET_PHRASES = [
+    # Scarlet & Violet series (2023-present)
+    'Scarlet & Violet', 'Paldea', 'Obsidian Flames', 'Paradox Rift', 'Temporal Forces',
+    'Twilight Masquerade', 'Stellar Crown', 'Shrouded Fable', 'Surging Sparks',
+    'Prismatic Evolutions', 'Journey Together', 'Destined Rivals',
+    'Terastal Festival', 'Mask of Change', 'Clay Burst', 'Wild Force',
+    'Indigo Disk', 'Iron Leaves', 'Charizard ex Special',
+    # Sword & Shield series (2020-2023)
+    'Sword & Shield', 'Rebel Clash', 'Darkness Ablaze', 'Vivid Voltage',
+    'Shining Fates', 'Battle Styles', 'Chilling Reign', 'Evolving Skies',
+    'Fusion Strike', 'Brilliant Stars', 'Astral Radiance', 'Pokémon GO',
+    'Lost Origin', 'Silver Tempest', 'Crown Zenith',
+    # Sun & Moon series (2017-2020)
+    'Sun & Moon', 'Guardians Rising', 'Burning Shadows', 'Crimson Invasion',
+    'Ultra Prism', 'Forbidden Light', 'Celestial Storm', 'Dragon Majesty',
+    'Team Up', 'Unbroken Bonds', 'Unified Minds', 'Hidden Fates',
+    'Cosmic Eclipse',
+]
+
+
+def _is_target_set(name: str) -> bool:
+    return any(phrase.lower() in name.lower() for phrase in ENGLISH_SET_PHRASES)
+
+
+# Retry policy for a single API call: rate limits (429), server errors and
+# network timeouts are retried with exponential backoff; other 4xx are not.
+MAX_ATTEMPTS = 5
+BACKOFF_BASE_SECONDS = 2.0
+RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+
+# Abort the run when the API keeps failing (token revoked, API down) instead
+# of grinding through tens of thousands of doomed requests.
+MAX_CONSECUTIVE_FAILURES = 25
+
+
+class CardTraderAuthError(Exception):
+    """The API token was rejected; retrying or continuing is pointless."""
 
 
 class CardTraderScraperV2:
@@ -71,10 +117,14 @@ class CardTraderScraperV2:
         }
         self.total_listings_scraped = 0
         self.total_blueprints_processed = 0
+        self.errors_count = 0
+        self.last_error: Optional[str] = None
+        self._consecutive_failures = 0
     
     async def scrape_all(self) -> int:
         """
-        Main scraper entry point
+        Main scraper entry point. Failures of a single expansion or blueprint
+        are logged and skipped; the run is recorded in scrape_logs whatever happens.
         
         Returns:
             Total number of listings scraped
@@ -83,178 +133,190 @@ class CardTraderScraperV2:
         logger.info("Starting CardTrader API Scraper")
         logger.info("=" * 60)
         
+        self.total_listings_scraped = 0
+        self.total_blueprints_processed = 0
+        self.errors_count = 0
+        self.last_error = None
+        self._consecutive_failures = 0
         start_time = datetime.utcnow()
-        
-        try:
-            # Step 1: Get Pokemon expansions
-            expansions = await self._fetch_pokemon_expansions()
-            logger.info(f"Found {len(expansions)} Pokemon expansions")
-            
-            # Target modern English TCG sets using multi-word fragments that are unique to English releases
-            # Single-word keywords cause false positives ("Black" matches "Wizards Black Star Promos", etc.)
-            ENGLISH_SET_PHRASES = [
-                # Scarlet & Violet series (2023-present)
-                'Scarlet & Violet', 'Paldea', 'Obsidian Flames', 'Paradox Rift', 'Temporal Forces',
-                'Twilight Masquerade', 'Stellar Crown', 'Shrouded Fable', 'Surging Sparks',
-                'Prismatic Evolutions', 'Journey Together', 'Destined Rivals',
-                'Terastal Festival', 'Mask of Change', 'Clay Burst', 'Wild Force',
-                'Indigo Disk', 'Iron Leaves', 'Charizard ex Special',
-                # Sword & Shield series (2020-2023)
-                'Sword & Shield', 'Rebel Clash', 'Darkness Ablaze', 'Vivid Voltage',
-                'Shining Fates', 'Battle Styles', 'Chilling Reign', 'Evolving Skies',
-                'Fusion Strike', 'Brilliant Stars', 'Astral Radiance', 'Pokémon GO',
-                'Lost Origin', 'Silver Tempest', 'Crown Zenith',
-                # Sun & Moon series (2017-2020)
-                'Sun & Moon', 'Guardians Rising', 'Burning Shadows', 'Crimson Invasion',
-                'Ultra Prism', 'Forbidden Light', 'Celestial Storm', 'Dragon Majesty',
-                'Team Up', 'Unbroken Bonds', 'Unified Minds', 'Hidden Fates',
-                'Cosmic Eclipse',
-            ]
-            def _is_target_set(name: str) -> bool:
-                return any(phrase.lower() in name.lower() for phrase in ENGLISH_SET_PHRASES)
+        status = "success"
 
-            target_sets = [e for e in expansions if _is_target_set(e.get('name', ''))]
-            # Also include the 20 most recent expansions to catch brand-new releases
-            seen_ids = {e['id'] for e in target_sets}
-            newest_20 = [e for e in expansions[-20:] if e['id'] not in seen_ids]
-            recent_expansions = target_sets + newest_20
-            logger.info(f"Processing {len(recent_expansions)} expansions ({len(target_sets)} target English sets + {len(newest_20)} newest)")
-            if newest_20:
-                logger.warning(
-                    f"⚠️  {len(newest_20)} newest expansions not matched by ENGLISH_SET_PHRASES — "
-                    f"may be new releases. Review and add to set_registry if relevant:"
-                )
-                for exp in newest_20:
-                    logger.warning(f"   UNKNOWN_EXPANSION | name='{exp.get('name_en') or exp.get('name')}' id={exp['id']}")
-            
-            # Step 2: For each expansion, get blueprints and marketplace listings
-            for i, expansion in enumerate(recent_expansions, 1):
-                expansion_id = expansion['id']
-                expansion_name = expansion['name']
-                
-                logger.info(f"[{i}/{len(recent_expansions)}] Processing: {expansion_name}")
-                
-                # Get blueprints for this expansion
-                blueprints = await self._fetch_blueprints(expansion_id)
-                logger.info(f"  Found {len(blueprints)} blueprints")
-                
-                # Process all blueprints (no limit)
-                for blueprint in blueprints:
-                    blueprint_id = blueprint['id']
-                    blueprint_name = blueprint.get('name', 'Unknown')
-                    
-                    listings = await self._fetch_marketplace_listings(blueprint_id)
-                    
-                    if listings:
-                        await self._save_listings(listings, blueprint, expansion)
-                        self.total_blueprints_processed += 1
-                        
-                        # Log progress every 10 blueprints
-                        if self.total_blueprints_processed % 10 == 0:
-                            logger.info(f"    Progress: {self.total_blueprints_processed} blueprints, {self.total_listings_scraped} listings")
-                    
-                    # Smaller delay for faster scraping (be respectful but efficient)
-                    await asyncio.sleep(0.3)
-            
-            end_time = datetime.utcnow()
-            duration = (end_time - start_time).total_seconds()
-            
-            logger.info("=" * 60)
-            logger.info(f"✅ Scrape complete!")
-            logger.info(f"   Blueprints processed: {self.total_blueprints_processed}")
-            logger.info(f"   Listings scraped: {self.total_listings_scraped}")
-            logger.info(f"   Duration: {duration:.1f}s")
-            logger.info("=" * 60)
-            
-            # Log to database
+        if not self.api_token:
+            logger.error("CARDTRADER_API_TOKEN is not set — skipping CardTrader scrape")
+            self.last_error = "CARDTRADER_API_TOKEN is not set"
+            await self._write_scrape_log(start_time, "failed")
+            return 0
+
+        try:
+            async with httpx.AsyncClient(
+                base_url=self.api_base, headers=self.headers, timeout=config.REQUEST_TIMEOUT
+            ) as client:
+                # Step 1: Get Pokemon expansions
+                expansions = await self._fetch_pokemon_expansions(client)
+                logger.info(f"Found {len(expansions)} Pokemon expansions")
+
+                target_sets = [e for e in expansions if _is_target_set(e.get('name', ''))]
+                # Also include the 20 most recent expansions to catch brand-new releases
+                seen_ids = {e['id'] for e in target_sets}
+                newest_20 = [e for e in expansions[-20:] if e['id'] not in seen_ids]
+                recent_expansions = target_sets + newest_20
+                logger.info(f"Processing {len(recent_expansions)} expansions ({len(target_sets)} target English sets + {len(newest_20)} newest)")
+                if newest_20:
+                    logger.warning(
+                        f"⚠️  {len(newest_20)} newest expansions not matched by ENGLISH_SET_PHRASES — "
+                        f"may be new releases. Review and add to set_registry if relevant:"
+                    )
+                    for exp in newest_20:
+                        logger.warning(f"   UNKNOWN_EXPANSION | name='{exp.get('name_en') or exp.get('name')}' id={exp['id']}")
+
+                # Step 2: For each expansion, get blueprints and marketplace listings
+                for i, expansion in enumerate(recent_expansions, 1):
+                    expansion_name = expansion.get('name', '?')
+                    logger.info(f"[{i}/{len(recent_expansions)}] Processing: {expansion_name}")
+
+                    blueprints = await self._fetch_or_skip(
+                        self._fetch_blueprints(client, expansion['id']),
+                        f"blueprints for expansion {expansion['id']} ({expansion_name})",
+                    )
+                    if blueprints is None:
+                        continue
+                    logger.info(f"  Found {len(blueprints)} blueprints")
+
+                    for blueprint in blueprints:
+                        listings = await self._fetch_or_skip(
+                            self._fetch_marketplace_listings(client, blueprint['id']),
+                            f"listings for blueprint {blueprint['id']}",
+                        )
+
+                        if listings:
+                            await self._save_listings(listings, blueprint, expansion)
+                            self.total_blueprints_processed += 1
+
+                            # Log progress every 10 blueprints
+                            if self.total_blueprints_processed % 10 == 0:
+                                logger.info(f"    Progress: {self.total_blueprints_processed} blueprints, {self.total_listings_scraped} listings")
+
+                        # Be respectful to the API between marketplace calls
+                        await asyncio.sleep(config.MIN_DELAY_SECONDS)
+
+            if self.errors_count:
+                status = "partial"
+        except Exception as e:
+            logger.error(f"Scraper failed: {e}", exc_info=True)
+            self.errors_count += 1
+            self.last_error = str(e)
+            status = "partial" if self.total_listings_scraped else "failed"
+
+        if status == "success" and self.total_listings_scraped == 0:
+            status = "no_data"
+
+        duration = (datetime.utcnow() - start_time).total_seconds()
+        logger.info("=" * 60)
+        logger.info(f"CardTrader scrape finished: {status}")
+        logger.info(f"   Blueprints processed: {self.total_blueprints_processed}")
+        logger.info(f"   Listings scraped: {self.total_listings_scraped}")
+        logger.info(f"   Errors: {self.errors_count}")
+        logger.info(f"   Duration: {duration:.1f}s")
+        logger.info("=" * 60)
+
+        await self._write_scrape_log(start_time, status)
+        return self.total_listings_scraped
+
+    async def _write_scrape_log(self, start_time: datetime, status: str) -> None:
+        end_time = datetime.utcnow()
+        try:
             async with AsyncSessionLocal() as session:
-                scrape_log = ScrapeLog(
+                session.add(ScrapeLog(
                     source="CardTrader",
                     started_at=start_time,
                     completed_at=end_time,
-                    duration_seconds=int(duration),
+                    duration_seconds=int((end_time - start_time).total_seconds()),
                     items_scraped=self.total_listings_scraped,
-                    status="success" if self.total_listings_scraped > 0 else "no_data"
-                )
-                session.add(scrape_log)
+                    errors_count=self.errors_count,
+                    error_message=(self.last_error or None) and self.last_error[:2000],
+                    status=status,
+                ))
                 await session.commit()
-            
-            return self.total_listings_scraped
-            
         except Exception as e:
-            logger.error(f"Scraper failed: {e}", exc_info=True)
-            return 0
-    
-    async def _fetch_pokemon_expansions(self) -> List[Dict[str, Any]]:
+            logger.error(f"Could not write scrape log: {e}")
+
+    async def _fetch_or_skip(self, coro, what: str):
+        """
+        Await one API call; on failure log it, count it and return None so the
+        caller skips this item. Auth errors and long failure streaks abort the run.
+        """
+        try:
+            result = await coro
+            self._consecutive_failures = 0
+            return result
+        except CardTraderAuthError:
+            raise
+        except Exception as e:
+            self.errors_count += 1
+            self._consecutive_failures += 1
+            self.last_error = f"{what}: {e}"
+            logger.warning(f"Skipping {what}: {e}")
+            if self._consecutive_failures >= MAX_CONSECUTIVE_FAILURES:
+                raise RuntimeError(
+                    f"Aborting: {self._consecutive_failures} consecutive API failures (last: {e})"
+                ) from e
+            return None
+
+    async def _get(self, client: httpx.AsyncClient, path: str, params: Optional[Dict[str, Any]] = None) -> Any:
+        """GET with retries on 429/5xx/network errors (honours Retry-After)."""
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            delay = BACKOFF_BASE_SECONDS * (2 ** (attempt - 1))
+            try:
+                response = await client.get(path, params=params)
+            except (httpx.TimeoutException, httpx.TransportError) as e:
+                if attempt == MAX_ATTEMPTS:
+                    raise
+                logger.info(f"Network error on {path} ({e}); retry {attempt}/{MAX_ATTEMPTS - 1} in {delay:.0f}s")
+                await asyncio.sleep(delay)
+                continue
+
+            if response.status_code in (401, 403):
+                raise CardTraderAuthError(
+                    f"CardTrader API rejected the token (HTTP {response.status_code})"
+                )
+            if response.status_code in RETRYABLE_STATUS and attempt < MAX_ATTEMPTS:
+                retry_after = response.headers.get("Retry-After")
+                if retry_after and retry_after.isdigit():
+                    delay = max(delay, float(retry_after))
+                logger.info(
+                    f"HTTP {response.status_code} on {path}; retry {attempt}/{MAX_ATTEMPTS - 1} in {delay:.0f}s"
+                )
+                await asyncio.sleep(delay)
+                continue
+
+            response.raise_for_status()
+            return response.json()
+
+    async def _fetch_pokemon_expansions(self, client: httpx.AsyncClient) -> List[Dict[str, Any]]:
         """
         Fetch all Pokemon expansions (game_id=5)
         """
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.api_base}/expansions",
-                headers=self.headers,
-                timeout=30.0
-            )
-            response.raise_for_status()
-            
-            all_expansions = response.json()
-            
-            # Filter for Pokemon (game_id=5)
-            pokemon_expansions = [
-                exp for exp in all_expansions
-                if exp.get('game_id') == 5
-            ]
-            
-            return pokemon_expansions
-    
-    async def _fetch_blueprints(self, expansion_id: int) -> List[Dict[str, Any]]:
+        all_expansions = await self._get(client, "/expansions")
+        return [exp for exp in all_expansions if exp.get('game_id') == 5]
+
+    async def _fetch_blueprints(self, client: httpx.AsyncClient, expansion_id: int) -> List[Dict[str, Any]]:
         """
         Fetch all blueprints (cards) for a given expansion
         """
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.api_base}/blueprints",
-                params={"expansion_id": expansion_id},
-                headers=self.headers,
-                timeout=30.0
-            )
-            response.raise_for_status()
-            return response.json()
-    
-    async def _fetch_marketplace_listings(self, blueprint_id: int) -> List[Dict[str, Any]]:
+        return await self._get(client, "/blueprints", {"expansion_id": expansion_id})
+
+    async def _fetch_marketplace_listings(self, client: httpx.AsyncClient, blueprint_id: int) -> List[Dict[str, Any]]:
         """
         Fetch marketplace listings for a given blueprint
-        
-        Response format:
-        {
-            "blueprint_id": [
-                {
-                    "id": listing_id,
-                    "price_cents": 499,
-                    "price_currency": "EUR",
-                    "quantity": 10,
-                    ...
-                }
-            ]
-        }
+
+        Response is a dict keyed by blueprint id:
+        {"<blueprint_id>": [{"id": ..., "price_cents": 499, "price_currency": "EUR", "quantity": 10, ...}]}
         """
-        async with httpx.AsyncClient() as client:
-            response = await client.get(
-                f"{self.api_base}/marketplace/products",
-                params={"blueprint_id": blueprint_id},
-                headers=self.headers,
-                timeout=30.0
-            )
-            response.raise_for_status()
-            
-            data = response.json()
-            
-            # Response is a dict with blueprint_id as key
-            if isinstance(data, dict) and str(blueprint_id) in data:
-                return data[str(blueprint_id)]
-            
-            return []
-    
+        data = await self._get(client, "/marketplace/products", {"blueprint_id": blueprint_id})
+        if isinstance(data, dict) and str(blueprint_id) in data:
+            return data[str(blueprint_id)]
+        return []
+
     async def _save_listings(
         self,
         listings: List[Dict[str, Any]],

@@ -240,7 +240,7 @@ NEXT_PUBLIC_API_URL=https://your-backend.onrender.com
 
 1. **Test the platform**:
    - Visit frontend URL
-   - Login with `demo@pokemontel.eu` / `demo123`
+   - Login with `demo@pokemontel.eu` / `<demo-password>`
    - Check all pages work
 
 2. **Run initial scrape**:

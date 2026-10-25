@@ -257,7 +257,7 @@ services/frontend/src/
 1. Open: **http://localhost:3000**
 2. Login:
    - Email: `demo@pokemontel.eu`
-   - Password: `demo123`
+   - Password: `<demo-password>`
 3. **IMPORTANT:** Hard refresh to clear cache
    - Mac: `Cmd + Shift + R`
    - Windows: `Ctrl + Shift + R`
