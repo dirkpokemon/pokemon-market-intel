@@ -34,10 +34,13 @@ Probleem 1 en 3. Gebruiker plakt een prijs (of advertentietekst) van Marktplaats
 
 Gratis, zonder account, deelbaar. Instap voor nieuwe gebruikers. Technisch het eenvoudigst: de data bestaat al.
 
-### 2. Lijst-/deckprijs inclusief verzending
+### 2. Lijst-/deckprijs inclusief verzending — *eerste versie gebouwd (oktober 2026)*
+
+Live als `/lijstprijs` (gratis tot 10 kaarten, Plus tot 60).
 Probleem 2. Plak een wantlist of decklist → goedkoopste combinatie over CardTrader (incl. gebundelde verzending via CardTrader Zero) en Cardmarket. Geen bestaande tool rekent een decklist in euro's mét verzending.
 - Stap 1 (oktober 2026): de scraper slaat per listing een **pseudonieme verkoper-sleutel** (`seller_key`, HMAC van het CardTrader-user-id met `SELLER_KEY_SECRET`; nooit de naam), het **land** (`seller_country`) en **Zero-geschiktheid** (`ships_via_zero`) op. Listings van verkopers op vakantie worden overgeslagen.
-- Nog te doen: de optimizer en de pagina `/lijstprijs`. CardTrader levert geen verzendtarieven in de listing-data, dus die beginnen als schatting per land en een vast Zero-tarief. Cardmarket heeft alleen de prijsgids, dus eerst alleen CardTrader.
+- Stap 2: optimizer (`backend/app/core/list_price.py`) en pagina. Verzendkosten zijn een schatting (brief/aangetekend per verkoper, vast Zero-tarief): CardTrader levert geen tarieven in de listing-data. Alleen CardTrader; Cardmarket heeft bij ons alleen de prijsgids.
+- Vervolg: echte verzendtarieven ijken (testbestellingen of CardTrader-checkout), Cardmarket-listings toevoegen zodra er API-toegang is, en de verkopers per land herkenbaar maken in de CardTrader-link.
 
 ### 3. Koop-/wachtsignaal op basis van aanbod
 Probleem 4. Stijgt het aantal listings terwijl de laagste prijs zakt → wachten is waarschijnlijk slim. Die data hebben we al (`volume_*`, `volume_trend_7d`, daily aggregates). Past beter bij een correctiejaar dan alleen "deal scores".
