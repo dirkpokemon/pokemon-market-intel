@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str
 
+    # Keys the seller_key hash in raw_prices (pseudonymous seller id). Any long
+    # random string; changing it only changes the keys of future scrapes.
+    SELLER_KEY_SECRET: str = ""
+
     # Scraping Configuration
     SCRAPE_INTERVAL: int = 60  # minutes
     SCRAPE_TIMEOUT: int = 30  # seconds

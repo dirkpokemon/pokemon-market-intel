@@ -3,7 +3,7 @@ Raw Price Database Model
 """
 
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Numeric, DateTime, Index
+from sqlalchemy import Boolean, Column, Integer, String, Numeric, DateTime, Index
 from sqlalchemy.sql import func
 
 from app.database import Base
@@ -37,6 +37,12 @@ class RawPrice(Base):
     seller_name = Column(String(255))
     seller_rating = Column(Numeric(3, 2))
     stock_quantity = Column(Integer)
+    # For the list-price optimizer (shipping is per seller). seller_key is a
+    # keyed hash of the CardTrader user id (pseudonymous, never the name);
+    # ships_via_zero: the seller can ship this listing through CardTrader Zero.
+    seller_key = Column(String(16))
+    seller_country = Column(String(2))
+    ships_via_zero = Column(Boolean)
     
     # Timestamps
     scraped_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
