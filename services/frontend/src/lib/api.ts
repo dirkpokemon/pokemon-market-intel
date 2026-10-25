@@ -388,6 +388,53 @@ export const priceCheckApi = {
   },
 };
 
+// List price (roadmap #2): cheapest way to buy a want/deck list incl. estimated shipping
+export interface ListPriceProduct {
+  product_name: string;
+  product_set?: string | null;
+  category: string;
+  card_number?: string | null;
+  rarity?: string | null;
+}
+
+export interface ListPriceLine {
+  query: string;
+  quantity: number;
+  matched: ListPriceProduct | null;
+  alternatives: ListPriceProduct[];
+  found: number;
+  missing: number;
+}
+
+export interface ListPriceShipment {
+  kind: 'seller' | 'zero';
+  label: string;
+  seller_country?: string | null;
+  items: { line: number; product_name: string; product_set?: string | null; price: number; copies: number; url?: string | null }[];
+  subtotal: number;
+  shipping: number;
+}
+
+export interface ListPriceResponse {
+  lines: ListPriceLine[];
+  shipments: ListPriceShipment[];
+  cards_total: number;
+  shipping_total: number;
+  total: number;
+  naive_total: number;
+  savings: number;
+  line_limit: number;
+  truncated: number;
+  listings_as_of?: string | null;
+  shipping_note: string;
+}
+
+export const listPriceApi = {
+  calculate: async (body: { text: string; country: string; condition: 'nm' | 'lp' }): Promise<ListPriceResponse> => {
+    return apiRequest<ListPriceResponse>('/api/v1/list-price', { method: 'POST', body: JSON.stringify(body) });
+  },
+};
+
 // Public (no auth required)
 export const publicApi = {
   /** Top deals for the landing page — no login required. */

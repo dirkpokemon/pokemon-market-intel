@@ -105,7 +105,7 @@ async def root():
 
 
 # Import and include routers
-from app.api import auth, market, subscriptions, stripe_webhook, admin, feedback, notifications, price_check
+from app.api import auth, market, subscriptions, stripe_webhook, admin, feedback, notifications, price_check, list_price
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(market.router, prefix="/api/v1")
@@ -115,3 +115,4 @@ app.include_router(admin.router, prefix="/api/v1")
 app.include_router(feedback.router, prefix="/api/v1")
 app.include_router(notifications.router, prefix="/api/v1", tags=["Notifications"])
 app.include_router(price_check.router, prefix="/api/v1")
+app.include_router(list_price.router, prefix="/api/v1")
