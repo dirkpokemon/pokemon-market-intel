@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import CardImage from '@/components/CardImage';
-import { marketApi, sealedApi, setsApi, DealScore, SealedPrice, PokemonSetInfo } from '@/lib/api';
+import { marketApi, sealedApi, setsApi, sparklineKey, DealScore, SealedPrice, PokemonSetInfo } from '@/lib/api';
 import Sparkline from '@/components/Sparkline';
 
 function cardmarketSealedUrl(set: PokemonSetInfo): string {
@@ -147,7 +147,7 @@ export default function SetDetailClient({ params }: { params: { setId: string } 
         setDealsLoaded(true);
         // Fire batch sparkline request for all loaded cards
         if (d.length > 0) {
-          marketApi.getSparklines(d.map(x => x.product_name), 7)
+          marketApi.getSparklines(d, 7)
             .then(setSparklines)
             .catch(() => {});
         }
@@ -387,7 +387,7 @@ export default function SetDetailClient({ params }: { params: { setId: string } 
                     </p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                       {filteredDeals.map(deal => (
-                        <DealCard key={deal.id} deal={deal} sparkline={sparklines[deal.product_name]} />
+                        <DealCard key={deal.id} deal={deal} sparkline={sparklines[sparklineKey(deal)]} />
                       ))}
                     </div>
                   </>

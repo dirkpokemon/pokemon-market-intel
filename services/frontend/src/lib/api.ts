@@ -211,6 +211,10 @@ export const authApi = {
   },
 };
 
+/** Key of a product in the getSparklines result. */
+export const sparklineKey = (p: { product_name: string; card_number?: string | null }): string =>
+  p.card_number ? `${p.product_name}#${p.card_number}` : p.product_name;
+
 // Market Data
 export const marketApi = {
   getDealScores: async (params?: {
@@ -229,16 +233,29 @@ export const marketApi = {
     return apiRequest<DealScore[]>(path);
   },
 
-  getPriceHistory: async (cardName: string, days = 30): Promise<PriceHistoryResponse> => {
-    const query = new URLSearchParams({ card_name: cardName, days: String(days) }).toString();
-    return apiRequest<PriceHistoryResponse>(`/api/v1/price_history?${query}`);
+  /** Daily median and cheapest listing price of one product (variant when card_number is given). */
+  getPriceHistory: async (
+    cardName: string,
+    days = 30,
+    variant?: { product_set?: string | null; card_number?: string | null },
+  ): Promise<PriceHistoryResponse> => {
+    const params = new URLSearchParams({ card_name: cardName, days: String(days) });
+    if (variant?.product_set) params.set('product_set', variant.product_set);
+    if (variant?.card_number) params.set('card_number', variant.card_number);
+    return apiRequest<PriceHistoryResponse>(`/api/v1/price_history?${params.toString()}`);
   },
 
-  /** Batch sparkline data: { [cardName]: avgPricePerDay[] } */
-  getSparklines: async (cardNames: string[], days = 7): Promise<Record<string, number[]>> => {
-    if (!cardNames.length) return {};
+  /** Batch sparkline data: { [sparklineKey(deal)]: medianPricePerDay[] } */
+  getSparklines: async (
+    products: { product_name: string; card_number?: string | null }[],
+    days = 7,
+  ): Promise<Record<string, number[]>> => {
+    if (!products.length) return {};
     const params = new URLSearchParams({ days: String(days) });
-    cardNames.forEach(n => params.append('card_names', n));
+    products.forEach(p => {
+      params.append('card_names', p.product_name);
+      params.append('card_numbers', p.card_number || '');
+    });
     return apiRequest<Record<string, number[]>>(`/api/v1/price_sparklines?${params.toString()}`);
   },
 };
