@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Product
 
-"TCG Pulse" — an EU Pokémon TCG price-intelligence SaaS. Monorepo with four services under `services/` sharing one PostgreSQL database (Supabase in production; Railway Postgres also supported). Production runs on Railway (each service has its own `railway.toml`); `docker-compose.yml` + `infrastructure/` (nginx, postgres init) are for local dev.
+"TCG Pulse" — an EU Pokémon TCG price-intelligence SaaS. Monorepo with four services under `services/` sharing one PostgreSQL database: Railway Postgres in production since late April 2026 (it was briefly on Supabase before; the code still handles both). Production runs on Railway (each service has its own `railway.toml`). Railway service names: backend `pokemon-market-intel`, `Scraper`, `analysis`, frontend `charming-contentment` (see `scripts/update_railway_db.sh`); `docker-compose.yml` + `infrastructure/` (nginx, postgres init) are for local dev.
 
 The many `*.md` status files at the repo root (`*_COMPLETE.md`, `*_FIXED.md`, `ARCHITECTURE.md`, etc.) are historical notes from earlier development sessions and are often stale — trust the code over them.
 
@@ -59,7 +59,7 @@ Data flows one way through the shared database:
 
 Cross-service gotchas:
 - **Schema ownership**: each Python service has its own copy of the SQLAlchemy models for the shared tables. On startup every service runs `sync_schema` (`app/database.py`), which creates missing tables, adds missing nullable columns and enables RLS. It never drops anything. Alembic migrations in `services/backend/alembic/versions/` run first (`start.sh`) and must be idempotent, because production tables predate working migrations.
-- **RLS**: every public table has RLS enabled without policies, so Supabase's PostgREST (anon/authenticated) sees nothing. Don't use `FORCE ROW LEVEL SECURITY`: it would also lock out the app, which connects as the table owner.
+- **RLS**: every public table has RLS enabled without policies (added while the DB was on Supabase, where PostgREST would otherwise expose it; harmless on Railway). Don't use `FORCE ROW LEVEL SECURITY`: it would also lock out the app, which connects as the table owner.
 - **Product names**: names keep the scraped spelling (no title-casing or punctuation stripping). Matching across sources and tables is case-insensitive (`lower(...)`). The watchlist notifier additionally strips punctuation, so watchlist items saved under old normalized names still match.
 - **Set names**: `services/backend/app/data/set_registry.py` is the single source of truth. Each entry's `aliases` lists every name variant seen in `deal_scores.product_set` / `raw_prices.card_set`, and endpoints match case-insensitively. The frontend gets sets from `/api/v1/sets`, so never hardcode a set list there. `GET /api/v1/sets/unmatched` (admin) lists scraped sets missing from the registry.
 - **Subscription tiers**: the DB/API roles are `free` | `paid` | `pro` (+ `admin`), displayed as Free / Plus / Business (`src/lib/plans.ts`). Business is waitlist-only. Server-side gates use `get_current_premium_user` / `get_current_admin_user` from `app/core/dependencies.py`:
