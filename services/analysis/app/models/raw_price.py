@@ -19,6 +19,8 @@ class RawPrice(Base):
     card_name = Column(String(500))
     card_set = Column(String(255))
     card_number = Column(String(100))
+    collector_number = Column(String(50))
+    rarity = Column(String(100))
     condition = Column(String(50))
     language = Column(String(10))
     price = Column(Numeric(10, 2))

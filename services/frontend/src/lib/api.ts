@@ -52,6 +52,10 @@ export interface DealScore {
   product_name: string;
   product_set?: string;
   category?: string;
+  /** Variant within the set (CardTrader blueprint id); same-named cards differ */
+  card_number?: string | null;
+  collector_number?: string | null;
+  rarity?: string | null;
   current_price: number;
   market_avg_price?: number;
   deal_score: number;
@@ -301,6 +305,72 @@ export const setsApi = {
   },
 };
 
+// ── Price check (public, no login) ─────────────────────────────
+export interface PriceCheckMatch {
+  product_name: string;
+  product_set?: string | null;
+  category: 'single' | 'sealed';
+  card_number?: string | null;
+  collector_number?: string | null;
+  rarity?: string | null;
+  floor_price?: number | null;
+  typical_price?: number | null;
+  days_observed?: number | null;
+}
+
+export interface PriceCheckSearchResponse {
+  terms: string[];
+  detected_price?: number | null;
+  results: PriceCheckMatch[];
+}
+
+export type PriceVerdictCode = 'suspicious_low' | 'below_floor' | 'normal' | 'high' | 'very_high';
+
+export interface PriceCheckResponse {
+  product_name: string;
+  product_set?: string | null;
+  category: 'single' | 'sealed';
+  card_number?: string | null;
+  collector_number?: string | null;
+  rarity?: string | null;
+  price: number;
+  verdict: {
+    code: PriceVerdictCode;
+    pct_vs_floor: number;
+    pct_vs_typical: number;
+    fair_offer_low: number;
+    fair_offer_high: number;
+    low_data: boolean;
+  };
+  reference: {
+    floor_price: number;
+    typical_price: number;
+    current_price?: number | null;
+    min_price_30d?: number | null;
+    max_price_30d?: number | null;
+    price_trend_30d?: number | null;
+    days_observed: number;
+    observations: number;
+    last_seen_at?: string | null;
+    calculated_at?: string | null;
+  };
+  basis: string;
+}
+
+export const priceCheckApi = {
+  /** Paste a card name or a whole listing; returns matches + the euro amount found in it. */
+  search: async (q: string): Promise<PriceCheckSearchResponse> => {
+    return apiRequest<PriceCheckSearchResponse>(`/api/v1/price-check/search?${new URLSearchParams({ q })}`);
+  },
+
+  check: async (match: PriceCheckMatch, price: number): Promise<PriceCheckResponse> => {
+    const params = new URLSearchParams({ name: match.product_name, category: match.category, price: String(price) });
+    if (match.product_set) params.set('set', match.product_set);
+    if (match.card_number) params.set('card_number', match.card_number);
+    return apiRequest<PriceCheckResponse>(`/api/v1/price-check?${params}`);
+  },
+};
+
 // Public (no auth required)
 export const publicApi = {
   /** Top deals for the landing page — no login required. */
@@ -330,6 +400,7 @@ export interface WatchlistItem {
   id: number;
   card_name: string;
   card_set?: string | null;
+  card_number?: string | null;
   target_price: number;
   current_price?: number | null;
   is_active: boolean;
@@ -365,7 +436,7 @@ export const notificationApi = {
   },
 
   /** Add a card to the backend watchlist */
-  addWatchlistItem: async (payload: { card_name: string; card_set?: string; target_price: number }): Promise<WatchlistItem> => {
+  addWatchlistItem: async (payload: { card_name: string; card_set?: string; card_number?: string; target_price: number }): Promise<WatchlistItem> => {
     return apiRequest<WatchlistItem>('/api/v1/watchlist', {
       method: 'POST',
       body: JSON.stringify(payload),

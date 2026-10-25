@@ -23,6 +23,10 @@ class MarketStats(Base):
     product_name = Column(String(500), nullable=False, index=True)
     product_set = Column(String(255), index=True)
     category = Column(String(50))  # single, sealed
+    # Variant identity within a set (CardTrader blueprint id; '' for sealed) and its labels
+    card_number = Column(String(100))
+    collector_number = Column(String(50))
+    rarity = Column(String(100))
     
     # 7-day statistics. avg_* hold the median of daily median listing prices
     # (robust "typical price"); the column names predate that and are kept

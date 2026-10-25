@@ -20,6 +20,9 @@ class MarketStats(Base):
     product_name = Column(String(500))
     product_set = Column(String(255))
     category = Column(String(50))
+    card_number = Column(String(100))       # variant id within a set ('' for sealed)
+    collector_number = Column(String(50))
+    rarity = Column(String(100))
     
     avg_price_7d = Column(Numeric(10, 2))
     avg_price_30d = Column(Numeric(10, 2))
@@ -32,5 +35,15 @@ class MarketStats(Base):
     
     liquidity_score = Column(Numeric(5, 2))
     volatility = Column(Numeric(5, 2))
+
+    # Written by the analysis service (see services/analysis/app/models/market_stats.py)
+    min_price_30d = Column(Numeric(10, 2))
+    max_price_30d = Column(Numeric(10, 2))
+    current_price = Column(Numeric(10, 2))      # cheapest comparable listing on the latest day
+    floor_price_30d = Column(Numeric(10, 2))    # median of the daily cheapest listing
+    days_observed = Column(Integer)
+    sample_size = Column(Integer)
+    data_quality = Column(String(20))
+    last_seen_at = Column(DateTime(timezone=True))
     
     calculated_at = Column(DateTime(timezone=True))

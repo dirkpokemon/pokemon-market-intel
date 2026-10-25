@@ -87,6 +87,9 @@ export default function LandingPage() {
           </div>
           <div className="flex gap-2 sm:gap-3 items-center">
             <ThemeIconButton />
+            <Link href="/prijscheck" className="hidden sm:inline-flex text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 sm:px-4 py-2 text-sm font-medium rounded-lg">
+              Prijscheck
+            </Link>
             <Link href="/login" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 sm:px-4 py-2 text-sm font-medium rounded-lg">
               Login
             </Link>
@@ -112,7 +115,13 @@ export default function LandingPage() {
         <p className="text-lg text-gray-500 dark:text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
           AI deal scoring on live EU prices, plus price-drop alerts on the cards you want. Find undervalued singles and get told when they hit your target.
         </p>
-        <div className="flex gap-4 justify-center">
+        <div className="flex flex-wrap gap-4 justify-center">
+          <Link
+            href="/prijscheck"
+            className="bg-indigo-600 text-white px-8 py-3.5 rounded-lg font-medium hover:bg-indigo-500 transition text-sm"
+          >
+            Free price check — no account
+          </Link>
           <button
             onClick={() => router.push('/register')}
             className="bg-gray-900 dark:bg-indigo-600 text-white px-8 py-3.5 rounded-lg font-medium hover:bg-gray-800 dark:hover:bg-indigo-500 transition text-sm"

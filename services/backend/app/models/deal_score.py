@@ -20,6 +20,9 @@ class DealScore(Base):
     product_name = Column(String(500))
     product_set = Column(String(255))
     category = Column(String(50))
+    card_number = Column(String(100))       # variant id within a set ('' for sealed)
+    collector_number = Column(String(50))
+    rarity = Column(String(100))
     
     current_price = Column(Numeric(10, 2))
     currency = Column(String(3))

@@ -174,6 +174,7 @@ PRICE_LOOKUP_SQL = f"""
     FROM market_statistics
     WHERE {_key('product_name')} = btrim({_KEY_SQL.format(col=':name')})
       AND (CAST(:set AS text) IS NULL OR {_key('product_set')} = btrim({_KEY_SQL.format(col='CAST(:set AS text)')}))
+      AND (CAST(:card AS text) IS NULL OR card_number = CAST(:card AS text))
       AND COALESCE(current_price, avg_price_7d) IS NOT NULL
     ORDER BY COALESCE(current_price, avg_price_7d) ASC
     LIMIT 1
@@ -199,6 +200,7 @@ async def check_watchlist_alerts() -> int:
                 wi.id            AS item_id,
                 wi.card_name,
                 wi.card_set,
+                wi.card_number,
                 wi.target_price,
                 wi.notified_at,
                 u.id             AS user_id,
@@ -219,7 +221,8 @@ async def check_watchlist_alerts() -> int:
             target = float(item.target_price)
 
             price_row = await session.execute(
-                text(PRICE_LOOKUP_SQL), {"name": card_name, "set": card_set}
+                text(PRICE_LOOKUP_SQL),
+                {"name": card_name, "set": card_set, "card": item.card_number},
             )
             price_result = price_row.fetchone()
             if price_result is None:
