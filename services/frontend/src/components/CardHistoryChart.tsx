@@ -2,6 +2,7 @@
 
 import { Line } from 'react-chartjs-2';
 import { PriceHistoryPoint } from '@/lib/api';
+import { eur } from '@/lib/format';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -25,10 +26,10 @@ export default function CardHistoryChart({ history }: CardHistoryChartProps) {
         <svg className="w-8 h-8 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
         </svg>
-        <p className="text-sm text-gray-400 font-medium">No history for this window yet</p>
+        <p className="text-sm text-gray-400 font-medium">Nog geen geschiedenis voor deze periode</p>
         <p className="text-xs text-gray-300 max-w-[220px]">
-          Price history builds up as the scraper runs twice daily.
-          Try the 60D view, or check back in a few days.
+          De prijsgeschiedenis groeit met elke scrape (twee keer per dag).
+          Kies een langere periode of kom over een paar dagen terug.
         </p>
       </div>
     );
@@ -36,14 +37,14 @@ export default function CardHistoryChart({ history }: CardHistoryChartProps) {
 
   const labels = history.map(p => {
     const d = new Date(p.date);
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    return d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' });
   });
 
   const data = {
     labels,
     datasets: [
       {
-        label: 'Median price',
+        label: 'Mediaanprijs',
         data: history.map(p => p.avg_price),
         borderColor: 'rgb(59, 130, 246)',
         backgroundColor: 'rgba(59, 130, 246, 0.08)',
@@ -54,7 +55,7 @@ export default function CardHistoryChart({ history }: CardHistoryChartProps) {
         pointHoverRadius: 5,
       },
       {
-        label: 'Min price',
+        label: 'Laagste prijs',
         data: history.map(p => p.min_price),
         borderColor: 'rgba(34, 197, 94, 0.7)',
         backgroundColor: 'transparent',
@@ -83,12 +84,12 @@ export default function CardHistoryChart({ history }: CardHistoryChartProps) {
         callbacks: {
           label: (ctx: any) => {
             const label = ctx.dataset.label ?? '';
-            return ` ${label}: €${ctx.parsed.y.toFixed(2)}`;
+            return ` ${label}: ${eur(ctx.parsed.y)}`;
           },
           afterBody: (items: any[]) => {
             const idx = items[0]?.dataIndex;
             if (idx != null) {
-              return [`  Listings: ${history[idx].listing_count}`];
+              return [`  Aanbiedingen: ${history[idx].listing_count}`];
             }
             return [];
           },
@@ -98,7 +99,7 @@ export default function CardHistoryChart({ history }: CardHistoryChartProps) {
     scales: {
       y: {
         ticks: {
-          callback: (v: any) => `€${Number(v).toFixed(2)}`,
+          callback: (v: any) => eur(Number(v)),
           font: { size: 11 },
           color: '#9ca3af',
         },

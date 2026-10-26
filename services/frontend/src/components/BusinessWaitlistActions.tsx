@@ -24,7 +24,7 @@ export default function BusinessWaitlistActions({ variant = 'card' }: { variant?
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch {
-      window.prompt('Copy this email address:', email);
+      window.prompt('Kopieer dit e-mailadres:', email);
     }
   };
 
@@ -44,7 +44,7 @@ export default function BusinessWaitlistActions({ variant = 'card' }: { variant?
         {CTA_BUSINESS_WAITLIST}
       </a>
       <a href={businessWaitlistGmailUrl()} target="_blank" rel="noopener noreferrer" className={gmailBtn}>
-        Open in Gmail (browser)
+        Openen in Gmail (browser)
       </a>
       <button
         type="button"
@@ -55,7 +55,7 @@ export default function BusinessWaitlistActions({ variant = 'card' }: { variant?
             : 'text-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 underline-offset-2 hover:underline'
         }`}
       >
-        {copied ? 'Copied to clipboard' : `Copy ${email}`}
+        {copied ? 'Gekopieerd' : `Kopieer ${email}`}
       </button>
     </div>
   );

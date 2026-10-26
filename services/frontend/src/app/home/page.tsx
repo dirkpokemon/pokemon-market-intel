@@ -9,6 +9,7 @@ import StatCard from '@/components/StatCard';
 import DealModal from '@/components/DealModal';
 import CardImage from '@/components/CardImage';
 import OnboardingTour from '@/components/OnboardingTour';
+import { eur } from '@/lib/format';
 
 export default function HomePage() {
   const router = useRouter();
@@ -177,15 +178,15 @@ export default function HomePage() {
         {showSubSuccess && (
           <div className="mb-6 rounded-xl border border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/40 px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <p className="text-sm text-green-900 dark:text-green-100">
-              <span className="font-semibold">Subscription active.</span>{' '}
-              Your plan should appear in a few seconds once Stripe has finished syncing. If deals still show as limited, refresh the page or sign out and back in.
+              <span className="font-semibold">Abonnement actief.</span>{' '}
+              Je abonnement is over een paar seconden zichtbaar, zodra Stripe klaar is met verwerken. Zie je nog steeds beperkte deals? Vernieuw de pagina of log opnieuw in.
             </p>
             <button
               type="button"
               onClick={() => setShowSubSuccess(false)}
               className="shrink-0 text-sm font-medium text-green-800 hover:text-green-950 dark:text-green-200 dark:hover:text-green-100 underline underline-offset-2"
             >
-              Dismiss
+              Sluiten
             </button>
           </div>
         )}
@@ -193,7 +194,7 @@ export default function HomePage() {
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-800 dark:border-gray-600 dark:border-t-gray-200 rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">Loading your dashboard...</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Je dashboard wordt geladen…</p>
             </div>
           </div>
         ) : (
@@ -201,9 +202,9 @@ export default function HomePage() {
             {/* Welcome Banner */}
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Welcome back, {displayName}! 👋
+                Welkom terug, {displayName}! 👋
               </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Here&apos;s what&apos;s happening in the EU singles market today.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Dit gebeurt er vandaag op de Europese markt voor losse kaarten.</p>
             </div>
 
             {/* ═══ Market Search (TOP) ═══ */}
@@ -218,17 +219,17 @@ export default function HomePage() {
                 {/* Header */}
                 <div className="flex items-center justify-between gap-3 mb-5">
                   <div className="flex items-center gap-3">
-                    <h2 className="text-lg font-bold text-white">Market Search</h2>
+                    <h2 className="text-lg font-bold text-white">Marktzoeker</h2>
                     <span className="px-2.5 py-0.5 bg-green-500/20 text-green-400 text-[11px] font-bold rounded-full tracking-wider uppercase flex items-center gap-1.5">
                       <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
-                      Hourly updated
+                      2× per dag bijgewerkt
                     </span>
                   </div>
                   <Link
                     href="/sets"
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-800 border border-gray-700 hover:border-gray-500 text-gray-300 hover:text-white text-xs font-medium transition"
                   >
-                    📦 Browse all sets
+                    📦 Alle sets bekijken
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                     </svg>
@@ -246,7 +247,7 @@ export default function HomePage() {
                       value={searchQuery}
                       onChange={(e) => handleSearchInput(e.target.value)}
                       onKeyDown={handleSearchKeyDown}
-                      placeholder="Search any card, set, or product..."
+                      placeholder="Zoek een kaart, set of product…"
                       className="w-full pl-12 pr-10 py-4 bg-gray-800 border border-gray-700 rounded-xl text-white placeholder-gray-500 text-sm focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition outline-none"
                     />
                     {searchQuery && (
@@ -267,7 +268,7 @@ export default function HomePage() {
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
-                    <span className="hidden sm:inline">Search</span>
+                    <span className="hidden sm:inline">Zoeken</span>
                   </button>
                 </div>
 
@@ -295,20 +296,20 @@ export default function HomePage() {
                     {searchLoading ? (
                       <div className="flex items-center justify-center py-8 gap-3">
                         <div className="w-5 h-5 border-2 border-gray-600 border-t-green-400 rounded-full animate-spin" />
-                        <p className="text-gray-400 text-sm">Searching 171,000+ cards...</p>
+                        <p className="text-gray-400 text-sm">Zoeken in het actuele aanbod…</p>
                       </div>
                     ) : searchResults.length === 0 ? (
                       <div className="text-center py-8">
-                        <p className="text-gray-400 text-sm">No results found for &quot;{searchQuery}&quot;</p>
-                        <p className="text-gray-600 text-xs mt-1">Try a different card name or set</p>
+                        <p className="text-gray-400 text-sm">Geen resultaten voor &quot;{searchQuery}&quot;</p>
+                        <p className="text-gray-600 text-xs mt-1">Probeer een andere kaartnaam of set</p>
                       </div>
                     ) : (
                       <>
                         {/* Results header with count + sort */}
                         <div className="flex items-center justify-between mb-3">
                           <p className="text-xs text-gray-500">
-                            <span className="text-green-400 font-semibold">{searchTotal.toLocaleString()}</span> cards found
-                            {searchTotal > 20 && <span className="text-gray-600"> · showing top 20</span>}
+                            <span className="text-green-400 font-semibold">{searchTotal.toLocaleString('nl-NL')}</span> kaarten gevonden
+                            {searchTotal > 20 && <span className="text-gray-600"> · top 20 getoond</span>}
                           </p>
                           <div className="flex items-center gap-2">
                             {(['relevance', 'price_asc', 'price_desc', 'listings'] as const).map((s) => (
@@ -321,7 +322,7 @@ export default function HomePage() {
                                     : 'text-gray-500 hover:text-gray-300'
                                 }`}
                               >
-                                {s === 'relevance' ? '🔥 Relevant' : s === 'price_asc' ? '↑ Price' : s === 'price_desc' ? '↓ Price' : '📦 Listings'}
+                                {s === 'relevance' ? '🔥 Relevant' : s === 'price_asc' ? '↑ Prijs' : s === 'price_desc' ? '↓ Prijs' : '📦 Aanbod'}
                               </button>
                             ))}
                           </div>
@@ -349,7 +350,7 @@ export default function HomePage() {
                                   )}
                                   <span className="text-[10px] text-gray-600">·</span>
                                   <span className="text-[11px] text-gray-500">
-                                    {result.listings} listing{result.listings !== 1 ? 's' : ''}
+                                    {result.listings} {result.listings !== 1 ? 'aanbiedingen' : 'aanbieding'}
                                   </span>
                                 </div>
                               </div>
@@ -357,10 +358,10 @@ export default function HomePage() {
                               {/* Price range + deal score */}
                               <div className="flex items-center gap-3 flex-shrink-0">
                                 <div className="text-right">
-                                  <p className="text-base font-bold text-white">€{result.min_price.toFixed(2)}</p>
+                                  <p className="text-base font-bold text-white">{eur(result.min_price)}</p>
                                   {result.avg_price > result.min_price && (
                                     <p className="text-[11px] text-gray-500">
-                                      avg €{result.avg_price.toFixed(2)}
+                                      gem. {eur(result.avg_price)}
                                     </p>
                                   )}
                                 </div>
@@ -371,7 +372,7 @@ export default function HomePage() {
                                     <span className={`text-sm font-bold ${
                                       result.deal_score >= 80 ? 'text-green-400' : result.deal_score >= 70 ? 'text-amber-400' : 'text-gray-400'
                                     }`}>
-                                      {result.deal_score}
+                                      {Math.round(result.deal_score)}
                                     </span>
                                   </div>
                                 ) : (
@@ -396,19 +397,19 @@ export default function HomePage() {
 
             {/* Key Metrics */}
             <div className="mb-8">
-              <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-4">Your Market at a Glance</h2>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-4">Jouw markt in één oogopslag</h2>
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                <StatCard title="Total Deals" value={dealScores.length} subtitle="Active opportunities" icon="🎴" color="blue" />
-                <StatCard title="Avg Deal Score" value={avgDealScore} subtitle="Market average" icon="📊" color="purple" />
-                <StatCard title="Excellent Deals" value={excellentDeals} subtitle="Score 80+" icon="⭐" color="green" />
+                <StatCard title="Deals" value={dealScores.length} subtitle="Actuele kansen" icon="🎴" color="blue" />
+                <StatCard title="Gem. dealscore" value={avgDealScore} subtitle="Marktgemiddelde" icon="📊" color="purple" />
+                <StatCard title="Topdeals" value={excellentDeals} subtitle="Score 80+" icon="⭐" color="green" />
               </div>
             </div>
 
             {/* Top deals preview (3 free / 5 premium — matches deals page gate) */}
             <div className="mb-8">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Today&apos;s Top Deals</h2>
-                <Link href="/deals" className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium">View all →</Link>
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Topdeals van vandaag</h2>
+                <Link href="/deals" className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium">Alles bekijken →</Link>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {topDeals.map((deal) => (
@@ -428,7 +429,7 @@ export default function HomePage() {
                             <span className={`text-sm font-bold ${
                               deal.deal_score >= 80 ? 'text-green-700 dark:text-green-400' : deal.deal_score >= 70 ? 'text-amber-700 dark:text-amber-400' : 'text-gray-600 dark:text-gray-300'
                             }`}>
-                              {deal.deal_score}
+                              {Math.round(deal.deal_score)}
                             </span>
                           </div>
                         </div>
@@ -439,11 +440,11 @@ export default function HomePage() {
                     </div>
                     <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-800">
                       <div>
-                        <p className="text-lg font-bold text-gray-900 dark:text-white">€{deal.current_price.toFixed(2)}</p>
+                        <p className="text-lg font-bold text-gray-900 dark:text-white">{eur(deal.current_price)}</p>
                       </div>
                       {deal.market_avg_price && (
                         <div className="text-right">
-                          <p className="text-xs text-gray-400">Avg €{deal.market_avg_price.toFixed(2)}</p>
+                          <p className="text-xs text-gray-400">Normaal {eur(deal.market_avg_price)}</p>
                         </div>
                       )}
                     </div>
@@ -459,7 +460,7 @@ export default function HomePage() {
                   <div className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-xl">🔔</div>
                   <div>
                     <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition">Watchlist</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Price alerts on your cards</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Prijsalerts voor jouw kaarten</p>
                   </div>
                 </div>
               </Link>
@@ -467,8 +468,8 @@ export default function HomePage() {
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-xl">📦</div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition">Browse Sets</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">All sets & sealed prices</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition">Sets bekijken</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Alle sets en sealed prijzen</p>
                   </div>
                 </div>
               </Link>
@@ -476,8 +477,8 @@ export default function HomePage() {
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center justify-center text-xl">⚙️</div>
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition">Settings</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Preferences & account</p>
+                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-gray-700 dark:group-hover:text-gray-200 transition">Instellingen</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Voorkeuren en account</p>
                   </div>
                 </div>
               </Link>
@@ -486,15 +487,15 @@ export default function HomePage() {
             {/* Upgrade CTA for Free Users */}
             {user?.role === 'free' && (
               <div className="mt-8 bg-gray-900 rounded-xl p-8 text-center">
-                <h3 className="text-xl font-bold text-white mb-2">Unlock Plus</h3>
+                <h3 className="text-xl font-bold text-white mb-2">Ontgrendel Plus</h3>
                 <p className="text-sm text-gray-400 mb-6">
-                  Get unlimited deals, all filters, full price history, and more!
+                  Alle deals, alle filters, de volledige prijsgeschiedenis en meer.
                 </p>
                 <Link
                   href="/pricing"
                   className="inline-block bg-white text-gray-900 px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-gray-100 transition"
                 >
-                  Upgrade to Plus
+                  Upgrade naar Plus
                 </Link>
               </div>
             )}

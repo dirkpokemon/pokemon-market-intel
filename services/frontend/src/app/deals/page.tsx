@@ -10,6 +10,7 @@ import DealModal from '@/components/DealModal';
 import CardImage from '@/components/CardImage';
 import Sparkline from '@/components/Sparkline';
 import { isSubscriberRole } from '@/lib/plans';
+import { eur } from '@/lib/format';
 
 type ViewMode = 'all' | 'watchlist';
 
@@ -80,7 +81,7 @@ function DealCard({ deal, watchlist, toggleWatchlist, setSelectedDeal, getScoreC
             {deal.product_set && (
               <p className="text-[11px] text-gray-400 truncate">{deal.product_set}</p>
             )}
-            <SignalBadge signal={deal.market_signal} floorChange={deal.floor_change_7d} supplyChange={deal.supply_change_7d} lang="en" className="flex-shrink-0" />
+            <SignalBadge signal={deal.market_signal} floorChange={deal.floor_change_7d} supplyChange={deal.supply_change_7d} className="flex-shrink-0" />
           </div>
         </div>
       </div>
@@ -88,9 +89,9 @@ function DealCard({ deal, watchlist, toggleWatchlist, setSelectedDeal, getScoreC
       {/* ── Price + score row ── */}
       <div className="px-3.5 py-3 flex items-center justify-between bg-gray-950 gap-2">
         <div className="min-w-0">
-          <p className="text-lg font-bold text-white">&euro;{deal.current_price.toFixed(2)}</p>
+          <p className="text-lg font-bold text-white">{eur(deal.current_price)}</p>
           {deal.market_avg_price && savingsPercent > 0 && (
-            <p className="text-[11px] text-gray-500 line-through">&euro;{deal.market_avg_price.toFixed(2)} avg</p>
+            <p className="text-[11px] text-gray-500 line-through">{eur(deal.market_avg_price)} normaal</p>
           )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -98,7 +99,7 @@ function DealCard({ deal, watchlist, toggleWatchlist, setSelectedDeal, getScoreC
             <Sparkline data={sparkline} width={56} height={20} showChange />
           )}
           <div className={`w-10 h-10 rounded-lg ${getScoreBg(deal.deal_score)} flex items-center justify-center`}>
-            <span className={`text-sm font-bold ${getScoreColor(deal.deal_score)}`}>{deal.deal_score}</span>
+            <span className={`text-sm font-bold ${getScoreColor(deal.deal_score)}`}>{Math.round(deal.deal_score)}</span>
           </div>
         </div>
       </div>
@@ -232,24 +233,24 @@ function DealsPageInner() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Top Deals
+              Topdeals
               {presetSet && (
                 <span className="ml-2 text-base font-normal text-gray-500 dark:text-gray-400">· set: {presetSet}</span>
               )}
               {!presetSet && presetCard && (
-                <span className="ml-2 text-base font-normal text-gray-500 dark:text-gray-400">· card: {presetCard}</span>
+                <span className="ml-2 text-base font-normal text-gray-500 dark:text-gray-400">· kaart: {presetCard}</span>
               )}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
               {presetSet || presetCard ? (
                 <>
-                  {dealScores.length} deal{dealScores.length !== 1 ? 's' : ''} loaded for this filter
-                  {isSubscriberRole(userRole) ? ' · full list for subscribers' : ' · free: top 20 with score ≥55'}
+                  {dealScores.length} {dealScores.length !== 1 ? 'deals' : 'deal'} geladen voor dit filter
+                  {isSubscriberRole(userRole) ? ' · volledige lijst voor abonnees' : ' · gratis: top 20 met score ≥55'}
                 </>
               ) : isSubscriberRole(userRole) ? (
-                `${dealScores.length} deals with AI scoring, refreshed hourly`
+                `${dealScores.length} deals met dealscore, twee keer per dag bijgewerkt`
               ) : (
-                `${FREE_VISIBLE} deals visible. Upgrade for full access.`
+                `${FREE_VISIBLE} deals zichtbaar. Upgrade voor alle deals.`
               )}
             </p>
           </div>
@@ -262,7 +263,7 @@ function DealsPageInner() {
                   : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700'
               }`}
             >
-              {viewMode === 'watchlist' ? '⭐ Watchlist' : '📋 All Deals'}
+              {viewMode === 'watchlist' ? '⭐ Watchlist' : '📋 Alle deals'}
               {viewMode === 'watchlist' && watchlist.length > 0 && (
                 <span className="ml-2 px-1.5 py-0.5 bg-amber-600 text-white rounded text-xs">{watchlist.length}</span>
               )}
@@ -274,7 +275,7 @@ function DealsPageInner() {
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
               <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-800 dark:border-gray-600 dark:border-t-gray-200 rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-sm text-gray-500 dark:text-gray-400">Loading deals...</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Deals worden geladen…</p>
             </div>
           </div>
         ) : (
@@ -288,7 +289,7 @@ function DealsPageInner() {
                   </svg>
                   <input
                     type="text"
-                    placeholder="Search cards or sets..."
+                    placeholder="Zoek kaarten of sets…"
                     value={filters.search}
                     onChange={(e) => { setFilters({ ...filters, search: e.target.value }); setCurrentPage(1); }}
                     className="w-full pl-10 pr-4 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 focus:border-transparent"
@@ -299,10 +300,10 @@ function DealsPageInner() {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 focus:border-transparent"
                 >
-                  <option value="score-desc">Best Score</option>
-                  <option value="price-asc">Lowest Price</option>
-                  <option value="price-desc">Highest Price</option>
-                  <option value="savings-desc">Best Savings</option>
+                  <option value="score-desc">Hoogste score</option>
+                  <option value="price-asc">Laagste prijs</option>
+                  <option value="price-desc">Hoogste prijs</option>
+                  <option value="savings-desc">Grootste besparing</option>
                 </select>
               </div>
 
@@ -319,12 +320,12 @@ function DealsPageInner() {
                     value={filters.minScore}
                     onChange={(e) => setFilters({ ...filters, minScore: parseInt(e.target.value, 10) })}
                     className="app-range-input"
-                    aria-label="Minimum deal score"
+                    aria-label="Minimale dealscore"
                   />
                 </div>
                 <div className="space-y-2 min-w-0">
                   <div className="flex justify-between gap-2 text-xs text-gray-600 dark:text-gray-400">
-                    <span>Min. price</span>
+                    <span>Min. prijs</span>
                     <span className="font-semibold tabular-nums text-gray-900 dark:text-white">€{filters.minPrice}</span>
                   </div>
                   <input
@@ -335,12 +336,12 @@ function DealsPageInner() {
                     value={filters.minPrice}
                     onChange={(e) => setFilters({ ...filters, minPrice: parseInt(e.target.value, 10) })}
                     className="app-range-input"
-                    aria-label="Minimum price in euros"
+                    aria-label="Minimumprijs in euro"
                   />
                 </div>
                 <div className="space-y-2 min-w-0">
                   <div className="flex justify-between gap-2 text-xs text-gray-600 dark:text-gray-400">
-                    <span>Max. price</span>
+                    <span>Max. prijs</span>
                     <span className="font-semibold tabular-nums text-gray-900 dark:text-white">€{filters.maxPrice}</span>
                   </div>
                   <input
@@ -351,7 +352,7 @@ function DealsPageInner() {
                     value={filters.maxPrice}
                     onChange={(e) => setFilters({ ...filters, maxPrice: parseInt(e.target.value, 10) })}
                     className="app-range-input"
-                    aria-label="Maximum price in euros"
+                    aria-label="Maximumprijs in euro"
                   />
                 </div>
               </div>
@@ -370,16 +371,16 @@ function DealsPageInner() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
-                  {viewMode === 'watchlist' ? 'Your watchlist is empty' : 'No deals found'}
+                  {viewMode === 'watchlist' ? 'Je watchlist is leeg' : 'Geen deals gevonden'}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-4 max-w-md mx-auto">
                   {viewMode === 'watchlist'
-                    ? 'Click the star on a deal to save it'
+                    ? 'Klik op de ster bij een deal om hem te bewaren'
                     : dealScores.length > 0
-                      ? 'Your filters exclude every loaded deal. Lower min. score or price, or clear the search field.'
+                      ? 'Je filters sluiten alle geladen deals uit. Verlaag de minimale score of prijs, of maak het zoekveld leeg.'
                       : presetSet || presetCard
-                        ? 'No scored deals match this set/card right now (free: score ≥55 only). Try all deals or check back later.'
-                        : 'Adjust your search or filters'}
+                        ? 'Geen deals voor deze set of kaart op dit moment (gratis: alleen score ≥55). Bekijk alle deals of kom later terug.'
+                        : 'Pas je zoekopdracht of filters aan'}
                 </p>
                 <button
                   onClick={() => {
@@ -391,7 +392,7 @@ function DealsPageInner() {
                   }}
                   className="px-4 py-2 bg-gray-900 dark:bg-indigo-600 text-white text-sm rounded-lg hover:bg-gray-800 dark:hover:bg-indigo-500 transition"
                 >
-                  {viewMode === 'watchlist' ? 'View all deals' : presetSet || presetCard ? 'Load all deals' : 'Reset filters'}
+                  {viewMode === 'watchlist' ? 'Alle deals bekijken' : presetSet || presetCard ? 'Alle deals laden' : 'Filters wissen'}
                 </button>
               </div>
             ) : isSubscriberRole(userRole) ? (
@@ -407,7 +408,7 @@ function DealsPageInner() {
                       disabled={currentPage === 1}
                       className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40"
                     >
-                      Previous
+                      Vorige
                     </button>
                     {[...Array(Math.min(totalPages, 5))].map((_, i) => (
                       <button
@@ -427,7 +428,7 @@ function DealsPageInner() {
                       disabled={currentPage === totalPages}
                       className="px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40"
                     >
-                      Next
+                      Volgende
                     </button>
                   </div>
                 )}
@@ -471,7 +472,7 @@ function DealsPageInner() {
                         </p>
                       )}
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                        Upgrade naar Plus voor alle {filteredAndSortedDeals.length} deals, elk uur bijgewerkt.
+                        Upgrade naar Plus voor alle {filteredAndSortedDeals.length} deals, twee keer per dag bijgewerkt.
                       </p>
                       <Link
                         href="/pricing"

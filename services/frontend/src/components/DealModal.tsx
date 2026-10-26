@@ -7,6 +7,7 @@ import CardImage from '@/components/CardImage';
 import { UPSELL_SUBSCRIBE } from '@/lib/plans';
 
 import SignalBadge, { signalExplanation } from '@/components/MarketSignal';
+import { eur } from '@/lib/format';
 const CardHistoryChart = dynamic(() => import('@/components/CardHistoryChart'), { ssr: false });
 
 // ─── Portfolio helpers ────────────────────────────────────────────────────────
@@ -50,48 +51,48 @@ function buildInsight(deal: DealScore) {
     : null;
 
   const pctText = discount !== null && discount > 0
-    ? `${discount}% below market average`
+    ? `${discount}% onder de normale vraagprijs`
     : discount !== null && discount < 0
-    ? `${Math.abs(discount)}% above market average`
+    ? `${Math.abs(discount)}% boven de normale vraagprijs`
     : null;
 
   if (deal.deal_score >= 80) {
     return {
-      verdict: 'Strong buy',
+      verdict: 'Sterke deal',
       label: 'bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200',
       border: 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/40',
       text: pctText
-        ? `Listed ${pctText} with a deal score of ${deal.deal_score}, one of the stronger opportunities in the current catalog.`
-        : `Deal score of ${deal.deal_score} is well above average. Price data suggests a solid buying opportunity.`,
+        ? `Aangeboden voor ${pctText}, met een dealscore van ${Math.round(deal.deal_score)}: een van de sterkere deals op dit moment.`
+        : `Een dealscore van ${Math.round(deal.deal_score)} ligt ruim boven het gemiddelde. De prijsdata wijzen op een scherpe prijs.`,
     };
   }
   if (deal.deal_score >= 65) {
     return {
-      verdict: 'Good deal',
+      verdict: 'Goede deal',
       label: 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-200',
       border: 'border-blue-100 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/40',
       text: pctText
-        ? `Listed ${pctText}. A good deal with competitive pricing relative to the EU market.`
-        : `Deal score of ${deal.deal_score} indicates good value at the current price.`,
+        ? `Aangeboden voor ${pctText}. Een goede deal met een scherpe prijs ten opzichte van de Europese markt.`
+        : `Een dealscore van ${Math.round(deal.deal_score)} wijst op een goede prijs.`,
     };
   }
   if (deal.deal_score >= 50) {
     return {
-      verdict: 'Fair price',
+      verdict: 'Redelijke prijs',
       label: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200',
       border: 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/60',
       text: pctText
-        ? `Listed ${pctText}. Score of ${deal.deal_score} is moderate: not a standout deal, but a fair price.`
-        : `Score of ${deal.deal_score} is around average. Priced reasonably, nothing exceptional.`,
+        ? `Aangeboden voor ${pctText}. Een score van ${Math.round(deal.deal_score)} is gemiddeld: geen uitschieter, wel een redelijke prijs.`
+        : `Een score van ${Math.round(deal.deal_score)} is ongeveer gemiddeld. Redelijk geprijsd, niets bijzonders.`,
     };
   }
   return {
-    verdict: 'Skip for now',
+    verdict: 'Er zijn betere deals',
     label: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200',
     border: 'border-amber-100 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/40',
     text: pctText
-      ? `Price is ${pctText}. Score of ${deal.deal_score} suggests better deals may be available elsewhere.`
-      : `Score of ${deal.deal_score} is below average. Consider other deals in this set.`,
+      ? `De prijs ligt ${pctText}. Een score van ${Math.round(deal.deal_score)} betekent dat er waarschijnlijk betere deals zijn.`
+      : `Een score van ${Math.round(deal.deal_score)} ligt onder het gemiddelde. Bekijk ook andere deals in deze set.`,
   };
 }
 
@@ -105,7 +106,7 @@ function getPriceBar(deal: DealScore) {
 
 function formatDate(iso: string) {
   try {
-    return new Date(iso).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return new Date(iso).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   } catch { return iso; }
 }
 
@@ -248,7 +249,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 dark:bg-gray-800/90 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm transition text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-          aria-label="Close"
+          aria-label="Sluiten"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -284,19 +285,19 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
 
               <div className="flex items-end gap-4 flex-wrap mb-3">
                 <div>
-                  <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Current price</p>
-                  <p className="text-4xl font-bold text-gray-900 dark:text-white leading-none">€{deal.current_price.toFixed(2)}</p>
+                  <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Huidige prijs</p>
+                  <p className="text-4xl font-bold text-gray-900 dark:text-white leading-none">{eur(deal.current_price)}</p>
                 </div>
                 {deal.market_avg_price && deal.market_avg_price > 0 && (
                   <div className="pb-1">
-                    <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Market avg</p>
-                    <p className="text-xl font-semibold text-gray-500 dark:text-gray-400">€{deal.market_avg_price.toFixed(2)}</p>
+                    <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Normaal</p>
+                    <p className="text-xl font-semibold text-gray-500 dark:text-gray-400">{eur(deal.market_avg_price)}</p>
                   </div>
                 )}
                 {savings !== null && savings !== 0 && (
                   <div className="pb-1">
                     <span className={`text-sm font-bold px-2.5 py-1 rounded-lg ${savings > 0 ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'}`}>
-                      {savings > 0 ? `${savings}% below avg` : `${Math.abs(savings)}% above avg`}
+                      {savings > 0 ? `${savings}% onder normaal` : `${Math.abs(savings)}% boven normaal`}
                     </span>
                   </div>
                 )}
@@ -305,14 +306,14 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
               {bar && (
                 <div>
                   <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                    <span>Est. low €{bar.low.toFixed(2)}</span>
-                    <span>Est. high €{bar.high.toFixed(2)}</span>
+                    <span>Laag ca. {eur(bar.low)}</span>
+                    <span>Hoog ca. {eur(bar.high)}</span>
                   </div>
                   <div className="relative h-2 bg-gray-100 dark:bg-gray-800 rounded-full">
                     <div className="absolute h-2 rounded-full bg-gradient-to-r from-green-400 to-green-300" style={{ width: `${bar.pct}%` }} />
                     <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white dark:bg-gray-900 border-2 border-gray-800 dark:border-gray-300 rounded-full shadow" style={{ left: `${bar.pct}%` }} />
                   </div>
-                  <p className="text-[10px] text-gray-400 mt-1">Price position relative to market average</p>
+                  <p className="text-[10px] text-gray-400 mt-1">Positie van de prijs ten opzichte van de normale vraagprijs</p>
                 </div>
               )}
             </div>
@@ -320,33 +321,33 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
 
           {/* ── Insight ── */}
           <div className={`mx-6 mt-4 rounded-xl border p-4 ${border}`}>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">What this means</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">Wat dit betekent</p>
             <p className="text-sm text-gray-800 dark:text-gray-200 leading-relaxed">{text}</p>
           </div>
 
           {/* ── Buy/wait signal ── */}
           <div className="mx-6 mt-4 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
             <div className="flex items-center gap-2 mb-1">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Market trend</p>
-              <SignalBadge signal={deal.market_signal} floorChange={deal.floor_change_7d} supplyChange={deal.supply_change_7d} lang="en" />
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">Markttrend</p>
+              <SignalBadge signal={deal.market_signal} floorChange={deal.floor_change_7d} supplyChange={deal.supply_change_7d} />
             </div>
             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {signalExplanation(deal.market_signal, deal.floor_change_7d, deal.supply_change_7d, 'en')}
+              {signalExplanation(deal.market_signal, deal.floor_change_7d, deal.supply_change_7d)}
             </p>
           </div>
 
           {/* ── Stats ── */}
           <div className="grid grid-cols-3 gap-3 mx-6 mt-4">
             <div className="bg-gray-50 dark:bg-gray-800/80 rounded-xl p-3 text-center">
-              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Deal score</p>
-              <p className={`text-2xl font-bold ${scoreColor}`}>{deal.deal_score}</p>
+              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Dealscore</p>
+              <p className={`text-2xl font-bold ${scoreColor}`}>{Math.round(deal.deal_score)}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-800/80 rounded-xl p-3 text-center">
-              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Confidence</p>
-              <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{deal.confidence != null ? `${deal.confidence}%` : 'N/A'}</p>
+              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Betrouwbaarheid</p>
+              <p className="text-2xl font-bold text-gray-800 dark:text-gray-100">{deal.confidence != null ? `${deal.confidence}%` : 'n.v.t.'}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-800/80 rounded-xl p-3 text-center">
-              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Last updated</p>
+              <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wide mb-0.5">Bijgewerkt</p>
               <p className="text-xs font-semibold text-gray-700 dark:text-gray-200 leading-tight mt-1">{formatDate(deal.calculated_at)}</p>
             </div>
           </div>
@@ -357,9 +358,9 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
               onClick={() => setHistoryOpen(v => !v)}
               className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800/80 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-left"
             >
-              <span className="text-sm font-semibold text-gray-900 dark:text-white">Price history</span>
+              <span className="text-sm font-semibold text-gray-900 dark:text-white">Prijsgeschiedenis</span>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">Based on hourly EU data</span>
+                <span className="text-xs text-gray-400">Europese vraagprijzen per dag</span>
                 <svg className={`w-4 h-4 text-gray-400 transition-transform ${historyOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -376,7 +377,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                       onClick={() => setHistoryDays(d)}
                       className={`px-3 py-1 text-xs font-semibold rounded-lg transition ${historyDays === d ? 'bg-gray-900 text-white dark:bg-white dark:text-gray-900' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'}`}
                     >
-                      {d}D
+                      {d} dgn
                     </button>
                   ))}
                 </div>
@@ -385,11 +386,11 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                   {historyLoading ? (
                     <div className="flex items-center justify-center h-full text-sm text-gray-400 dark:text-gray-500">
                       <div className="w-5 h-5 border-2 border-gray-200 border-t-gray-600 dark:border-gray-700 dark:border-t-gray-300 rounded-full animate-spin mr-2" />
-                      Loading...
+                      Laden…
                     </div>
                   ) : historyLocked ? (
                     <div className="flex flex-col items-center justify-center h-full text-center gap-3">
-                      <p className="text-sm text-gray-600 dark:text-gray-300">Full price history is included with Plus.</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">De volledige prijsgeschiedenis zit in Plus.</p>
                       <a
                         href="/pricing"
                         className="px-4 py-2 bg-indigo-600 dark:bg-indigo-500 text-white text-sm rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-400 transition font-medium"
@@ -406,16 +407,16 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                 {conditions.length > 0 && (
                   <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-2">
-                      Current listings by condition
+                      Huidig aanbod per conditie
                     </p>
                     <div className="flex flex-wrap gap-2">
                       {conditions.map(c => (
                         <div key={c.condition} className="flex items-center gap-1.5 px-2.5 py-1.5 bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-lg">
                           <span className="text-xs font-semibold text-gray-700 dark:text-gray-200">{c.condition}</span>
                           <span className="text-xs text-gray-400">·</span>
-                          <span className="text-xs text-gray-600 dark:text-gray-300">€{c.avg_price.toFixed(2)} avg</span>
+                          <span className="text-xs text-gray-600 dark:text-gray-300">{eur(c.avg_price)} gem.</span>
                           <span className="text-xs text-gray-400">·</span>
-                          <span className="text-xs text-gray-400">{c.count} listings</span>
+                          <span className="text-xs text-gray-400">{c.count} aanbiedingen</span>
                         </div>
                       ))}
                     </div>
@@ -427,7 +428,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
 
           {/* ── Buy links ── */}
           <div className="mx-6 mt-4">
-            <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide mb-2">Find this card</p>
+            <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide mb-2">Vind deze kaart</p>
             <div className="grid grid-cols-3 gap-2">
               <a
                 href={cardMarketUrl}
@@ -464,7 +465,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
               </a>
             </div>
             <p className="text-[10px] text-gray-400 mt-2 text-center">
-              Opens a search on each platform. On eBay we filter to Buy It Now and sort by lowest price first.
+              Opent een zoekopdracht op elk platform. Op eBay tonen we alleen “Nu kopen”, goedkoopste eerst.
             </p>
           </div>
 
@@ -491,7 +492,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                 {deal.current_price > 0 && (
                   <div className="text-right pb-2 shrink-0">
                     <p className="text-[10px] text-gray-400">Nu</p>
-                    <p className="text-sm font-bold text-gray-700 dark:text-gray-200">€{deal.current_price.toFixed(2)}</p>
+                    <p className="text-sm font-bold text-gray-700 dark:text-gray-200">{eur(deal.current_price)}</p>
                   </div>
                 )}
               </div>
@@ -517,10 +518,10 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
           {/* ── Add to portfolio (collapsible form) ── */}
           {portfolioOpen && (
             <div className="mx-6 mt-4 border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-gray-50 dark:bg-gray-800/60">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Add to portfolio</p>
+              <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Toevoegen aan portfolio</p>
               <div className="grid grid-cols-2 gap-3 mb-3">
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Quantity</label>
+                  <label className="block text-xs text-gray-500 mb-1">Aantal</label>
                   <input
                     type="number"
                     min={1}
@@ -530,7 +531,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">Purchase price (€)</label>
+                  <label className="block text-xs text-gray-500 mb-1">Aankoopprijs (€)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -542,7 +543,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                 </div>
               </div>
               <div className="mb-3">
-                <label className="block text-xs text-gray-500 mb-1">Condition</label>
+                <label className="block text-xs text-gray-500 mb-1">Conditie</label>
                 <select
                   value={portForm.condition}
                   onChange={e => setPortForm(f => ({ ...f, condition: e.target.value }))}
@@ -552,10 +553,10 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                 </select>
               </div>
               <div className="mb-4">
-                <label className="block text-xs text-gray-500 mb-1">Notes (optional)</label>
+                <label className="block text-xs text-gray-500 mb-1">Notitie (optioneel)</label>
                 <input
                   type="text"
-                  placeholder="e.g. bought at GP Amsterdam"
+                  placeholder="bijv. gekocht op een beurs in Utrecht"
                   value={portForm.notes}
                   onChange={e => setPortForm(f => ({ ...f, notes: e.target.value }))}
                   className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600 focus:border-transparent"
@@ -567,13 +568,13 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                   disabled={portfolioAdded}
                   className="flex-1 px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition disabled:bg-green-600"
                 >
-                  {portfolioAdded ? '✓ Added!' : 'Confirm add'}
+                  {portfolioAdded ? '✓ Toegevoegd!' : 'Toevoegen'}
                 </button>
                 <button
                   onClick={() => setPortfolioOpen(false)}
                   className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition"
                 >
-                  Cancel
+                  Annuleren
                 </button>
               </div>
             </div>
@@ -626,7 +627,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
             </div>
 
             <button onClick={onClose} className="px-5 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition">
-              Close
+              Sluiten
             </button>
           </div>
 

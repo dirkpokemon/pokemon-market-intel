@@ -142,14 +142,14 @@ export default function SettingsPage() {
   };
 
   const handleClearCache = () => {
-    if (confirm('This will clear your watchlist, portfolio, and preferences. Continue?')) {
+    if (confirm('Dit wist je lokaal opgeslagen watchlist, portfolio en voorkeuren op dit apparaat. Doorgaan?')) {
       localStorage.removeItem('watchlist');
       localStorage.removeItem('portfolio_collection');
       localStorage.removeItem('portfolio_watchlist');
       localStorage.removeItem('hasSeenOnboarding');
       localStorage.removeItem('price_alerts');
       localStorage.removeItem(NOTIF_PREFS_KEY);
-      alert('Cache cleared!');
+      alert('Lokale gegevens gewist.');
     }
   };
 
@@ -180,7 +180,7 @@ export default function SettingsPage() {
       const { portal_url } = await subscriptionApi.createPortalSession();
       window.location.href = portal_url;
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Could not open billing portal';
+      const msg = e instanceof Error ? e.message : 'Het betaalportaal kon niet worden geopend';
       setBillingError(msg);
       setPortalLoading(false);
     }
@@ -190,8 +190,8 @@ export default function SettingsPage() {
     <DashboardLayout>
       <div className="px-4 sm:px-6 py-8 max-w-3xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Settings</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage your account, notifications, and preferences</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Instellingen</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Beheer je account, meldingen en voorkeuren</p>
         </div>
 
         {/* Account */}
@@ -200,13 +200,13 @@ export default function SettingsPage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800">
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Email</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email || 'Unknown'}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">E-mail</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{user?.email || 'Onbekend'}</p>
               </div>
             </div>
             <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800">
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Account Type</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Abonnement</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{tierLabel(user?.role)}</p>
               </div>
               {!isPaid && (
@@ -220,14 +220,14 @@ export default function SettingsPage() {
             </div>
             <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800 last:border-0 gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Profile Settings</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Update your profile information</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Profiel</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Pas je profielgegevens aan</p>
               </div>
               <button
                 onClick={() => setShowProfile(true)}
                 className="shrink-0 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 dark:text-gray-100 text-gray-700 text-xs rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 border border-transparent dark:border-gray-600 transition font-medium"
               >
-                Edit Profile
+                Profiel bewerken
               </button>
             </div>
           </div>
@@ -236,25 +236,25 @@ export default function SettingsPage() {
         {user?.role === 'paid' && (
           <div className="bg-gradient-to-r from-indigo-50 to-violet-50 dark:from-indigo-950/55 dark:to-violet-950/55 rounded-xl border border-indigo-100 dark:border-indigo-800/60 p-6 mb-6">
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-3">
-              Business (coming soon)
+              Business (binnenkort)
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
-              We are not selling Business yet. It will add API access, bulk export, and advanced alerts when ready. Join the
-              waitlist and we will email you when checkout opens. You keep Plus until then.
+              Business is nog niet te koop. Het voegt straks API-toegang, data-export en uitgebreide alerts toe. Zet je op de
+              wachtlijst, dan mailen we je zodra het beschikbaar is. Tot die tijd houd je gewoon Plus.
             </p>
             <BusinessWaitlistActions variant="settings" />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 leading-relaxed">
-              Same link as on the <span className="font-medium text-gray-700 dark:text-gray-300">Pricing</span> page under Business.
+              Dezelfde link als op de pagina <span className="font-medium text-gray-700 dark:text-gray-300">Abonnementen</span> onder Business.
             </p>
           </div>
         )}
 
         {canManageStripeBilling && (
           <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-6">
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-2">Subscription &amp; billing</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-2">Abonnement en betaling</h2>
             <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed mb-4">
-              Cancel your subscription, update your payment method, or download invoices through Stripe&apos;s secure portal.
-              If you cancel, you keep access until the end of your current billing period; then your account returns to the free tier.
+              Zeg je abonnement op, wijzig je betaalmethode of download facturen via het beveiligde portaal van Stripe. Zeg je op,
+              dan houd je toegang tot het einde van de lopende periode; daarna ga je terug naar Gratis.
             </p>
             {billingError && (
               <div className="mb-3 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 rounded-lg text-sm">
@@ -273,10 +273,10 @@ export default function SettingsPage() {
                   aria-hidden
                 />
               )}
-              {portalLoading ? 'Opening…' : 'Manage subscription'}
+              {portalLoading ? 'Openen…' : 'Abonnement beheren'}
             </button>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 leading-relaxed">
-              After changes in Stripe, refresh this page or sign out and back in so your plan updates here.
+              Heb je iets gewijzigd in Stripe? Vernieuw deze pagina of log opnieuw in om je abonnement hier bij te werken.
             </p>
           </div>
         )}
@@ -284,7 +284,7 @@ export default function SettingsPage() {
         {/* Notifications */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Notifications</h2>
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide">Meldingen</h2>
             {isPaid && (
               <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-200 text-[10px] font-bold rounded uppercase tracking-wide">
                 {tierLabel(user?.role)}
@@ -295,22 +295,22 @@ export default function SettingsPage() {
           {/* Watchlist alerts are part of every plan, so everyone can manage (and turn off) their mail */}
           <>
               {/* Delivery channels */}
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold mb-2">Delivery Channels</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold mb-2">Kanalen</p>
               <div className="mb-6">
                 <Toggle
                   checked={prefs.email_enabled}
                   onChange={(v) => updatePref('email_enabled', v)}
-                  label="Email Notifications"
-                  description="Receive high-priority signals and watchlist alerts via email"
+                  label="Meldingen per e-mail"
+                  description="Ontvang watchlist-alerts per e-mail"
                 />
                 {prefs.email_enabled && (
                   <div className="pl-0 py-2 pb-3 border-b border-gray-100 dark:border-gray-800">
-                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Email address</label>
+                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">E-mailadres</label>
                     <input
                       type="email"
                       value={prefs.email_address || user?.email || ''}
                       onChange={(e) => updatePref('email_address', e.target.value)}
-                      placeholder={user?.email || 'your@email.com'}
+                      placeholder={user?.email || 'jij@voorbeeld.nl'}
                       className="w-full max-w-sm px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500/40 dark:focus:ring-indigo-400/40 focus:border-indigo-500 dark:focus:border-indigo-500"
                     />
                   </div>
@@ -319,8 +319,8 @@ export default function SettingsPage() {
                 <div className="py-3">
                   <div className="flex items-center justify-between gap-4">
                     <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Dagelijkse E-mail Digest</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Ontvang elke ochtend om 8:00 de top deals en marktsignalen per mail</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Dagelijkse e-mailsamenvatting</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Ontvang elke ochtend de topdeals en marktsignalen per mail</p>
                     </div>
                     <button
                       type="button"
@@ -347,36 +347,7 @@ export default function SettingsPage() {
               {/* Watchlist alerts */}
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold mb-2">Watchlist</p>
               <div className="mb-6">
-                <Toggle checked={prefs.notify_watchlist} onChange={(v) => updatePref('notify_watchlist', v)} label="Watchlist Price Targets" description="When a card in your watchlist hits its target price" />
-              </div>
-
-              {/* Priority filter */}
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide font-semibold mb-2">Minimum Priority</p>
-              <div className="mb-4">
-                <div className="space-y-2 py-1">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-xs text-gray-600 dark:text-gray-400">Threshold (1 = all, 10 = critical only)</span>
-                    <span className="text-sm font-semibold tabular-nums text-indigo-700 dark:text-indigo-300 min-w-[1.5rem] text-right">
-                      {prefs.min_priority}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    step="1"
-                    value={prefs.min_priority}
-                    onChange={(e) => updatePref('min_priority', parseInt(e.target.value, 10))}
-                    className="app-range-input block"
-                    aria-valuemin={1}
-                    aria-valuemax={10}
-                    aria-valuenow={prefs.min_priority}
-                    aria-label="Minimum signal priority"
-                  />
-                </div>
-                <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                  Only notifications with priority {prefs.min_priority}+ (1 = all, 10 = critical only)
-                </p>
+                <Toggle checked={prefs.notify_watchlist} onChange={(v) => updatePref('notify_watchlist', v)} label="Doelprijzen in je watchlist" description="Zodra een kaart in je watchlist je doelprijs bereikt" />
               </div>
 
               {/* Save */}
@@ -385,21 +356,21 @@ export default function SettingsPage() {
                   onClick={savePrefs}
                   className="px-5 py-2 bg-gray-900 dark:bg-white dark:text-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition"
                 >
-                  Save Preferences
+                  Voorkeuren opslaan
                 </button>
-                {saved && <span className="text-sm text-green-600 dark:text-green-400 font-medium">Saved!</span>}
+                {saved && <span className="text-sm text-green-600 dark:text-green-400 font-medium">Opgeslagen!</span>}
               </div>
             </>
         </div>
 
         {/* Preferences */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6 mb-6">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-4">Preferences</h2>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-4">Voorkeuren</h2>
           <div className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-3 border-b border-gray-100 dark:border-gray-800">
               <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-white">Appearance</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Light or dark interface. Saved on this device.</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-white">Weergave</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Licht of donker thema. Wordt op dit apparaat bewaard.</p>
               </div>
               <div className="sm:w-56">
                 <ThemeToggle />
@@ -407,38 +378,38 @@ export default function SettingsPage() {
             </div>
             <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800 gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Onboarding Tour</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Replay the platform walkthrough</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Rondleiding</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Bekijk de rondleiding opnieuw</p>
               </div>
               <button
                 onClick={() => { activateTour(); router.push('/home'); }}
                 className="shrink-0 px-3 py-1.5 bg-gray-900 dark:bg-white dark:text-gray-900 text-white text-xs rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition font-medium"
               >
-                Replay Tour
+                Opnieuw bekijken
               </button>
             </div>
             <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800 gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Keyboard Shortcuts</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">View available shortcuts</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Sneltoetsen</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Bekijk de beschikbare sneltoetsen</p>
               </div>
               <button
-                onClick={() => alert('Keyboard Shortcuts:\n\nS - Focus search\nW - Toggle watchlist view\n? - Show shortcuts help\nESC - Close modals')}
+                onClick={() => alert('Sneltoetsen:\n\nS - Naar zoeken\nW - Watchlist aan/uit\n? - Sneltoetsen tonen\nESC - Venster sluiten')}
                 className="shrink-0 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 dark:text-gray-100 text-gray-700 text-xs rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 border border-transparent dark:border-gray-600 transition font-medium"
               >
-                View
+                Bekijken
               </button>
             </div>
             <div className="flex items-center justify-between py-3 gap-3">
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Clear Cache</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Reset watchlist, portfolio, alerts, and preferences</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Lokale gegevens wissen</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Wis de op dit apparaat bewaarde watchlist, portfolio en voorkeuren</p>
               </div>
               <button
                 onClick={handleClearCache}
                 className="shrink-0 px-3 py-1.5 bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-xs rounded-lg hover:bg-red-100 dark:hover:bg-red-950/60 border border-red-100 dark:border-red-900/50 transition font-medium"
               >
-                Clear
+                Wissen
               </button>
             </div>
           </div>
@@ -494,10 +465,10 @@ export default function SettingsPage() {
 
         {/* About */}
         <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-4">About</h2>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wide mb-4">Over</h2>
           <div className="space-y-2 text-xs text-gray-500 dark:text-gray-400">
-            <p><strong className="text-gray-700 dark:text-gray-300">Version:</strong> 1.0.0</p>
-            <p><strong className="text-gray-700 dark:text-gray-300">Platform:</strong> TCG Pulse, EU market intelligence for trading card singles</p>
+            <p><strong className="text-gray-700 dark:text-gray-300">Versie:</strong> 1.0.0</p>
+            <p><strong className="text-gray-700 dark:text-gray-300">Platform:</strong> TCG Pulse, Europese marktdata voor losse ruilkaarten</p>
             <p><strong className="text-gray-700 dark:text-gray-300">Support:</strong> pokemonmarketintel@gmail.com</p>
           </div>
         </div>

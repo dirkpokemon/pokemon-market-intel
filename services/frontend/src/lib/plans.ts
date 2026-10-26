@@ -8,9 +8,9 @@ import { SITE_CONTACT_EMAIL } from './site';
 
 export type AppTier = 'free' | 'paid' | 'pro';
 
-const WAITLIST_SUBJECT = 'TCG Pulse: Business waitlist';
+const WAITLIST_SUBJECT = 'TCG Pulse: wachtlijst Business';
 const WAITLIST_BODY =
-  "Hi,\n\nI'd like to join the waitlist for Business (API, data export, advanced alerts).\n\nThanks,\n";
+  'Hallo,\n\nIk wil graag op de wachtlijst voor Business (API, data-export, uitgebreide alerts).\n\nGroet,\n';
 
 /** Target inbox for the Business waitlist (mailto + copy + Gmail compose). */
 export function businessWaitlistEmail(): string {
@@ -34,7 +34,7 @@ export function businessWaitlistGmailUrl(): string {
 }
 
 export const TIER_LABEL: Record<AppTier, string> = {
-  free: 'Free',
+  free: 'Gratis',
   paid: 'Plus',
   pro: 'Business',
 };
@@ -57,32 +57,33 @@ export function isSubscriberRole(role: string | undefined | null): boolean {
 
 export const PLAN_FEATURES = {
   free: [
-    'Top 20 deal scores (score ≥ 55)',
-    'Browse all sets + sealed prices',
-    'Watchlist with email price-drop alerts',
-    'Card search across live EU listings',
-    'Community support',
+    'Top 20 dealscores (score ≥ 55)',
+    'Prijscheck en lijstprijs tot 10 kaarten',
+    'Alle sets en sealed prijzen bekijken',
+    'Watchlist met e-mailalerts bij prijsdalingen',
+    'Zoeken in het actuele EU-aanbod',
   ],
   paid: [
-    'Unlimited deal scores (all deals, no cap)',
-    'All filters: price, set, category, savings',
-    'Full market stats & price history',
-    'Priority support',
+    'Alle dealscores, zonder limiet',
+    'Alle filters: prijs, set, categorie, besparing',
+    'Volledige marktstatistieken en prijsgeschiedenis',
+    'Lijstprijs voor lijsten tot 60 kaarten',
+    'Voorrang bij support',
   ],
   pro: [
-    'Everything in Plus today, same app access until extras launch',
-    'Planned: read-only API & bulk data export',
-    'Planned: advanced alert rules for shops',
-    'Join the waitlist: we email you when Business checkout opens',
-    'Built for shops and power users',
+    'Nu: alles van Plus, tot de extra functies klaar zijn',
+    'Gepland: API (alleen lezen) en data-export',
+    'Gepland: uitgebreide alertregels voor winkels',
+    'Zet je op de wachtlijst: we mailen je zodra Business beschikbaar is',
+    'Gemaakt voor winkels en intensieve gebruikers',
   ],
 } as const;
 
 /** CTA for free users upgrading to the first paid tier. */
-export const CTA_SUBSCRIBE_PLUS = 'Subscribe to Plus';
+export const CTA_SUBSCRIBE_PLUS = 'Neem Plus';
 
 /** Business is waitlist-only until API/export ships; opens email. */
-export const CTA_BUSINESS_WAITLIST = 'Join Business waitlist';
+export const CTA_BUSINESS_WAITLIST = 'Op de wachtlijst voor Business';
 
 /** @deprecated use CTA_BUSINESS_WAITLIST */
 export const CTA_GET_BUSINESS = CTA_BUSINESS_WAITLIST;
@@ -91,4 +92,4 @@ export const CTA_GET_BUSINESS = CTA_BUSINESS_WAITLIST;
 export const CTA_UPGRADE_BUSINESS = CTA_BUSINESS_WAITLIST;
 
 /** Free-user upsell lines (replace vague “Premium”). */
-export const UPSELL_SUBSCRIBE = 'Upgrade to Plus';
+export const UPSELL_SUBSCRIBE = 'Upgrade naar Plus';

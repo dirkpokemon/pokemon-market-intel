@@ -28,9 +28,9 @@ export default function StatCard({ title, value, subtitle, icon, trend, color = 
   const trendIcon = trend?.isPositive ? '↑' : '↓';
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-6 hover:shadow-md transition">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
+    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-6 hover:shadow-md transition">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">{title}</p>
           <p className="text-3xl font-bold text-gray-900 dark:text-white">{value}</p>
           {subtitle && (
@@ -45,7 +45,7 @@ export default function StatCard({ title, value, subtitle, icon, trend, color = 
           )}
         </div>
         {icon && (
-          <div className={`w-12 h-12 rounded-lg ${colorClasses[color]} flex items-center justify-center text-2xl flex-shrink-0`}>
+          <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg ${colorClasses[color]} flex items-center justify-center text-xl sm:text-2xl flex-shrink-0`}>
             {icon}
           </div>
         )}

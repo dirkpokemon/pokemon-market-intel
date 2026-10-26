@@ -17,7 +17,7 @@ function VerifyContent() {
   useEffect(() => {
     if (!token) {
       setState('error');
-      setErrorMsg('No verification token found. Please use the link from your email.');
+      setErrorMsg('Geen bevestigingscode gevonden. Gebruik de link uit je e-mail.');
       return;
     }
 
@@ -29,7 +29,7 @@ function VerifyContent() {
       })
       .catch((err) => {
         setState('error');
-        setErrorMsg(err.message || 'Verification failed. The link may have expired.');
+        setErrorMsg(err.message || 'Bevestigen mislukt. De link is mogelijk verlopen.');
       });
   }, [token]);
 
@@ -71,17 +71,17 @@ function VerifyContent() {
   };
 
   const titles: Record<VerifyState, string> = {
-    loading: 'Verifying your email...',
-    success: 'Email verified!',
-    already: 'Already verified',
-    error: 'Verification failed',
+    loading: 'Je e-mailadres wordt bevestigd…',
+    success: 'E-mailadres bevestigd!',
+    already: 'Al bevestigd',
+    error: 'Bevestigen mislukt',
   };
 
   const descriptions: Record<VerifyState, string> = {
-    loading: 'Please wait while we activate your account.',
-    success: 'Your account is now active. You can sign in and start exploring the market.',
-    already: 'Your email was already verified. You can sign in below.',
-    error: errorMsg || 'Something went wrong.',
+    loading: 'Even geduld, we activeren je account.',
+    success: 'Je account is actief. Log in en ontdek de markt.',
+    already: 'Je e-mailadres was al bevestigd. Je kunt hieronder inloggen.',
+    error: errorMsg || 'Er ging iets mis.',
   };
 
   return (
@@ -96,7 +96,7 @@ function VerifyContent() {
           href="/login"
           className="inline-block bg-gray-900 text-white py-2.5 px-8 rounded-lg hover:bg-gray-800 transition text-sm font-medium"
         >
-          Sign In
+          Inloggen
         </Link>
       )}
 
@@ -106,10 +106,10 @@ function VerifyContent() {
             href="/register"
             className="inline-block bg-gray-900 text-white py-2.5 px-8 rounded-lg hover:bg-gray-800 transition text-sm font-medium"
           >
-            Try Again
+            Opnieuw proberen
           </Link>
           <p className="text-xs text-gray-400">
-            Or <Link href="/login" className="underline">sign in</Link> if you already have an account
+            Of <Link href="/login" className="underline">log in</Link> als je al een account hebt
           </p>
         </div>
       )}
@@ -141,8 +141,8 @@ export default function VerifyPage() {
                 <path d="M12 6v6l4 2" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Verifying your email...</h1>
-            <p className="text-gray-500 text-sm mb-8">Please wait while we activate your account.</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Je e-mailadres wordt bevestigd…</h1>
+            <p className="text-gray-500 text-sm mb-8">Even geduld, we activeren je account.</p>
           </>
         }>
           <VerifyContent />

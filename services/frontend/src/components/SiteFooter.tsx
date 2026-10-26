@@ -24,7 +24,7 @@ export default function SiteFooter({ showMarketingLinks, className = '' }: SiteF
           </p>
           <nav
             className="order-1 sm:order-2 flex flex-wrap items-center justify-center sm:justify-end gap-x-5 gap-y-1 text-[11px] text-gray-400 dark:text-gray-500"
-            aria-label="Legal and contact"
+            aria-label="Juridisch en contact"
           >
             <a
               href={`mailto:${SITE_CONTACT_EMAIL}?subject=${encodeURIComponent('TCG Pulse contact')}`}
@@ -33,10 +33,10 @@ export default function SiteFooter({ showMarketingLinks, className = '' }: SiteF
               Contact
             </a>
             <Link href="/legal" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors rounded-sm">
-              Legal notice
+              Colofon
             </Link>
             <Link href="/terms" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors rounded-sm">
-              Terms
+              Voorwaarden
             </Link>
             <Link href="/privacy" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors rounded-sm">
               Privacy
@@ -44,20 +44,20 @@ export default function SiteFooter({ showMarketingLinks, className = '' }: SiteF
             {showMarketingLinks && (
               <>
                 <Link href="/pricing" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors rounded-sm">
-                  Pricing
+                  Abonnementen
                 </Link>
                 <Link href="/login" className="hover:text-gray-700 dark:hover:text-gray-300 transition-colors rounded-sm">
-                  Login
+                  Inloggen
                 </Link>
               </>
             )}
           </nav>
         </div>
         <p className="mt-3 text-[10px] leading-relaxed text-gray-400 dark:text-gray-600 text-center sm:text-left">
-          TCG Pulse is an independent price-tracking tool and is not affiliated with, endorsed, sponsored, or
-          approved by Nintendo, Creatures Inc., GAME FREAK inc., or The Pokémon Company. &ldquo;Pokémon&rdquo; and all
-          related names are trademarks of their respective owners and are used here for identification only. Prices are
-          sourced from CardTrader and are informational — not financial advice.
+          TCG Pulse is een onafhankelijke prijstool en is niet verbonden aan, goedgekeurd of gesponsord door Nintendo,
+          Creatures Inc., GAME FREAK inc. of The Pokémon Company. &ldquo;Pokémon&rdquo; en alle bijbehorende namen zijn
+          handelsmerken van hun respectieve eigenaren en worden hier alleen ter herkenning gebruikt. Prijzen komen van
+          CardTrader en zijn ter informatie — geen financieel advies.
         </p>
       </div>
     </footer>

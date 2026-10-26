@@ -21,9 +21,9 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
 
-    if (!firstName.trim()) { setError('First name is required'); setLoading(false); return; }
-    if (!lastName.trim()) { setError('Last name is required'); setLoading(false); return; }
-    if (password.length < 8) { setError('Password must be at least 8 characters'); setLoading(false); return; }
+    if (!firstName.trim()) { setError('Vul je voornaam in'); setLoading(false); return; }
+    if (!lastName.trim()) { setError('Vul je achternaam in'); setLoading(false); return; }
+    if (password.length < 8) { setError('Je wachtwoord moet minstens 8 tekens hebben'); setLoading(false); return; }
 
     try {
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
@@ -31,7 +31,7 @@ export default function RegisterPage() {
       if (res.verify_url) setVerifyUrl(res.verify_url);
       setRegistered(true);
     } catch (err: any) {
-      setError(err.message || 'Registration failed');
+      setError(err.message || 'Registreren mislukt');
     } finally {
       setLoading(false);
     }
@@ -50,7 +50,7 @@ export default function RegisterPage() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Back to home
+              Terug naar home
             </Link>
           </div>
           {/* Envelope icon */}
@@ -61,35 +61,35 @@ export default function RegisterPage() {
             </svg>
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Check your email</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Kijk in je mail</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">
-            We&apos;ve sent a verification link to<br />
+            We hebben een bevestigingslink gestuurd naar<br />
             <span className="font-medium text-gray-900 dark:text-white">{email}</span>
           </p>
 
           {verifyUrl ? (
             <div className="bg-amber-50 dark:bg-amber-950/35 border border-amber-200 dark:border-amber-800/60 rounded-lg p-4 mb-6 text-left">
-              <p className="text-sm text-amber-800 dark:text-amber-200 font-medium mb-2">Email could not be sent</p>
-              <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">Click the button below to verify your account directly:</p>
+              <p className="text-sm text-amber-800 dark:text-amber-200 font-medium mb-2">De e-mail kon niet worden verstuurd</p>
+              <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">Klik op de knop hieronder om je account direct te bevestigen:</p>
               <a
                 href={verifyUrl}
                 className="inline-block bg-gray-900 dark:bg-indigo-600 text-white py-2 px-6 rounded-lg hover:bg-gray-800 dark:hover:bg-indigo-500 transition text-sm font-medium"
               >
-                Verify My Account
+                Account bevestigen
               </a>
             </div>
           ) : (
             <div className="bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6 text-left">
               <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
-                Click the link in your email to activate your account. The link expires in 48 hours. Check your spam folder if you don&apos;t see it within a few minutes.
+                Klik op de link in de mail om je account te activeren. De link is 48 uur geldig. Zie je niets binnen een paar minuten? Kijk dan in je spammap.
               </p>
             </div>
           )}
 
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            Already verified?{' '}
+            Al bevestigd?{' '}
             <Link href="/login" className="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">
-              Sign in
+              Inloggen
             </Link>
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function RegisterPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to home
+            Terug naar home
           </Link>
         </div>
 
@@ -121,8 +121,8 @@ export default function RegisterPage() {
         </div>
 
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create Account</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Join TCG Pulse</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Account aanmaken</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Word lid van TCG Pulse</p>
         </div>
 
         {error && (
@@ -135,7 +135,7 @@ export default function RegisterPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                First Name
+                Voornaam
               </label>
               <input
                 id="firstName"
@@ -145,12 +145,12 @@ export default function RegisterPage() {
                 required
                 disabled={loading}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-900 dark:focus:ring-indigo-500 focus:border-transparent text-sm disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500"
-                placeholder="John"
+                placeholder="Sam"
               />
             </div>
             <div>
               <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                Last Name
+                Achternaam
               </label>
               <input
                 id="lastName"
@@ -160,14 +160,14 @@ export default function RegisterPage() {
                 required
                 disabled={loading}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-900 dark:focus:ring-indigo-500 focus:border-transparent text-sm disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500"
-                placeholder="Doe"
+                placeholder="de Vries"
               />
             </div>
           </div>
 
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Email Address
+              E-mailadres
             </label>
             <input
               id="email"
@@ -177,13 +177,13 @@ export default function RegisterPage() {
               required
               disabled={loading}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-900 dark:focus:ring-indigo-500 focus:border-transparent text-sm disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500"
-              placeholder="you@example.com"
+              placeholder="jij@voorbeeld.nl"
             />
           </div>
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Password
+              Wachtwoord
             </label>
             <input
               id="password"
@@ -196,7 +196,7 @@ export default function RegisterPage() {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-900 dark:focus:ring-indigo-500 focus:border-transparent text-sm disabled:bg-gray-50 dark:disabled:bg-gray-800/50 disabled:text-gray-500"
               placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
             />
-            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">At least 8 characters</p>
+            <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Minstens 8 tekens</p>
           </div>
 
           <button
@@ -211,14 +211,14 @@ export default function RegisterPage() {
                 aria-hidden
               />
             )}
-            <span>{loading ? 'Creating account…' : 'Create Account'}</span>
+            <span>{loading ? 'Account aanmaken…' : 'Account aanmaken'}</span>
           </button>
         </form>
 
         <div className="mt-6 text-center text-sm">
-          <span className="text-gray-500 dark:text-gray-400">Already have an account? </span>
+          <span className="text-gray-500 dark:text-gray-400">Heb je al een account? </span>
           <Link href="/login" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:underline font-medium">
-            Sign in
+            Inloggen
           </Link>
         </div>
       </div>

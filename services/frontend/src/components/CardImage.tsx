@@ -72,7 +72,7 @@ export default function CardImage({ cardName, size = 'sm', className = '' }: Car
     <div
       className={`${sizeClasses[size]} rounded-lg overflow-hidden flex-shrink-0 relative bg-gradient-to-br ${gradient} flex flex-col items-center justify-center text-center px-1 ${className}`}
       role="img"
-      aria-label={name || 'Card'}
+      aria-label={name || 'Kaart'}
       title={name || undefined}
     >
       {/* subtle top sheen for a card-like feel */}

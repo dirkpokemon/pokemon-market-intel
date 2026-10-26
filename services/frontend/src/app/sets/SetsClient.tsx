@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/DashboardLayout';
 import { setsApi, PokemonSetInfo, EraInfo } from '@/lib/api';
+import { eur } from '@/lib/format';
 
 // Era background gradients for visual variety
 const ERA_GRADIENTS: Record<string, string> = {
@@ -58,7 +59,7 @@ function SetCard({ set }: { set: PokemonSetInfo }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 10V11" />
             </svg>
             <span className="text-[11px] font-semibold text-emerald-400">
-              v.a. €{sealedPrice % 1 === 0 ? sealedPrice.toFixed(0) : sealedPrice.toFixed(2)}
+              v.a. {eur(sealedPrice)}
             </span>
           </div>
         )}
@@ -117,7 +118,7 @@ export default function SetsClient({ initialData }: SetsClientProps) {
       <div className="px-4 sm:px-6 py-6 sm:py-8 max-w-[1400px] mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Browse Sets</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Sets</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             {sets.length} Pokémon TCG sets
             {setsWithData > 0 && (

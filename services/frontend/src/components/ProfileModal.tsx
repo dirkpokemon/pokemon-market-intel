@@ -205,7 +205,7 @@ export default function ProfileModal({ user, onClose, onSave }: ProfileModalProp
             {activeTab === 'notifications' && (
               <>
                 <div className="p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-800 dark:text-blue-300">
-                  Notificaties zijn beschikbaar voor Plus en Business accounts.
+                  Watchlist-alerts per e-mail zitten in elk abonnement, ook in Gratis.
                 </div>
                 <div className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800">
                   <div>

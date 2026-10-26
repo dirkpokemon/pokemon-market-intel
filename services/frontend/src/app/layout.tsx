@@ -13,11 +13,11 @@ const SITE_URL =
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: 'TCG Pulse — EU Pokémon price alerts',
+    default: 'TCG Pulse — eerlijke Pokémon-prijzen in Europa',
     template: '%s | TCG Pulse',
   },
-  description: 'EU price intelligence and price-drop alerts for Pokémon TCG singles.',
-  keywords: ['TCG', 'Pokémon', 'trading cards', 'singles', 'market', 'prices', 'EU', 'CardTrader', 'price alerts'],
+  description: 'Prijscheck, lijstprijs inclusief verzending en prijsalerts voor Pokémon-kaarten in Europa.',
+  keywords: ['TCG', 'Pokémon', 'Pokémon kaarten', 'prijscheck', 'kaartprijzen', 'singles', 'EU', 'CardTrader', 'prijsalert'],
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
@@ -27,15 +27,16 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     siteName: 'TCG Pulse',
-    title: 'TCG Pulse — EU Pokémon price alerts',
-    description: 'Find Pokémon singles below market price and get alerted when your target hits.',
+    title: 'TCG Pulse — eerlijke Pokémon-prijzen in Europa',
+    description: 'Check of een prijs eerlijk is, bereken je lijst inclusief verzending en krijg een alert bij je doelprijs.',
     url: SITE_URL,
+    locale: 'nl_NL',
     images: [{ url: '/icon-512.png', width: 512, height: 512, alt: 'TCG Pulse' }],
   },
   twitter: {
     card: 'summary',
-    title: 'TCG Pulse — EU Pokémon price alerts',
-    description: 'Find Pokémon singles below market price and get alerted when your target hits.',
+    title: 'TCG Pulse — eerlijke Pokémon-prijzen in Europa',
+    description: 'Check of een prijs eerlijk is, bereken je lijst inclusief verzending en krijg een alert bij je doelprijs.',
     images: ['/icon-512.png'],
   },
 };
@@ -58,7 +59,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="nl" suppressHydrationWarning>
       <body className={`${inter.className} bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100`}>
         <Script id="theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeInit }} />
         <ToastProvider>
