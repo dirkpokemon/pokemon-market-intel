@@ -441,6 +441,13 @@ class CardTraderScraperV2:
                     is_sealed = _is_sealed_product(card_name)
                     card_number = None if is_sealed else str(blueprint.get('id'))
                     collector_number, rarity = (None, None) if is_sealed else _blueprint_details(blueprint)
+                    if not is_sealed:
+                        # Blueprints carry no number/rarity; single-card listings do
+                        # (properties_hash.collector_number / pokemon_rarity).
+                        collector_number = collector_number or (str(properties.get('collector_number') or '')[:50] or None)
+                        listing_rarity = properties.get('pokemon_rarity')
+                        if listing_rarity:
+                            rarity = str(listing_rarity)[:100]
                     seller_key, seller_country, ships_via_zero = _seller_fields(listing, is_sealed)
 
                     # Create raw_price entry

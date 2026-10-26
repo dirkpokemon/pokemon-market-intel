@@ -12,7 +12,7 @@ analysis service replaces market_statistics on every run.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.language import RAW_LANG_SQL
 from app.core.price_check import judge_price, parse_listing
 from app.core.rate_limit import RateLimiter
 from app.database import get_db
@@ -76,6 +77,12 @@ class VerdictOut(BaseModel):
     low_data: bool
 
 
+class GradedOffers(BaseModel):
+    """Graded (slabbed) copies on offer now. CardTrader doesn't say which grade or company."""
+    min_price: float
+    listings: int
+
+
 class CheckResponse(BaseModel):
     product_name: str
     product_set: Optional[str] = None
@@ -87,6 +94,7 @@ class CheckResponse(BaseModel):
     price: float
     verdict: VerdictOut
     reference: Reference
+    graded: Optional[GradedOffers] = None
     basis: str
 
 
@@ -207,6 +215,25 @@ async def check_price(
     observations = int(row.sample_size or 0)
     verdict = judge_price(price, floor, typical, days, observations)
 
+    graded = None
+    if row.card_number:
+        g = (await db.execute(
+            text(f"""
+                SELECT min(price) AS min_price, count(*) AS listings
+                FROM raw_prices
+                WHERE card_number = :card
+                  AND graded = true
+                  AND price > 0
+                  AND upper(COALESCE(currency, 'EUR')) = 'EUR'
+                  AND scraped_at >= :since
+                  AND {RAW_LANG_SQL} = :language
+            """),
+            {"card": row.card_number, "language": row.language,
+             "since": datetime.now(timezone.utc) - timedelta(hours=26)},
+        )).fetchone()
+        if g and g.listings:
+            graded = GradedOffers(min_price=float(g.min_price), listings=int(g.listings))
+
     return CheckResponse(
         product_name=row.product_name,
         product_set=row.product_set,
@@ -217,6 +244,7 @@ async def check_price(
         language=row.language,
         price=price,
         verdict=VerdictOut(**verdict.__dict__),
+        graded=graded,
         basis=(
             "Vraagprijzen van vergelijkbare aanbiedingen op CardTrader (singles: near-mint, "
             + ("Japanstalig" if row.language == "JP" else "Engelstalig")

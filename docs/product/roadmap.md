@@ -47,7 +47,10 @@ Probleem 2. Plak een wantlist of decklist → goedkoopste combinatie over CardTr
 `scoring.market_signal` vergelijkt de laatste 7 afgeronde dagen met de dagen daarvoor (laagste vraagprijs en aanbod per dag). Labels: Koopmoment / Wachten / Stijgend / Dalend / Stabiel, op de dealkaarten, in de deal-popup en in de prijscheck.
 Probleem 4. Stijgt het aantal listings terwijl de laagste prijs zakt → wachten is waarschijnlijk slim. Die data hebben we al (`volume_*`, `volume_trend_7d`, daily aggregates). Past beter bij een correctiejaar dan alleen "deal scores".
 
-### 4. Graden: wel of niet?
+### 4. Graden: wel of niet? — *geparkeerd (oktober 2026)*
+
+CardTrader geeft per listing alleen `graded: true`, niet het cijfer (PSA 9/10) of het bedrijf (PSA/BGS/CGC); juist dat bepaalt de prijs. Een eerlijke rekenhulp kan daarom niet op deze data. Tussenstap: de prijscheck toont "gegradeerde exemplaren vanaf € X" met die waarschuwing. Vervolg: een bron met cijfers zoeken (het cijfer uit vrije verkopersbeschrijvingen halen is te onbetrouwbaar).
+
 Probleem 6. Rekenhulp met EU-kosten (PSA Frankfurt, AP Grading, douane, verzending) tegenover de meerprijs van een graded kaart. Vereist graded-prijsdata (nog te bepalen welke bron).
 
 ### 5. Japanse kaarten als aparte lijn — *gebouwd (oktober 2026)*
