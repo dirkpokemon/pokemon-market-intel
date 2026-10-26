@@ -31,6 +31,7 @@ class WatchlistCreate(BaseModel):
     card_name: str = Field(..., min_length=1, max_length=255)
     card_set: Optional[str] = Field(default=None, max_length=255)
     card_number: Optional[str] = Field(default=None, max_length=100)
+    language: Optional[str] = Field(default=None, pattern="^(EN|JP)$")
     target_price: float = Field(..., gt=0)
 
 
@@ -39,6 +40,7 @@ class WatchlistItemResponse(BaseModel):
     card_name: str
     card_set: Optional[str]
     card_number: Optional[str] = None
+    language: Optional[str] = None
     target_price: float
     current_price: Optional[float]
     is_active: bool
@@ -100,6 +102,7 @@ async def add_watchlist_item(
         card_name=payload.card_name.strip(),
         card_set=payload.card_set.strip() if payload.card_set else None,
         card_number=payload.card_number.strip() if payload.card_number else None,
+        language=payload.language if payload.language and payload.language != "EN" else None,
         target_price=payload.target_price,
         is_active=True,
     )

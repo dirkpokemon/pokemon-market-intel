@@ -24,6 +24,8 @@ class DailyPrice(Base):
     set_key = Column(String(255), nullable=False)
     category = Column(String(50), nullable=False)
     card_key = Column(String(100), nullable=False)
+    # Listing language (EN, JP, ...): part of the product identity
+    language = Column(String(10), nullable=False, server_default="EN")
     day = Column(Date, nullable=False, index=True)
 
     # Display labels as scraped
@@ -43,7 +45,7 @@ class DailyPrice(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     __table_args__ = (
-        UniqueConstraint("name_key", "set_key", "category", "card_key", "day", name="uq_daily_prices_product_day"),
+        UniqueConstraint("name_key", "set_key", "category", "card_key", "language", "day", name="uq_daily_prices_product_lang_day"),
     )
 
     def __repr__(self):

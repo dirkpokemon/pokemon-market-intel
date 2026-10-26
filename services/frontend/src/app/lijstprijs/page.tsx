@@ -49,6 +49,7 @@ export default function ListPricePage() {
   const [text, setText] = useState('');
   const [country, setCountry] = useState('NL');
   const [condition, setCondition] = useState<'nm' | 'lp'>('nm');
+  const [language, setLanguage] = useState<'EN' | 'JP'>('EN');
   const [loggedIn, setLoggedIn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -69,7 +70,7 @@ export default function ListPricePage() {
     setError('');
     setResult(null);
     try {
-      setResult(await listPriceApi.calculate({ text, country, condition }));
+      setResult(await listPriceApi.calculate({ text, country, condition, language }));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Berekenen is mislukt.');
     } finally {
@@ -147,7 +148,7 @@ export default function ListPricePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:items-end">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:items-end">
             <div>
               <label htmlFor="lp-country" className="block text-sm font-semibold mb-1.5">
                 Bezorgen in
@@ -177,6 +178,20 @@ export default function ListPricePage() {
               >
                 <option value="nm">Near mint</option>
                 <option value="lp">Near mint of licht gespeeld</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="lp-language" className="block text-sm font-semibold mb-1.5">
+                Taal
+              </label>
+              <select
+                id="lp-language"
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as 'EN' | 'JP')}
+                className="w-full px-3 py-3 text-base rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              >
+                <option value="EN">Engels</option>
+                <option value="JP">Japans</option>
               </select>
             </div>
             <button

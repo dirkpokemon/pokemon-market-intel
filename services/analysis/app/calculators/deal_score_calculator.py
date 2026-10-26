@@ -106,6 +106,7 @@ class DealScoreCalculator:
             "product_set": stats.product_set,
             "category": stats.category,
             "card_number": stats.card_number,
+            "language": stats.language or "EN",
             "collector_number": stats.collector_number,
             "rarity": stats.rarity,
             "current_price": _dec(float(stats.current_price)),

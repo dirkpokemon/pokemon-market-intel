@@ -7,6 +7,7 @@ import CardImage from '@/components/CardImage';
 import { UPSELL_SUBSCRIBE } from '@/lib/plans';
 
 import SignalBadge, { signalExplanation } from '@/components/MarketSignal';
+import LanguageBadge from '@/components/LanguageBadge';
 import { eur } from '@/lib/format';
 const CardHistoryChart = dynamic(() => import('@/components/CardHistoryChart'), { ssr: false });
 
@@ -199,6 +200,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
         card_name: deal.product_name,
         card_set: deal.product_set ?? undefined,
         card_number: deal.card_number ?? undefined,
+        language: deal.language ?? undefined,
         target_price: price,
       });
       setAlertSaved(true);
@@ -279,6 +281,7 @@ export default function DealModal({ deal, onClose }: DealModalProps) {
                     {[deal.collector_number && `#${deal.collector_number}`, deal.rarity].filter(Boolean).join(' · ')}
                   </span>
                 )}
+                <LanguageBadge language={deal.language} className="!text-xs !px-2 !rounded-full" />
               </div>
 
               <h2 className="text-xl font-bold text-gray-900 dark:text-white leading-tight mb-3 pr-8">{deal.product_name}</h2>

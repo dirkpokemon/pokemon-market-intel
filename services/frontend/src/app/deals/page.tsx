@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { marketApi, sparklineKey, DealScore } from '@/lib/api';
 import SignalBadge from '@/components/MarketSignal';
+import LanguageBadge from '@/components/LanguageBadge';
 import DashboardLayout from '@/components/DashboardLayout';
 import DealModal from '@/components/DealModal';
 import CardImage from '@/components/CardImage';
@@ -81,6 +82,7 @@ function DealCard({ deal, watchlist, toggleWatchlist, setSelectedDeal, getScoreC
             {deal.product_set && (
               <p className="text-[11px] text-gray-400 truncate">{deal.product_set}</p>
             )}
+            <LanguageBadge language={deal.language} className="flex-shrink-0" />
             <SignalBadge signal={deal.market_signal} floorChange={deal.floor_change_7d} supplyChange={deal.supply_change_7d} className="flex-shrink-0" />
           </div>
         </div>
@@ -120,6 +122,7 @@ function DealsPageInner() {
   const [selectedDeal, setSelectedDeal] = useState<DealScore | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState('score-desc');
+  const [language, setLanguage] = useState<'EN' | 'JP' | 'all'>('EN');
   const [viewMode, setViewMode] = useState<ViewMode>('all');
   const [userRole, setUserRole] = useState<string>('free');
   const [filters, setFilters] = useState<FilterOptions>({
@@ -156,6 +159,7 @@ function DealsPageInner() {
         const scores = await marketApi.getDealScores({
           limit: 100,
           min_score: scoped ? 0 : 50,
+          language,
           ...(setP ? { product_set: setP } : {}),
           ...(cardP ? { product_name: cardP } : {}),
         });
@@ -172,7 +176,7 @@ function DealsPageInner() {
         setLoading(false);
       }
     })();
-  }, [searchParams]);
+  }, [searchParams, language]);
 
   const toggleWatchlist = (dealId: number) => {
     const newWatchlist = watchlist.includes(dealId)
@@ -248,7 +252,7 @@ function DealsPageInner() {
                   {isSubscriberRole(userRole) ? ' · volledige lijst voor abonnees' : ' · gratis: top 20 met score ≥55'}
                 </>
               ) : isSubscriberRole(userRole) ? (
-                `${dealScores.length} deals met dealscore, twee keer per dag bijgewerkt`
+                `${dealScores.length} ${dealScores.length !== 1 ? 'deals' : 'deal'} met dealscore, twee keer per dag bijgewerkt`
               ) : (
                 `${FREE_VISIBLE} deals zichtbaar. Upgrade voor alle deals.`
               )}
@@ -305,6 +309,16 @@ function DealsPageInner() {
                   <option value="price-desc">Hoogste prijs</option>
                   <option value="savings-desc">Grootste besparing</option>
                 </select>
+                <select
+                  value={language}
+                  onChange={(e) => { setLanguage(e.target.value as 'EN' | 'JP' | 'all'); setCurrentPage(1); }}
+                  aria-label="Taal van de kaarten"
+                  className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 focus:border-transparent"
+                >
+                  <option value="EN">Engelse kaarten</option>
+                  <option value="JP">Japanse kaarten</option>
+                  <option value="all">Alle talen</option>
+                </select>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
@@ -360,7 +374,7 @@ function DealsPageInner() {
 
             {filteredAndSortedDeals.length > 0 && (
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                Showing {filteredAndSortedDeals.length} {viewMode === 'watchlist' ? 'watchlist ' : ''}deal{filteredAndSortedDeals.length !== 1 ? 's' : ''}
+                {filteredAndSortedDeals.length} {filteredAndSortedDeals.length !== 1 ? 'deals' : 'deal'}{viewMode === 'watchlist' ? ' in je watchlist' : ''}
               </p>
             )}
 

@@ -50,7 +50,9 @@ Probleem 4. Stijgt het aantal listings terwijl de laagste prijs zakt → wachten
 ### 4. Graden: wel of niet?
 Probleem 6. Rekenhulp met EU-kosten (PSA Frankfurt, AP Grading, douane, verzending) tegenover de meerprijs van een graded kaart. Vereist graded-prijsdata (nog te bepalen welke bron).
 
-### 5. Japanse kaarten als aparte lijn
+### 5. Japanse kaarten als aparte lijn — *gebouwd (oktober 2026)*
+
+Taal is nu een dimensie: Engelse en Japanse uitgaven hebben elk hun eigen statistieken, deals, prijscheck en lijstprijs (filter "Japanse kaarten" op de dealspagina, label "Japans"). De scraper is niet uitgebreid: Japanse listings in de gevolgde sets (ook Japanse sets als Terastal Festival) werden al opgehaald maar weggefilterd. Vervolg: meer Japanse sets toevoegen aan `ENGLISH_SET_PHRASES` als er vraag is (kost scrapetijd en opslag).
 Snelst groeiende segment in Europa. Let op: de analyse filtert nu op `INCLUDED_LANGUAGES = ['EN']`. Taal moet dan een **dimensie** worden (aparte statistieken per taal), geen filter.
 
 ### Niet doen

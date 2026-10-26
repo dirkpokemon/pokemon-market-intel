@@ -28,6 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.price_check import _escape_like
 from app.core.dependencies import get_optional_user
+from app.core.language import RAW_LANG_SQL
 from app.core.list_price import ZERO_BIN, Offer, optimize, parse_wantlist
 from app.core.price_check import search_terms
 from app.core.rate_limit import RateLimiter
@@ -61,7 +62,7 @@ class ListPriceRequest(BaseModel):
     text: str = Field(..., min_length=2, max_length=10_000)
     country: str = Field(default="NL", pattern="^[A-Za-z]{2}$")
     condition: str = Field(default="nm", pattern="^(nm|lp)$")
-    language: str = Field(default="EN", pattern="^[A-Za-z]{2}$")
+    language: str = Field(default="EN", pattern="^(EN|JP)$")
 
 
 class Product(BaseModel):
@@ -113,13 +114,14 @@ class ListPriceResponse(BaseModel):
     shipping_note: str = SHIPPING_NOTE
 
 
-async def _match_line(db: AsyncSession, query: str) -> List[Product]:
-    """Products for one list line, best match first (exact name, then most observed)."""
+async def _match_line(db: AsyncSession, query: str, language: str) -> List[Product]:
+    """Products for one list line in this language, best match first (exact name, then most observed)."""
     terms = search_terms(query)
     if not terms:
         return []
     params = {f"t{i}": f"%{_escape_like(t)}%" for i, t in enumerate(terms)}
     params["full"] = query.strip().lower()
+    params["lang"] = language
     for n in range(len(terms), 0, -1):
         conditions = " AND ".join(
             f"(product_name || ' ' || COALESCE(product_set, '') || ' ' || COALESCE(rarity, ''))"
@@ -131,11 +133,12 @@ async def _match_line(db: AsyncSession, query: str) -> List[Product]:
                 SELECT product_name, product_set, category, card_number, rarity
                 FROM market_statistics
                 WHERE {conditions}
+                  AND COALESCE(language, 'EN') = :lang
                 ORDER BY (lower(product_name) = :full) DESC,
                          days_observed DESC NULLS LAST, volume_30d DESC NULLS LAST
                 LIMIT 5
             """),
-            {k: v for k, v in params.items() if k == "full" or int(k[1:]) < n},
+            {k: v for k, v in params.items() if k in ("full", "lang") or int(k[1:]) < n},
         )
         rows = result.fetchall()
         if rows:
@@ -172,7 +175,7 @@ async def list_price(
 
     lines: List[LineResult] = []
     for w in wanted:
-        matches = await _match_line(db, w.query)
+        matches = await _match_line(db, w.query, body.language)
         lines.append(LineResult(
             query=w.query, quantity=w.quantity,
             matched=matches[0] if matches else None,
@@ -193,7 +196,7 @@ async def list_price(
     rows = []
     if single_lines or sealed_lines:
         result = await db.execute(
-            text("""
+            text(f"""
                 WITH cand AS (
                     SELECT card_name, card_set, card_number, price, stock_quantity,
                            seller_key, seller_country, ships_via_zero, source_url, scraped_at,
@@ -207,7 +210,7 @@ async def list_price(
                       AND graded IS NOT TRUE
                       AND price > 0
                       AND upper(COALESCE(currency, 'EUR')) = 'EUR'
-                      AND upper(COALESCE(language, 'EN')) = :language
+                      AND {RAW_LANG_SQL} = :language
                       AND (card_number IS NULL OR lower(btrim(condition)) = ANY(:conditions))
                       AND (card_number = ANY(:cards)
                            OR (card_number IS NULL AND lower(card_name) = ANY(:sealed_names)))

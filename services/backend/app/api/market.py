@@ -20,6 +20,7 @@ from app.schemas.market import (
 from app.core.dependencies import get_current_admin_user, get_current_premium_user, get_current_user
 from app.data.set_registry import SETS, ERAS as SET_ERAS, aliases_for
 from app.utils.cache import public_cache
+from app.core.language import RAW_LANG_SQL
 
 
 logger = logging.getLogger(__name__)
@@ -79,6 +80,7 @@ async def get_deal_scores(
     set_slug: Optional[str] = Query(default=None, description="Canonical set slug (preferred). Resolves to registry aliases."),
     product_set: Optional[str] = Query(default=None, description="[DEPRECATED] Filter by product set string. Prefer set_slug."),
     product_name: Optional[str] = Query(default=None, description="Filter by product name (substring, case-insensitive)"),
+    language: str = Query(default="EN", pattern="^(EN|JP|all)$", description="Listing language: EN (default), JP or all"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -119,6 +121,9 @@ async def get_deal_scores(
 
     if category:
         query = query.where(DealScore.category == category)
+
+    if language != "all":
+        query = query.where(func.coalesce(DealScore.language, "EN") == language)
 
     aliases = _aliases_or_fallback(set_slug, product_set)
     set_clause = _ilike_any_set(DealScore.product_set, aliases)
@@ -636,6 +641,7 @@ async def get_price_history(
     days: int = Query(default=30, ge=7, le=180, description="Number of days of history"),
     product_set: Optional[str] = Query(default=None, max_length=255),
     card_number: Optional[str] = Query(default=None, max_length=100, description="Variant (CardTrader blueprint id)"),
+    language: str = Query(default="EN", pattern="^(EN|JP)$"),
     current_user: User = Depends(get_current_premium_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -650,7 +656,7 @@ async def get_price_history(
     """
     since_day = datetime.now(timezone.utc).date() - timedelta(days=days)
     params = {"name": card_name, "since_day": since_day,
-              "set": product_set or "", "card": card_number or ""}
+              "set": product_set or "", "card": card_number or "", "lang": language}
     name_key = _NAME_KEY_SQL.format(col="CAST(:name AS text)")
     history_result = await db.execute(
         text(f"""
@@ -661,6 +667,7 @@ async def get_price_history(
               AND day > :since_day
               AND (CAST(:card AS text) = '' OR card_key = CAST(:card AS text))
               AND (CAST(:set AS text) = '' OR set_key = lower(btrim(CAST(:set AS text))))
+              AND language = CAST(:lang AS text)
             ORDER BY day ASC
         """),
         params,
@@ -677,6 +684,7 @@ async def get_price_history(
             FROM raw_prices
             WHERE LOWER(card_name) = LOWER(:name)
               AND price > 0
+              AND {RAW_LANG_SQL} = CAST(:lang AS text)
               {variant_filter}
             GROUP BY condition
             ORDER BY count DESC
@@ -731,6 +739,7 @@ async def get_public_top_deals(
         .where(
             DealScoreModel.is_active == True,  # noqa: E712
             DealScoreModel.deal_score >= 70,
+            func.coalesce(DealScoreModel.language, "EN") == "EN",
         )
         .order_by(desc(DealScoreModel.deal_score))
         .limit(5)
@@ -752,6 +761,10 @@ async def get_price_sparklines(
         default=None,
         description="Variant per card name (same order; '' when unknown). Keys the result as 'name#card_number'.",
     ),
+    languages: Optional[List[str]] = Query(
+        default=None,
+        description="Listing language per card name (same order; EN when missing). Keys a JP entry as 'name#card_number#JP'.",
+    ),
     days: int = Query(default=7, ge=3, le=30, description="Number of days of history"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -771,26 +784,32 @@ async def get_price_sparklines(
     card_names = card_names[:200]
     numbers = list(card_numbers or [])[:len(card_names)]
     numbers += [""] * (len(card_names) - len(numbers))
-    keys = [f"{n}#{c}" if c else n for n, c in zip(card_names, numbers)]
+    langs = [(l or "EN").upper() for l in (languages or [])][:len(card_names)]
+    langs += ["EN"] * (len(card_names) - len(langs))
+    keys = [
+        (f"{n}#{c}" if c else n) + (f"#{l}" if l != "EN" else "")
+        for n, c, l in zip(card_names, numbers, langs)
+    ]
 
     since_day = datetime.now(timezone.utc).date() - timedelta(days=days)
     name_key = _NAME_KEY_SQL.format(col="r.name")
     result = await db.execute(
         text(f"""
             WITH req AS (
-                SELECT {name_key} AS name_key, r.card, r.k
-                FROM unnest(CAST(:names AS text[]), CAST(:cards AS text[]), CAST(:keys AS text[]))
-                     AS r(name, card, k)
+                SELECT {name_key} AS name_key, r.card, r.lang, r.k
+                FROM unnest(CAST(:names AS text[]), CAST(:cards AS text[]), CAST(:langs AS text[]), CAST(:keys AS text[]))
+                     AS r(name, card, lang, k)
             )
             SELECT req.k, d.set_key, d.category, d.card_key, d.day, d.median_price, d.listings
             FROM req
             JOIN daily_prices d
               ON d.name_key = req.name_key
              AND (req.card = '' OR d.card_key = req.card)
+             AND d.language = req.lang
             WHERE d.day > :since_day
             ORDER BY req.k, d.day
         """),
-        {"names": card_names, "cards": numbers, "keys": keys, "since_day": since_day},
+        {"names": card_names, "cards": numbers, "langs": langs, "keys": keys, "since_day": since_day},
     )
 
     grouped: Dict[str, List] = {}

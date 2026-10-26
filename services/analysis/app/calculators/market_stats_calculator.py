@@ -29,6 +29,21 @@ from app.models.market_stats import MarketStats
 
 logger = logging.getLogger(__name__)
 
+# Listing language, upper-cased; CardTrader's Japanese code is normalised to
+# 'JP' whichever spelling it uses. Language is part of a product's identity:
+# a Japanese print is priced very differently from the English one, and both
+# share the same CardTrader blueprint id (card_number).
+LANG_EXPR = "(CASE upper(COALESCE(NULLIF(btrim(language), ''), 'EN')) WHEN 'JA' THEN 'JP' ELSE upper(COALESCE(NULLIF(btrim(language), ''), 'EN')) END)"
+
+LANGUAGE_MIX_SQL = f"""
+SELECT {LANG_EXPR} AS lang, count(*) AS listings
+FROM raw_prices
+WHERE scraped_at >= :since
+GROUP BY 1
+ORDER BY 2 DESC
+LIMIT 12
+"""
+
 DAILY_AGGREGATES_SQL = """
 WITH base AS (
     SELECT
@@ -36,6 +51,7 @@ WITH base AS (
         COALESCE(NULLIF(regexp_replace(btrim(card_set), '\\s+', ' ', 'g'), ''), 'Unknown Set') AS set_clean,
         CASE WHEN card_number IS NULL THEN 'sealed' ELSE 'single' END AS category,
         COALESCE(card_number, '') AS card_key,
+        {lang_expr} AS lang,
         collector_number,
         rarity,
         price * {rate_case} AS price_eur,
@@ -45,7 +61,7 @@ WITH base AS (
     WHERE scraped_at >= :since
       AND price > 0
       AND card_name IS NOT NULL
-      AND upper(COALESCE(language, 'EN')) = ANY(:languages)
+      AND {lang_expr} = ANY(:languages)
       AND graded IS NOT TRUE
       AND (
           card_number IS NULL
@@ -58,6 +74,7 @@ SELECT
     lower(set_clean)  AS set_key,
     category,
     card_key,
+    lang              AS language,
     day,
     max(name_clean)   AS product_name,
     max(set_clean)    AS product_set,
@@ -72,23 +89,23 @@ SELECT
 FROM base
 WHERE price_eur IS NOT NULL
   AND price_eur < 99999999
-GROUP BY 1, 2, 3, 4, 5
+GROUP BY 1, 2, 3, 4, 5, 6
 """
 
 # Days before :refresh_from are only inserted when missing (first backfill):
 # raw_prices no longer holds all of their listings.
 UPSERT_DAILY_PRICES_SQL = """
 INSERT INTO daily_prices (
-    name_key, set_key, category, card_key, day,
+    name_key, set_key, category, card_key, language, day,
     product_name, product_set, collector_number, rarity,
     median_price, p10_price, min_price, max_price, listings, last_seen_at, updated_at
 )
 SELECT
-    name_key, set_key, category, card_key, day,
+    name_key, set_key, category, card_key, language, day,
     product_name, product_set, collector_number, rarity,
     median_price, p10_price, min_price, max_price, listings, last_seen_at, now()
 FROM ({aggregates}) agg
-ON CONFLICT ON CONSTRAINT uq_daily_prices_product_day DO UPDATE SET
+ON CONFLICT ON CONSTRAINT uq_daily_prices_product_lang_day DO UPDATE SET
     product_name = EXCLUDED.product_name,
     product_set = EXCLUDED.product_set,
     collector_number = COALESCE(EXCLUDED.collector_number, daily_prices.collector_number),
@@ -104,12 +121,12 @@ WHERE daily_prices.day >= :refresh_from
 """
 
 HISTORY_SQL = """
-SELECT name_key, set_key, category, card_key, day,
+SELECT name_key, set_key, category, card_key, language, day,
        product_name, product_set, collector_number, rarity,
        median_price, p10_price, min_price, max_price, listings, last_seen_at
 FROM daily_prices
 WHERE day > :since_day
-ORDER BY name_key, set_key, category, card_key, day
+ORDER BY name_key, set_key, category, card_key, language, day
 """
 
 
@@ -167,7 +184,7 @@ class MarketStatsCalculator:
         cfg = self.config
         since, refresh_from = self._raw_window(now)
         rate_case, rate_params = _rate_case(cfg.CURRENCY_RATES)
-        aggregates = DAILY_AGGREGATES_SQL.format(rate_case=rate_case)
+        aggregates = DAILY_AGGREGATES_SQL.format(rate_case=rate_case, lang_expr=LANG_EXPR)
         stmt = text(UPSERT_DAILY_PRICES_SQL.format(aggregates=aggregates))
         params = {
             "since": since,
@@ -180,6 +197,9 @@ class MarketStatsCalculator:
             "Updating daily_prices from raw_prices since %s (days from %s refreshed; languages=%s, single conditions=%s)",
             since.isoformat(timespec="minutes"), refresh_from, params["languages"], params["conditions"],
         )
+        async with AsyncSessionLocal() as session:
+            mix = (await session.execute(text(LANGUAGE_MIX_SQL), {"since": since})).fetchall()
+        logger.info("raw_prices languages: %s", ", ".join(f"{r.lang} {r.listings}" for r in mix))
         async with AsyncSessionLocal() as session:
             async with session.begin():
                 result = await session.execute(stmt, params)
@@ -219,14 +239,14 @@ class MarketStatsCalculator:
             def flush() -> None:
                 if current_key is None:
                     return
-                record = self._build_record(current_key[2], current_key[3], display, days, now)
+                record = self._build_record(current_key[2], current_key[3], current_key[4], display, days, now)
                 if record:
                     records.append(record)
 
             async for partition in result.partitions(5000):
                 for row in partition:
                     group_rows += 1
-                    key = (row.name_key, row.set_key, row.category, row.card_key)
+                    key = (row.name_key, row.set_key, row.category, row.card_key, row.language)
                     if key != current_key:
                         flush()
                         current_key, days, display = key, [], {}
@@ -270,6 +290,7 @@ class MarketStatsCalculator:
         self,
         category: str,
         card_key: str,
+        language: str,
         display: Dict[str, Any],
         days: List[DayAggregate],
         now: datetime,
@@ -289,6 +310,7 @@ class MarketStatsCalculator:
             "product_set": display["product_set"],
             "category": category,
             "card_number": card_key,
+            "language": language,
             "collector_number": display.get("collector_number"),
             "rarity": display.get("rarity"),
             "calculated_at": now,

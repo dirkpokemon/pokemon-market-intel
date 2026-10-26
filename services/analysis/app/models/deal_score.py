@@ -28,6 +28,8 @@ class DealScore(Base):
     card_number = Column(String(100))
     collector_number = Column(String(50))
     rarity = Column(String(100))
+    # Listing language (EN, JP, ...); same card_number can exist per language
+    language = Column(String(10))
     
     # Current listing info
     current_price = Column(Numeric(10, 2), nullable=False)

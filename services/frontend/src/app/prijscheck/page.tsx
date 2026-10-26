@@ -65,9 +65,10 @@ const VERDICTS: Record<PriceVerdictCode, { title: string; tone: string; text: (r
   },
 };
 
-function variantLabel(m: { collector_number?: string | null; rarity?: string | null; category: string }) {
-  if (m.category === 'sealed') return 'Sealed product';
-  return [m.collector_number && `#${m.collector_number}`, m.rarity].filter(Boolean).join(' · ') || 'Single';
+function variantLabel(m: { collector_number?: string | null; rarity?: string | null; category: string; language?: string | null }) {
+  const lang = m.language === 'JP' ? ' · Japans' : '';
+  if (m.category === 'sealed') return 'Sealed product' + lang;
+  return ([m.collector_number && `#${m.collector_number}`, m.rarity].filter(Boolean).join(' · ') || 'Single') + lang;
 }
 
 export default function PriceCheckPage() {
@@ -148,6 +149,7 @@ export default function PriceCheckPage() {
         card_name: result.product_name,
         card_set: result.product_set ?? undefined,
         card_number: result.card_number ?? undefined,
+        language: result.language ?? undefined,
         target_price: result.price,
       });
       setAlertState('saved');
@@ -219,10 +221,10 @@ export default function PriceCheckPage() {
               )}
               <div className="grid gap-2">
                 {matches.map((m) => {
-                  const key = `${m.product_name}|${m.product_set}|${m.card_number ?? ''}|${m.category}`;
+                  const key = `${m.product_name}|${m.product_set}|${m.card_number ?? ''}|${m.category}|${m.language ?? 'EN'}`;
                   const active =
                     selected &&
-                    `${selected.product_name}|${selected.product_set}|${selected.card_number ?? ''}|${selected.category}` === key;
+                    `${selected.product_name}|${selected.product_set}|${selected.card_number ?? ''}|${selected.category}|${selected.language ?? 'EN'}` === key;
                   return (
                     <button
                       key={key}
