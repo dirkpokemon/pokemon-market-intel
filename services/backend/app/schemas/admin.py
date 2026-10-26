@@ -30,7 +30,7 @@ class AdminStatsResponse(BaseModel):
     users_by_role: dict
     raw_prices_count: int
     raw_distinct_cards: int
-    signals_active: int
+    daily_prices_rows: int
     deal_scores_active: int
     last_scrapes: List[ScrapeLogRow]
     recent_users: List[UserSummary]

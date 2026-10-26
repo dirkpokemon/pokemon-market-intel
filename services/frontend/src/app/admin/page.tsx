@@ -97,7 +97,7 @@ export default function AdminPage() {
                 {[
                   { label: 'Users', value: stats.users_total, sub: `${stats.users_verified} verified` },
                   { label: 'Raw prices rows', value: stats.raw_prices_count.toLocaleString(), sub: `${stats.raw_distinct_cards.toLocaleString()} distinct cards` },
-                  { label: 'Active signals', value: stats.signals_active },
+                  { label: 'Price history rows', value: stats.daily_prices_rows },
                   { label: 'Active deal scores', value: stats.deal_scores_active },
                 ].map((c) => (
                   <div key={c.label} className="bg-white rounded-xl border border-gray-200 p-4 sm:p-5">
