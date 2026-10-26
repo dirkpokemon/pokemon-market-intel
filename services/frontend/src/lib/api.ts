@@ -56,6 +56,8 @@ export interface DealScore {
   card_number?: string | null;
   collector_number?: string | null;
   rarity?: string | null;
+  /** Listing language: 'EN' or 'JP' (Japanese prints are their own product line) */
+  language?: string | null;
   current_price: number;
   market_avg_price?: number;
   deal_score: number;
@@ -216,8 +218,9 @@ export const authApi = {
 };
 
 /** Key of a product in the getSparklines result. */
-export const sparklineKey = (p: { product_name: string; card_number?: string | null }): string =>
-  p.card_number ? `${p.product_name}#${p.card_number}` : p.product_name;
+export const sparklineKey = (p: { product_name: string; card_number?: string | null; language?: string | null }): string =>
+  (p.card_number ? `${p.product_name}#${p.card_number}` : p.product_name) +
+  (p.language && p.language !== 'EN' ? `#${p.language}` : '');
 
 // Market Data
 export const marketApi = {
@@ -228,6 +231,7 @@ export const marketApi = {
     set_slug?: string;
     product_set?: string;
     product_name?: string;
+    language?: 'EN' | 'JP' | 'all';
   }): Promise<DealScore[]> => {
     const entries = Object.entries(params || {})
       .filter(([, v]) => v !== undefined && v !== null && v !== '')
@@ -241,17 +245,18 @@ export const marketApi = {
   getPriceHistory: async (
     cardName: string,
     days = 30,
-    variant?: { product_set?: string | null; card_number?: string | null },
+    variant?: { product_set?: string | null; card_number?: string | null; language?: string | null },
   ): Promise<PriceHistoryResponse> => {
     const params = new URLSearchParams({ card_name: cardName, days: String(days) });
     if (variant?.product_set) params.set('product_set', variant.product_set);
     if (variant?.card_number) params.set('card_number', variant.card_number);
+    if (variant?.language === 'JP') params.set('language', 'JP');
     return apiRequest<PriceHistoryResponse>(`/api/v1/price_history?${params.toString()}`);
   },
 
   /** Batch sparkline data: { [sparklineKey(deal)]: medianPricePerDay[] } */
   getSparklines: async (
-    products: { product_name: string; card_number?: string | null }[],
+    products: { product_name: string; card_number?: string | null; language?: string | null }[],
     days = 7,
   ): Promise<Record<string, number[]>> => {
     if (!products.length) return {};
@@ -259,6 +264,7 @@ export const marketApi = {
     products.forEach(p => {
       params.append('card_names', p.product_name);
       params.append('card_numbers', p.card_number || '');
+      params.append('languages', p.language || 'EN');
     });
     return apiRequest<Record<string, number[]>>(`/api/v1/price_sparklines?${params.toString()}`);
   },
@@ -334,6 +340,7 @@ export interface PriceCheckMatch {
   card_number?: string | null;
   collector_number?: string | null;
   rarity?: string | null;
+  language?: string | null;
   floor_price?: number | null;
   typical_price?: number | null;
   days_observed?: number | null;
@@ -352,6 +359,7 @@ export interface PriceCheckResponse {
   product_set?: string | null;
   category: 'single' | 'sealed';
   card_number?: string | null;
+  language?: string | null;
   collector_number?: string | null;
   rarity?: string | null;
   price: number;
@@ -391,6 +399,7 @@ export const priceCheckApi = {
     const params = new URLSearchParams({ name: match.product_name, category: match.category, price: String(price) });
     if (match.product_set) params.set('set', match.product_set);
     if (match.card_number) params.set('card_number', match.card_number);
+    if (match.language === 'JP') params.set('language', 'JP');
     return apiRequest<PriceCheckResponse>(`/api/v1/price-check?${params}`);
   },
 };
@@ -437,7 +446,7 @@ export interface ListPriceResponse {
 }
 
 export const listPriceApi = {
-  calculate: async (body: { text: string; country: string; condition: 'nm' | 'lp' }): Promise<ListPriceResponse> => {
+  calculate: async (body: { text: string; country: string; condition: 'nm' | 'lp'; language?: 'EN' | 'JP' }): Promise<ListPriceResponse> => {
     return apiRequest<ListPriceResponse>('/api/v1/list-price', { method: 'POST', body: JSON.stringify(body) });
   },
 };
@@ -507,7 +516,7 @@ export const notificationApi = {
   },
 
   /** Add a card to the backend watchlist */
-  addWatchlistItem: async (payload: { card_name: string; card_set?: string; card_number?: string; target_price: number }): Promise<WatchlistItem> => {
+  addWatchlistItem: async (payload: { card_name: string; card_set?: string; card_number?: string; language?: string; target_price: number }): Promise<WatchlistItem> => {
     return apiRequest<WatchlistItem>('/api/v1/watchlist', {
       method: 'POST',
       body: JSON.stringify(payload),

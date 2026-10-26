@@ -75,7 +75,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-gray-300 dark:border-slate-600 border-t-gray-800 dark:border-t-gray-200 rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-gray-500 dark:text-gray-400">Loading...</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Laden…</p>
         </div>
       </div>
     );

@@ -180,6 +180,7 @@ PRICE_LOOKUP_SQL = f"""
     WHERE {_key('product_name')} = btrim({_KEY_SQL.format(col=':name')})
       AND (CAST(:set AS text) IS NULL OR {_key('product_set')} = btrim({_KEY_SQL.format(col='CAST(:set AS text)')}))
       AND (CAST(:card AS text) IS NULL OR card_number = CAST(:card AS text))
+      AND COALESCE(language, 'EN') = COALESCE(CAST(:lang AS text), 'EN')
       AND COALESCE(current_price, avg_price_7d) IS NOT NULL
     ORDER BY COALESCE(current_price, avg_price_7d) ASC
     LIMIT 1
@@ -206,6 +207,7 @@ async def check_watchlist_alerts() -> int:
                 wi.card_name,
                 wi.card_set,
                 wi.card_number,
+                wi.language,
                 wi.target_price,
                 wi.notified_at,
                 u.id             AS user_id,
@@ -227,7 +229,7 @@ async def check_watchlist_alerts() -> int:
 
             price_row = await session.execute(
                 text(PRICE_LOOKUP_SQL),
-                {"name": card_name, "set": card_set, "card": item.card_number},
+                {"name": card_name, "set": card_set, "card": item.card_number, "lang": item.language},
             )
             price_result = price_row.fetchone()
             if price_result is None:

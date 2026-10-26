@@ -39,6 +39,7 @@ class ProductMatch(BaseModel):
     card_number: Optional[str] = None
     collector_number: Optional[str] = None
     rarity: Optional[str] = None
+    language: str = "EN"
     floor_price: Optional[float] = None
     typical_price: Optional[float] = None
     days_observed: Optional[int] = None
@@ -82,10 +83,11 @@ class CheckResponse(BaseModel):
     card_number: Optional[str] = None
     collector_number: Optional[str] = None
     rarity: Optional[str] = None
+    language: str = "EN"
     price: float
     verdict: VerdictOut
     reference: Reference
-    basis: str = "Vraagprijzen van vergelijkbare aanbiedingen op CardTrader (singles: near-mint, Engelstalig), laatste 30 dagen."
+    basis: str
 
 
 def _escape_like(value: str) -> str:
@@ -105,7 +107,11 @@ async def search_products(
     if not terms:
         return SearchResponse(terms=[], detected_price=detected_price, results=[])
 
-    cache_key = "pc-search:" + " ".join(terms)
+    # "japans" / "japanese" / "jp" in the text: show Japanese prints first
+    jp_words = {"jp", "jap", "japans", "japanse", "japanese", "jpn"}
+    want_lang = "JP" if jp_words & {t.lower() for t in terms} else "EN"
+    terms = [t for t in terms if t.lower() not in jp_words] or terms
+    cache_key = f"pc-search:{want_lang}:" + " ".join(terms)
     cached = public_cache.get(cache_key)
     if cached is None:
         params = {f"t{i}": f"%{_escape_like(t)}%" for i, t in enumerate(terms)}
@@ -121,14 +127,15 @@ async def search_products(
             result = await db.execute(
                 text(f"""
                     SELECT product_name, product_set, category, card_number,
-                           collector_number, rarity,
+                           collector_number, rarity, COALESCE(language, 'EN') AS language,
                            floor_price_30d, avg_price_30d, days_observed
                     FROM market_statistics
                     WHERE {conditions}
-                    ORDER BY days_observed DESC NULLS LAST, volume_30d DESC NULLS LAST
+                    ORDER BY (COALESCE(language, 'EN') = :want_lang) DESC,
+                             days_observed DESC NULLS LAST, volume_30d DESC NULLS LAST
                     LIMIT 8
                 """),
-                {k: v for k, v in params.items() if int(k[1:]) < n},
+                {"want_lang": want_lang, **{k: v for k, v in params.items() if int(k[1:]) < n}},
             )
             rows = result.fetchall()
             if rows:
@@ -141,6 +148,7 @@ async def search_products(
                 card_number=r.card_number or None,
                 collector_number=r.collector_number,
                 rarity=r.rarity,
+                language=r.language,
                 floor_price=_f(r.floor_price_30d),
                 typical_price=_f(r.avg_price_30d),
                 days_observed=r.days_observed,
@@ -159,11 +167,13 @@ async def check_price(
     set: Optional[str] = Query(default=None, max_length=255),
     category: str = Query(default="single", pattern="^(single|sealed)$"),
     card_number: Optional[str] = Query(default=None, max_length=100, description="Variant uit de zoekresultaten"),
+    language: str = Query(default="EN", pattern="^(EN|JP)$", description="Taal van de kaart"),
     db: AsyncSession = Depends(get_db),
 ) -> CheckResponse:
     result = await db.execute(
         text("""
             SELECT product_name, product_set, category, card_number, collector_number, rarity,
+                   COALESCE(language, 'EN') AS language,
                    floor_price_30d, avg_price_30d,
                    current_price, min_price_30d, max_price_30d, price_trend_30d,
                    days_observed, sample_size, last_seen_at, calculated_at,
@@ -173,6 +183,7 @@ async def check_price(
               AND lower(COALESCE(product_set, '')) = lower(COALESCE(:set, ''))
               AND category = :category
               AND (CAST(:card AS text) IS NULL OR COALESCE(card_number, '') = CAST(:card AS text))
+              AND COALESCE(language, 'EN') = :language
             ORDER BY days_observed DESC NULLS LAST, calculated_at DESC
             LIMIT 1
         """),
@@ -181,6 +192,7 @@ async def check_price(
             "set": set.strip() if set else None,
             "category": category,
             "card": card_number.strip() if card_number else None,
+            "language": language,
         },
     )
     row = result.fetchone()
@@ -202,8 +214,14 @@ async def check_price(
         card_number=row.card_number or None,
         collector_number=row.collector_number,
         rarity=row.rarity,
+        language=row.language,
         price=price,
         verdict=VerdictOut(**verdict.__dict__),
+        basis=(
+            "Vraagprijzen van vergelijkbare aanbiedingen op CardTrader (singles: near-mint, "
+            + ("Japanstalig" if row.language == "JP" else "Engelstalig")
+            + "), laatste 30 dagen."
+        ),
         reference=Reference(
             floor_price=floor,
             typical_price=typical,

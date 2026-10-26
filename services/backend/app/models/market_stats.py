@@ -23,6 +23,7 @@ class MarketStats(Base):
     card_number = Column(String(100))       # variant id within a set ('' for sealed)
     collector_number = Column(String(50))
     rarity = Column(String(100))
+    language = Column(String(10))           # listing language (EN, JP); NULL = EN
     
     avg_price_7d = Column(Numeric(10, 2))
     avg_price_30d = Column(Numeric(10, 2))

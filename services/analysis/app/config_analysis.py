@@ -23,7 +23,9 @@ class AnalysisConfig(BaseSettings):
     # Singles: only these normalized conditions; sealed products ignore condition.
     # Rows without a condition (e.g. CardMarket price guide = NM) are kept.
     INCLUDED_CONDITIONS: List[str] = ['near mint', 'nm', 'mint', 'm']
-    INCLUDED_LANGUAGES: List[str] = ['EN']
+    # Each language is its own product line (separate statistics and deals).
+    # 'JP' also covers CardTrader's 'JA' (see LANG_EXPR).
+    INCLUDED_LANGUAGES: List[str] = ['EN', 'JP']
 
     # Data quality by number of distinct days a product was seen in the long window
     MIN_DAYS_EXCELLENT: int = 20

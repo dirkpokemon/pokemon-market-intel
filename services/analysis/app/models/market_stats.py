@@ -27,6 +27,8 @@ class MarketStats(Base):
     card_number = Column(String(100))
     collector_number = Column(String(50))
     rarity = Column(String(100))
+    # Listing language (EN, JP, ...); same card_number can exist per language
+    language = Column(String(10))
     
     # 7-day statistics. avg_* hold the median of daily median listing prices
     # (robust "typical price"); the column names predate that and are kept

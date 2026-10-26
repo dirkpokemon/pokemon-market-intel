@@ -17,6 +17,7 @@ class DealScoreResponse(BaseModel):
     card_number: Optional[str] = None
     collector_number: Optional[str] = None
     rarity: Optional[str] = None
+    language: Optional[str] = None
     current_price: float
     currency: str = "EUR"
     condition: Optional[str] = None
