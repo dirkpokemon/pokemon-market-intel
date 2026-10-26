@@ -567,7 +567,7 @@ export interface AdminStatsResponse {
   users_by_role: Record<string, number>;
   raw_prices_count: number;
   raw_distinct_cards: number;
-  signals_active: number;
+  daily_prices_rows: number;
   deal_scores_active: number;
   last_scrapes: AdminScrapeLogRow[];
   recent_users: AdminUserSummary[];

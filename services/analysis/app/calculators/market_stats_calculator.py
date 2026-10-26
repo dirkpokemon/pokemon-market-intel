@@ -20,7 +20,7 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import delete, insert, text
+from sqlalchemy import insert, text
 
 from app.calculators.scoring import DayAggregate, product_stats
 from app.config_analysis import analysis_config
@@ -46,6 +46,7 @@ WITH base AS (
       AND price > 0
       AND card_name IS NOT NULL
       AND upper(COALESCE(language, 'EN')) = ANY(:languages)
+      AND graded IS NOT TRUE
       AND (
           card_number IS NULL
           OR condition IS NULL
@@ -255,7 +256,10 @@ class MarketStatsCalculator:
 
         async with AsyncSessionLocal() as session:
             async with session.begin():
-                await session.execute(delete(MarketStats))
+                # TRUNCATE (transactional in Postgres) instead of DELETE: the table is
+                # fully replaced every run, and DELETE left dead rows behind
+                # (deal_scores had grown to 270 MB for ~2k live rows).
+                await session.execute(text("TRUNCATE market_statistics"))
                 for i in range(0, len(records), 1000):
                     await session.execute(insert(MarketStats), records[i:i + 1000])
 

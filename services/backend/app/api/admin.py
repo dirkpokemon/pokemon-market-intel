@@ -42,8 +42,8 @@ async def get_admin_stats(
         await _scalar(db, "SELECT COUNT(DISTINCT card_name) FROM raw_prices") or 0
     )
 
-    signals_active = int(
-        await _scalar(db, "SELECT COUNT(*) FROM signals WHERE is_active = true") or 0
+    daily_prices_rows = int(
+        await _scalar(db, "SELECT COUNT(*) FROM daily_prices") or 0
     )
     deal_scores_active = int(
         await _scalar(db, "SELECT COUNT(*) FROM deal_scores WHERE is_active = true") or 0
@@ -104,7 +104,7 @@ async def get_admin_stats(
         users_by_role=users_by_role,
         raw_prices_count=raw_prices_count,
         raw_distinct_cards=raw_distinct_cards,
-        signals_active=signals_active,
+        daily_prices_rows=daily_prices_rows,
         deal_scores_active=deal_scores_active,
         last_scrapes=last_scrapes,
         recent_users=recent_users,

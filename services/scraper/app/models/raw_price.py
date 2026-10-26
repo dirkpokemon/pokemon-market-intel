@@ -43,6 +43,8 @@ class RawPrice(Base):
     seller_key = Column(String(16))
     seller_country = Column(String(2))
     ships_via_zero = Column(Boolean)
+    # Graded (slabbed) listing: kept out of the comparable-listing statistics
+    graded = Column(Boolean)
     
     # Timestamps
     scraped_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)

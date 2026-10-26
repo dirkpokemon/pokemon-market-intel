@@ -4,7 +4,7 @@ This model exists in the scraper service database
 We import it here for analysis queries
 """
 
-from sqlalchemy import Column, Integer, String, Numeric, DateTime
+from sqlalchemy import Boolean, Column, Integer, String, Numeric, DateTime
 from app.database import Base
 
 
@@ -30,5 +30,6 @@ class RawPrice(Base):
     seller_name = Column(String(255))
     seller_rating = Column(Numeric(3, 2))
     stock_quantity = Column(Integer)
+    graded = Column(Boolean)  # graded (slabbed) listing, excluded from statistics
     scraped_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True))

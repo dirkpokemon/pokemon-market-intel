@@ -13,7 +13,7 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, Optional
 
-from sqlalchemy import delete, insert, select
+from sqlalchemy import insert, select, text
 
 from app.calculators.scoring import deal_score
 from app.config_analysis import analysis_config
@@ -75,7 +75,10 @@ class DealScoreCalculator:
 
         async with AsyncSessionLocal() as session:
             async with session.begin():
-                await session.execute(delete(DealScore))
+                # TRUNCATE (transactional in Postgres) instead of DELETE: the table is
+                # fully replaced every run, and DELETE left dead rows behind
+                # (deal_scores had grown to 270 MB for ~2k live rows).
+                await session.execute(text("TRUNCATE deal_scores"))
                 for i in range(0, len(records), 1000):
                     await session.execute(insert(DealScore), records[i:i + 1000])
 

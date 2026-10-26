@@ -105,7 +105,7 @@ def _blueprint_details(blueprint: Dict[str, Any]) -> tuple:
 
 # Listing fields whose values are safe to log: shipping/hub capabilities and
 # seller type/location. Seller names and ids are personal data and are never logged.
-_LOGGABLE_LISTING_HINTS = ("country", "hub", "zero", "ship", "type", "level", "graded", "language", "condition")
+_LOGGABLE_LISTING_HINTS = ("country", "hub", "zero", "ship", "type", "level", "grade", "company", "language", "condition")
 
 
 def _describe_listing(listing: Dict[str, Any]) -> Dict[str, Any]:
@@ -187,6 +187,7 @@ class CardTraderScraperV2:
         self._consecutive_failures = 0
         self._logged_blueprint_shape = False
         self._logged_listing_shape = False
+        self._logged_graded_shape = False
     
     async def scrape_all(self) -> int:
         """
@@ -268,6 +269,12 @@ class CardTraderScraperV2:
                             if not self._logged_listing_shape:
                                 logger.info("Listing shape: %s", _describe_listing(listings[0]))
                                 self._logged_listing_shape = True
+                            if not self._logged_graded_shape:
+                                graded = next((l for l in listings if l.get('graded')), None)
+                                if graded is not None:
+                                    # Once per run: which grading fields CardTrader sends (roadmap #4)
+                                    logger.info("Graded listing shape: %s", _describe_listing(graded))
+                                    self._logged_graded_shape = True
                             await self._save_listings(listings, blueprint, expansion)
                             self.total_blueprints_processed += 1
 
@@ -455,6 +462,7 @@ class CardTraderScraperV2:
                         seller_key=seller_key,
                         seller_country=seller_country,
                         ships_via_zero=ships_via_zero,
+                        graded=bool(listing.get('graded')),
                         scraped_at=datetime.utcnow()
                     )
                     

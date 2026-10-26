@@ -204,6 +204,7 @@ async def list_price(
                     WHERE scraped_at >= :since
                       AND source = 'CardTrader'
                       AND seller_key IS NOT NULL
+                      AND graded IS NOT TRUE
                       AND price > 0
                       AND upper(COALESCE(currency, 'EUR')) = 'EUR'
                       AND upper(COALESCE(language, 'EN')) = :language
