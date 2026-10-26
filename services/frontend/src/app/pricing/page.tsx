@@ -70,10 +70,10 @@ export default function PricingPage() {
       [
         {
           key: 'free' as const,
-          name: 'Free',
+          name: 'Gratis',
           price: '€0',
-          period: '/month',
-          description: 'Get started with the basics',
+          period: '/maand',
+          description: 'Begin met de basis',
           features: [...PLAN_FEATURES.free],
           highlighted: false,
           priceId: null as string | null,
@@ -82,8 +82,8 @@ export default function PricingPage() {
           key: 'paid' as const,
           name: 'Plus',
           price: '€19',
-          period: '/month',
-          description: 'Full Signals, deals, and alerts',
+          period: '/maand',
+          description: 'Alle deals, prijsgeschiedenis en alerts',
           features: [...PLAN_FEATURES.paid],
           highlighted: true,
           priceId: stripePrices.paid || null,
@@ -91,9 +91,9 @@ export default function PricingPage() {
         {
           key: 'pro' as const,
           name: 'Business',
-          price: 'Coming soon',
+          price: 'Binnenkort',
           period: '',
-          description: 'API, exports, and advanced rules. Join the waitlist.',
+          description: 'API, export en uitgebreide regels. Zet je op de wachtlijst.',
           features: [...PLAN_FEATURES.pro],
           highlighted: false,
           priceId: null as string | null,
@@ -106,22 +106,22 @@ export default function PricingPage() {
     const r = (accountRole || 'free').toLowerCase();
     if (r === 'admin') {
       if (planKey === 'free') return { disabled: true as const, label: '…', mode: 'idle' as const };
-      return { disabled: true as const, label: 'Admin access', mode: 'idle' as const };
+      return { disabled: true as const, label: 'Admintoegang', mode: 'idle' as const };
     }
     if (planKey === 'free') {
-      if (r === 'free') return { disabled: true as const, label: 'Current plan', mode: 'idle' as const };
+      if (r === 'free') return { disabled: true as const, label: 'Huidig abonnement', mode: 'idle' as const };
       return { disabled: true as const, label: '…', mode: 'idle' as const };
     }
     if (planKey === 'paid') {
       if (r === 'free') return { disabled: false as const, label: CTA_SUBSCRIBE_PLUS, mode: 'checkout' as const };
-      if (r === 'paid') return { disabled: true as const, label: 'Your plan', mode: 'idle' as const };
-      return { disabled: true as const, label: 'Included in Plus today', mode: 'idle' as const };
+      if (r === 'paid') return { disabled: true as const, label: 'Jouw abonnement', mode: 'idle' as const };
+      return { disabled: true as const, label: 'Nu inbegrepen in Plus', mode: 'idle' as const };
     }
     /* pro / Business — waitlist UI is rendered as links (not this button handler) */
     if (r === 'free' || r === 'paid') {
       return { disabled: false as const, label: '', mode: 'waitlist' as const };
     }
-    return { disabled: true as const, label: 'Your plan', mode: 'idle' as const };
+    return { disabled: true as const, label: 'Jouw abonnement', mode: 'idle' as const };
   };
 
   const handlePlanClick = async (planKey: PlanKey, priceId: string | null) => {
@@ -139,7 +139,7 @@ export default function PricingPage() {
     /* checkout (Plus only) */
     if (!priceId) {
       setError(
-        'This plan has no Stripe price on the server. Set STRIPE_PRICE_PAID and STRIPE_PRICE_PRO on the backend, redeploy the API, then refresh this page.'
+        'Voor dit abonnement is geen Stripe-prijs ingesteld op de server. Zet STRIPE_PRICE_PAID en STRIPE_PRICE_PRO op de backend, deploy de API opnieuw en vernieuw deze pagina.'
       );
       return;
     }
@@ -150,7 +150,7 @@ export default function PricingPage() {
       const response = await subscriptionApi.createCheckoutSession(priceId);
       window.location.href = response.checkout_url;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to start checkout';
+      const msg = err instanceof Error ? err.message : 'Afrekenen kon niet worden gestart';
       setError(msg);
       setLoading(null);
     }
@@ -167,13 +167,13 @@ export default function PricingPage() {
           <div className="flex gap-2 sm:gap-3 items-center">
             <ThemeIconButton />
             <Link href="/login" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 sm:px-4 py-2 text-sm font-medium rounded-lg">
-              Login
+              Inloggen
             </Link>
             <Link
               href="/register"
               className="bg-gray-900 dark:bg-indigo-600 text-white px-4 sm:px-5 py-2 rounded-lg hover:bg-gray-800 dark:hover:bg-indigo-500 transition text-sm font-medium"
             >
-              Start free
+              Gratis beginnen
             </Link>
           </div>
         </div>
@@ -181,19 +181,19 @@ export default function PricingPage() {
 
       <main className="flex-1 max-w-5xl mx-auto px-4 py-16 sm:py-20 sm:px-6 lg:px-8 w-full">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Simple, transparent pricing</h2>
-          <p className="text-gray-500 dark:text-gray-400">Start free. Move to Plus when you want full Signals and unlimited deals.</p>
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-3">Eenvoudige, duidelijke prijzen</h2>
+          <p className="text-gray-500 dark:text-gray-400">Begin gratis. Stap over op Plus als je alle deals en de volledige prijsgeschiedenis wilt.</p>
         </div>
 
         {canceledNotice && (
           <div className="mb-6 p-3 bg-amber-50 border border-amber-200 text-amber-900 rounded-lg text-sm max-w-2xl mx-auto flex justify-between gap-3 items-start">
-            <span>No worries: checkout was canceled. You can pick a plan again whenever you&apos;re ready.</span>
+            <span>Geen probleem: het afrekenen is geannuleerd. Je kunt op elk moment opnieuw een abonnement kiezen.</span>
             <button
               type="button"
               onClick={() => setCanceledNotice(false)}
               className="shrink-0 text-amber-800 text-xs font-semibold underline"
             >
-              Dismiss
+              Sluiten
             </button>
           </div>
         )}
@@ -218,12 +218,12 @@ export default function PricingPage() {
               >
                 {plan.highlighted && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 bg-gray-900 text-white text-[11px] font-bold rounded-full uppercase tracking-wide">
-                    Most popular
+                    Meest gekozen
                   </div>
                 )}
                 {plan.key === 'pro' && (
                   <div className="absolute -top-3 right-4 px-2 py-0.5 bg-violet-100 text-violet-800 text-[10px] font-bold rounded-full uppercase tracking-wide">
-                    Waitlist
+                    Wachtlijst
                   </div>
                 )}
 
@@ -233,7 +233,7 @@ export default function PricingPage() {
                   <span className={`font-bold text-gray-900 ${plan.key === 'pro' ? 'text-2xl' : 'text-3xl'}`}>{plan.price}</span>
                   {plan.period ? <span className="text-gray-400 text-sm">{plan.period}</span> : null}
                   {plan.key === 'pro' && (
-                    <p className="text-xs text-gray-400 mt-1">Paid checkout opens when API &amp; export ship</p>
+                    <p className="text-xs text-gray-400 mt-1">Afrekenen opent zodra API en export klaar zijn</p>
                   )}
                 </div>
 
@@ -279,7 +279,7 @@ export default function PricingPage() {
                         aria-hidden
                       />
                     )}
-                    <span>{isLoading ? 'Redirecting to checkout…' : btn.label}</span>
+                    <span>{isLoading ? 'Doorsturen naar afrekenen…' : btn.label}</span>
                   </button>
                 )}
               </div>
@@ -288,7 +288,7 @@ export default function PricingPage() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-8">
-          30-day money-back guarantee on Plus. Cancel anytime. Business is waitlist-only until we launch API and data export (same email as in the waitlist button).
+          30 dagen geld-terug-garantie op Plus. Altijd opzegbaar. Business heeft alleen een wachtlijst tot de API en data-export klaar zijn (hetzelfde e-mailadres als bij de wachtlijstknop).
         </p>
       </main>
 

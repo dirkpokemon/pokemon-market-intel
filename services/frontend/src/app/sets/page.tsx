@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import SetsClient from './SetsClient';
 
 export const metadata: Metadata = {
-  title: 'Browse Sets',
+  title: 'Alle Pokémon-sets',
   description: 'Alle Pokémon TCG sets met live EU marktprijzen, deal scores en sealed product prijzen.',
 };
 

@@ -13,22 +13,22 @@ export function getTourSteps(role: TourRole): TourStep[] {
     {
       page: '/home',
       pageLabel: 'Home',
-      title: 'Your dashboard',
-      body: 'This is your command center. Use the search bar to find any card across live EU listings. The stats below give you a quick read on the market.',
+      title: 'Je dashboard',
+      body: 'Hier begin je. Zoek met de zoekbalk elke kaart in het actuele Europese aanbod. De cijfers eronder geven je in één oogopslag een beeld van de markt.',
     },
     {
       page: '/deals',
-      pageLabel: 'Top Deals',
-      title: 'Deal Score explained',
-      body: 'Each card gets a Deal Score from 0 to 100. The higher the score, the better the price versus the EU market average. Click a card for buy links on CardMarket, CardTrader, and eBay.',
+      pageLabel: 'Topdeals',
+      title: 'Zo werkt de dealscore',
+      body: 'Elke kaart krijgt een dealscore van 0 tot 100. Hoe hoger de score, hoe scherper de prijs ten opzichte van wat de kaart in Europa normaal kost. Klik op een kaart voor links naar CardMarket, CardTrader en eBay.',
       actionLink:
-        role === 'free' ? { href: '/pricing', label: 'View Plus plans' } : undefined,
+        role === 'free' ? { href: '/pricing', label: 'Bekijk Plus' } : undefined,
     },
     {
       page: '/watchlist',
       pageLabel: 'Watchlist',
-      title: 'Price alerts on your cards',
-      body: 'Add any card with a target price. When the EU market drops to your target, we email you automatically. No need to check back daily.',
+      title: 'Prijsalerts voor jouw kaarten',
+      body: 'Voeg een kaart toe met een doelprijs. Zakt het Europese aanbod tot jouw doelprijs, dan mailen we je automatisch. Zelf elke dag kijken is niet nodig.',
     },
   ];
 }

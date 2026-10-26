@@ -34,7 +34,7 @@ export default function LoginPage() {
       if (msg === 'EMAIL_NOT_VERIFIED') {
         setNotVerified(true);
       } else {
-        setError(msg || 'Login failed. Please check your credentials.');
+        setError(msg || 'Inloggen mislukt. Controleer je e-mailadres en wachtwoord.');
       }
     } finally {
       setLoading(false);
@@ -47,7 +47,7 @@ export default function LoginPage() {
       await authApi.resendVerification(email, password);
       setResent(true);
     } catch (err: any) {
-      setError(err.message || 'Failed to resend verification email.');
+      setError(err.message || 'De bevestigingsmail kon niet opnieuw worden verstuurd.');
     } finally {
       setResending(false);
     }
@@ -65,7 +65,7 @@ export default function LoginPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to home
+            Terug naar home
           </Link>
         </div>
 
@@ -75,8 +75,8 @@ export default function LoginPage() {
         </div>
 
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welcome Back</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Sign in to TCG Pulse</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Welkom terug</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1 text-sm">Log in bij TCG Pulse</p>
         </div>
 
         {error && (
@@ -93,19 +93,19 @@ export default function LoginPage() {
                 <path d="M22 4L12 13L2 4" />
               </svg>
               <div>
-                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Email not verified</p>
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">E-mailadres nog niet bevestigd</p>
                 <p className="text-xs text-amber-600 dark:text-amber-300 mt-1">
-                  Please check your inbox for the verification link.
+                  Kijk in je inbox voor de bevestigingslink.
                 </p>
                 {resent ? (
-                  <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-2">Verification email resent! Check your inbox.</p>
+                  <p className="text-xs text-green-600 dark:text-green-400 font-medium mt-2">Bevestigingsmail opnieuw verstuurd. Kijk in je inbox.</p>
                 ) : (
                   <button
                     onClick={handleResend}
                     disabled={resending}
                     className="mt-2 text-xs font-medium text-amber-800 dark:text-amber-200 underline hover:text-amber-900 dark:hover:text-amber-100 disabled:opacity-50"
                   >
-                    {resending ? 'Sending...' : 'Resend verification email'}
+                    {resending ? 'Versturen…' : 'Bevestigingsmail opnieuw sturen'}
                   </button>
                 )}
               </div>
@@ -116,7 +116,7 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Email Address
+              E-mailadres
             </label>
             <input
               id="email"
@@ -125,13 +125,13 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-gray-900 dark:focus:ring-indigo-500 focus:border-transparent text-sm"
-              placeholder="you@example.com"
+              placeholder="jij@voorbeeld.nl"
             />
           </div>
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Password
+              Wachtwoord
             </label>
             <input
               id="password"
@@ -149,14 +149,14 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full bg-gray-900 dark:bg-indigo-600 text-white py-2.5 px-4 rounded-lg hover:bg-gray-800 dark:hover:bg-indigo-500 disabled:bg-gray-300 dark:disabled:bg-gray-700 dark:disabled:text-gray-400 disabled:cursor-not-allowed transition text-sm font-medium"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? 'Inloggen…' : 'Inloggen'}
           </button>
         </form>
 
         <div className="mt-6 text-center text-sm">
-          <span className="text-gray-500 dark:text-gray-400">Don&apos;t have an account? </span>
+          <span className="text-gray-500 dark:text-gray-400">Nog geen account? </span>
           <Link href="/register" className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 hover:underline font-medium">
-            Sign up
+            Registreren
           </Link>
         </div>
       </div>

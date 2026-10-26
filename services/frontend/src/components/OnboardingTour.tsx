@@ -18,14 +18,14 @@ const GOALS: { id: Goal; icon: string; title: string; description: string; page:
     id: 'deals',
     icon: '🎯',
     title: 'Deals spotten',
-    description: 'Vind kaarten onder marktprijs met AI Deal Score',
+    description: 'Vind kaarten onder de normale prijs met de dealscore',
     page: '/deals',
   },
   {
     id: 'watchlist',
     icon: '🔔',
     title: 'Prijsalerts',
-    description: 'Zet target-prijzen en krijg een mail bij een daling',
+    description: 'Stel een doelprijs in en krijg een mail bij een daling',
     page: '/watchlist',
   },
 ];
@@ -115,15 +115,15 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
                   Welkom bij TCG Pulse
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
-                  EU marktintelligentie voor Pokémon TCG — live prijzen, deal-scores en prijsalerts van Europese listings.
+                  Europese marktdata voor Pokémon TCG: actuele prijzen, dealscores en prijsalerts op basis van Europees aanbod.
                 </p>
               </div>
 
               <div className="px-7 py-5 space-y-3">
                 {[
-                  { icon: '🎯', label: 'Deal Score', desc: 'AI-scoring op 0–100 — hoe goedkoper vs markt, hoe hoger' },
-                  { icon: '🔔', label: 'Prijsalerts', desc: 'Target-prijs per kaart, mail bij een daling' },
-                  { icon: '📦', label: 'Sets & sealed', desc: 'Blader alle sets met live EU prijzen' },
+                  { icon: '🎯', label: 'Dealscore', desc: 'Score van 0–100: hoe goedkoper dan normaal, hoe hoger' },
+                  { icon: '🔔', label: 'Prijsalerts', desc: 'Doelprijs per kaart, mail bij een daling' },
+                  { icon: '📦', label: 'Sets & sealed', desc: 'Bekijk alle sets met actuele Europese prijzen' },
                 ].map(item => (
                   <div key={item.label} className="flex items-start gap-3">
                     <span className="text-xl flex-shrink-0 mt-0.5">{item.icon}</span>
@@ -222,7 +222,7 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
                 </h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
                   {selectedGoals.length > 0
-                    ? `We sturen je naar ${primaryGoalInfo?.title ?? 'de app'}. Je kan altijd naar andere pagina's navigeren via het menu.`
+                    ? `We sturen je naar ${primaryGoalInfo?.title ?? 'de app'}. Via het menu kun je altijd naar andere pagina's.`
                     : 'Verken de app via het menu aan de linkerkant.'}
                 </p>
               </div>

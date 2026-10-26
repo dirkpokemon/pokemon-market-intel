@@ -7,6 +7,7 @@ import CardImage from '@/components/CardImage';
 import { marketApi, sealedApi, setsApi, sparklineKey, DealScore, SealedPrice, PokemonSetInfo } from '@/lib/api';
 import SignalBadge from '@/components/MarketSignal';
 import Sparkline from '@/components/Sparkline';
+import { eur } from '@/lib/format';
 
 function cardmarketSealedUrl(set: PokemonSetInfo): string {
   return `https://www.cardmarket.com/en/Pokemon/Products/Booster-Boxes?searchString=${encodeURIComponent(set.name)}&sortBy=price_asc`;
@@ -60,7 +61,7 @@ function DealCard({ deal, sparkline }: { deal: DealScore; sparkline?: number[] }
           </div>
         )}
         <div className={`absolute top-2 right-2 w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${scoreColor(deal.deal_score)}`}>
-          {deal.deal_score}
+          {Math.round(deal.deal_score)}
         </div>
       </div>
 
@@ -69,12 +70,12 @@ function DealCard({ deal, sparkline }: { deal: DealScore; sparkline?: number[] }
         <h3 className="text-xs font-semibold text-gray-900 dark:text-white line-clamp-2 leading-snug mb-auto">
           {deal.product_name}
         </h3>
-        <SignalBadge signal={deal.market_signal} floorChange={deal.floor_change_7d} supplyChange={deal.supply_change_7d} lang="en" className="mt-1.5 self-start" />
+        <SignalBadge signal={deal.market_signal} floorChange={deal.floor_change_7d} supplyChange={deal.supply_change_7d} className="mt-1.5 self-start" />
         <div className="mt-2 flex items-end justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-sm font-bold text-gray-900 dark:text-white">€{deal.current_price.toFixed(2)}</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white">{eur(deal.current_price)}</p>
             {deal.market_avg_price && deal.market_avg_price > deal.current_price && (
-              <p className="text-[10px] text-gray-400 line-through">€{deal.market_avg_price.toFixed(2)}</p>
+              <p className="text-[10px] text-gray-400 line-through">{eur(deal.market_avg_price)}</p>
             )}
           </div>
           {sparkline && sparkline.length >= 2 ? (
@@ -280,7 +281,7 @@ export default function SetDetailClient({ params }: { params: { setId: string } 
                 </div>
                 <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-3">
                   <p className="text-[11px] text-gray-500 dark:text-gray-400 mb-1">Goedkoopste single</p>
-                  <p className="text-xl font-bold text-gray-900 dark:text-white">€{stats.cheapest.toFixed(2)}</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">{eur(stats.cheapest)}</p>
                 </div>
               </>
             )}
@@ -440,9 +441,9 @@ export default function SetDetailClient({ params }: { params: { setId: string } 
                           </p>
                           <div className="flex items-end justify-between mb-3">
                             <div>
-                              <p className="text-2xl font-bold text-gray-900 dark:text-white">€{minPrice.toFixed(2)}</p>
+                              <p className="text-2xl font-bold text-gray-900 dark:text-white">{eur(minPrice)}</p>
                               <p className="text-xs text-gray-500 dark:text-gray-400">
-                                v.a. · gem. €{avgPrice.toFixed(2)}
+                                v.a. · gem. {eur(avgPrice)}
                               </p>
                             </div>
                             <span className="text-xs text-gray-400">{totalListings} listings</span>

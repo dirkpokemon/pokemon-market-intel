@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/DashboardLayout';
 import { notificationApi, WatchlistItem } from '@/lib/api';
+import { eur } from '@/lib/format';
 
 function PriceProgress({ current, target }: { current?: number | null; target: number }) {
   if (!current || current <= 0) return null;
@@ -13,8 +14,8 @@ function PriceProgress({ current, target }: { current?: number | null; target: n
   return (
     <div className="mt-2">
       <div className="flex justify-between text-[11px] text-gray-400 mb-1">
-        <span>Nu €{current.toFixed(2)}</span>
-        <span>Doel €{target.toFixed(2)}</span>
+        <span>Nu {eur(current)}</span>
+        <span>Doel {eur(target)}</span>
       </div>
       <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
         <div
@@ -165,7 +166,7 @@ export default function WatchlistPage() {
                         <div>
                           <p className="text-[10px] text-gray-400 uppercase tracking-wide">Doelprijs</p>
                           <p className="text-base font-bold text-gray-900 dark:text-white">
-                            €{item.target_price.toFixed(2)}
+                            {eur(item.target_price)}
                           </p>
                         </div>
                         {item.current_price != null && (
@@ -174,7 +175,7 @@ export default function WatchlistPage() {
                             <p className={`text-base font-bold ${
                               hit ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-600 dark:text-gray-300'
                             }`}>
-                              €{item.current_price.toFixed(2)}
+                              {eur(item.current_price)}
                             </p>
                           </div>
                         )}

@@ -28,7 +28,7 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
 
   const displayName = user?.full_name
     ? user.full_name.split(' ')[0]
-    : user?.email?.split('@')[0] || 'User';
+    : user?.email?.split('@')[0] || 'Gebruiker';
 
   const handleLogout = () => {
     localStorage.removeItem('access_token');
@@ -40,7 +40,7 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
     { href: '/home', label: 'Home', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
     )},
-    { href: '/deals', label: 'Top Deals', icon: (
+    { href: '/deals', label: 'Topdeals', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
     )},
     { href: '/prijscheck', label: 'Prijscheck', icon: (
@@ -71,7 +71,7 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
       : baseNavItems;
 
   const bottomItems = [
-    { href: '/settings', label: 'Settings', icon: (
+    { href: '/settings', label: 'Instellingen', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
     )},
   ];
@@ -152,7 +152,7 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
             <div className="min-w-0">
               <p className="text-sm font-bold text-gray-900 dark:text-white truncate">TCG Pulse</p>
               <p className="text-[9px] text-gray-400 dark:text-gray-500 font-medium leading-tight">
-                EU trading card market data
+                EU-marktdata voor ruilkaarten
               </p>
             </div>
           )}
@@ -210,7 +210,7 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
               <button 
                 onClick={handleLogout}
                 className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded transition"
-                title="Logout"
+                title="Uitloggen"
                 type="button"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -227,7 +227,7 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
           onClick={() => onCollapsedChange(!collapsed)}
           className="hidden lg:flex items-center justify-center h-10 border-t border-gray-100 dark:border-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/80 transition"
           aria-expanded={!collapsed}
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? 'Zijbalk uitklappen' : 'Zijbalk inklappen'}
         >
           <svg className={`w-4 h-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
@@ -247,18 +247,18 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Thanks for your feedback!</h3>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Bedankt voor je feedback!</h3>
                 {feedbackEmailSent === true && (
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                    A copy was emailed to the team inbox. Check spam if you manage that mailbox. We may follow up via your account email if needed.
+                    We hebben je bericht ontvangen. Als we vragen hebben, mailen we je via het e-mailadres van je account.
                   </p>
                 )}
                 {feedbackEmailSent === false && (
                   <div className="text-sm text-gray-600 dark:text-gray-300 mb-6 text-left space-y-2">
-                    <p>Your message was saved on the server, but <strong>no email was sent</strong> to the feedback inbox.</p>
+                    <p>Je bericht is opgeslagen, maar er is <strong>geen e-mail verstuurd</strong> naar de feedback-inbox.</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      On Railway, open the <strong>backend</strong> service logs right after sending — look for &quot;Brevo HTTP&quot; errors or &quot;Feedback email NOT delivered&quot;.
-                      Usually you need <code className="text-[11px] bg-gray-100 dark:bg-gray-800 px-1 rounded">BREVO_API_KEY</code> plus a <strong>verified sender</strong> in Brevo (same as signup verification mail), or working SMTP variables.
+                      Op Railway: open direct na het versturen de logs van de <strong>backend</strong> en zoek naar &quot;Brevo HTTP&quot;-fouten of &quot;Feedback email NOT delivered&quot;.
+                      Meestal is er een <code className="text-[11px] bg-gray-100 dark:bg-gray-800 px-1 rounded">BREVO_API_KEY</code> nodig plus een <strong>geverifieerde afzender</strong> in Brevo (dezelfde als voor de verificatiemail), of werkende SMTP-variabelen.
                     </p>
                   </div>
                 )}
@@ -267,7 +267,7 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
                   onClick={() => setShowFeedback(false)}
                   className="px-5 py-2 bg-gray-900 dark:bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-gray-800 dark:hover:bg-indigo-500 transition"
                 >
-                  Close
+                  Sluiten
                 </button>
               </div>
             ) : (
@@ -275,23 +275,23 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
               <>
                 <div className="px-6 pt-6 pb-4">
                   <div className="flex items-center justify-between mb-1">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Send Feedback</h3>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Feedback sturen</h3>
                     <button type="button" onClick={() => setShowFeedback(false)} className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Help us improve TCG Pulse</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Help ons TCG Pulse beter te maken</p>
                 </div>
 
                 <div className="px-6 pb-6">
                   {/* Type selector */}
                   <div className="flex gap-2 mb-4">
                     {([
-                      { value: 'idea' as const, label: '💡 Idea', color: 'blue' },
+                      { value: 'idea' as const, label: '💡 Idee', color: 'blue' },
                       { value: 'bug' as const, label: '🐛 Bug', color: 'red' },
-                      { value: 'other' as const, label: '💬 Other', color: 'gray' },
+                      { value: 'other' as const, label: '💬 Anders', color: 'gray' },
                     ]).map((t) => (
                       <button
                         key={t.value}
@@ -312,9 +312,9 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
                     value={feedbackText}
                     onChange={(e) => setFeedbackText(e.target.value)}
                     placeholder={
-                      feedbackType === 'idea' ? 'I would love it if...' :
-                      feedbackType === 'bug' ? 'I found an issue with...' :
-                      'Tell us what you think...'
+                      feedbackType === 'idea' ? 'Het zou mooi zijn als…' :
+                      feedbackType === 'bug' ? 'Ik liep tegen een probleem aan bij…' :
+                      'Laat weten wat je ervan vindt…'
                     }
                     className="w-full h-32 px-4 py-3 bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 resize-none focus:ring-2 focus:ring-indigo-500/30 dark:focus:ring-indigo-400/30 focus:border-indigo-400 dark:focus:border-indigo-500 outline-none transition"
                     autoFocus
@@ -327,7 +327,7 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
                     )}
                     <div className="flex items-center justify-between">
                       <p className="text-[11px] text-gray-400">
-                        {user?.email ? `Logged in as ${user.email}` : 'Sign in required to send feedback'}
+                        {user?.email ? `Ingelogd als ${user.email}` : 'Log in om feedback te sturen'}
                       </p>
                       <button
                         type="button"
@@ -344,7 +344,7 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
                             setFeedbackSent(true);
                             setFeedbackText('');
                           } catch (e: unknown) {
-                            const msg = e instanceof Error ? e.message : 'Could not send feedback. Try again later.';
+                            const msg = e instanceof Error ? e.message : 'Feedback versturen is mislukt. Probeer het later opnieuw.';
                             setFeedbackError(msg);
                           } finally {
                             setFeedbackSubmitting(false);
@@ -357,7 +357,7 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
                             : 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
                         }`}
                       >
-                        {feedbackSubmitting ? 'Sending…' : 'Send Feedback'}
+                        {feedbackSubmitting ? 'Versturen…' : 'Feedback sturen'}
                       </button>
                     </div>
                   </div>
