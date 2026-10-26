@@ -331,6 +331,17 @@ export default function PriceCheckPage() {
                 </div>
               </div>
 
+              {result.graded && (
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+                  <h3 className="font-semibold mb-1">Gegradeerde exemplaren</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+                    Nu te koop vanaf <strong>{fmt(result.graded.min_price)}</strong> ({result.graded.listings}{' '}
+                    {result.graded.listings === 1 ? 'aanbieding' : 'aanbiedingen'}). CardTrader vermeldt niet welk cijfer
+                    of welk bedrijf (PSA, BGS, CGC), dus vergelijk een gegradeerde kaart altijd per cijfer.
+                  </p>
+                </div>
+              )}
+
               <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="font-semibold">Kopen of wachten?</h3>

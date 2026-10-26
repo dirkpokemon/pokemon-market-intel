@@ -386,6 +386,8 @@ export interface PriceCheckResponse {
     floor_change_7d?: number | null;
     supply_change_7d?: number | null;
   };
+  /** Graded (slabbed) copies on offer now; grade and grading company are unknown */
+  graded?: { min_price: number; listings: number } | null;
   basis: string;
 }
 
