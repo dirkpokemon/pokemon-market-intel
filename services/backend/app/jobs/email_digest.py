@@ -16,6 +16,13 @@ from app.utils.email import send_email
 
 logger = logging.getLogger(__name__)
 
+MONTHS_NL = ("jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec")
+
+
+def _eur(value: float) -> str:
+    """Dutch notation: 1.234,50"""
+    return f"{value:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
+
 
 def _build_html(deals: list, unsub_url: str) -> str:
     """Build a dark-themed HTML email with a top-deals table."""
@@ -33,11 +40,11 @@ def _build_html(deals: list, unsub_url: str) -> str:
             <tr>
               <td style="padding:8px 12px;border-bottom:1px solid #1e293b;">{esc(d.product_name or "")}</td>
               <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#94a3b8;">{esc(d.product_set or "")}</td>
-              <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#34d399;">&euro;{current:.2f}</td>
+              <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#34d399;">&euro; {_eur(current)}</td>
               <td style="padding:8px 12px;border-bottom:1px solid #1e293b;text-align:center;">
                 <span style="background:#064e3b;color:#34d399;padding:2px 8px;border-radius:12px;font-size:12px;">{score:.0f}</span>
               </td>
-              <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#34d399;">-{saving_pct}%</td>
+              <td style="padding:8px 12px;border-bottom:1px solid #1e293b;color:#34d399;">-{str(saving_pct).replace('.', ',')}%</td>
             </tr>
         """
 
@@ -123,7 +130,7 @@ def _build_text(deals: list, unsub_url: str) -> str:
         current = float(d.current_price or 0)
         avg = float(d.market_avg_price or 0)
         saving_pct = round((avg - current) / avg * 100, 1) if avg > 0 else 0
-        lines.append(f"  {d.product_name} ({d.product_set}) — EUR{current:.2f} | Score: {d.deal_score:.0f} | -{saving_pct}%")
+        lines.append(f"  {d.product_name} ({d.product_set}) — € {_eur(current)} | score {float(d.deal_score or 0):.0f} | -{str(saving_pct).replace('.', ',')}%")
     lines += ["", f"Afmelden voor de digest: {unsub_url}"]
     return "\n".join(lines)
 
@@ -164,7 +171,8 @@ async def send_daily_digest() -> int:
         logger.info("No recipients for daily digest")
         return 0
 
-    today = datetime.now(timezone.utc).strftime("%d %b %Y")
+    now = datetime.now(timezone.utc)
+    today = f"{now.day} {MONTHS_NL[now.month - 1]} {now.year}"
     subject = f"TCG Pulse — Marktupdate {today}"
 
     for user in users:

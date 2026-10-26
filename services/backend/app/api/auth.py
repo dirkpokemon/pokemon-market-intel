@@ -38,7 +38,7 @@ async def register(
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered",
+            detail="Er bestaat al een account met dit e-mailadres",
         )
 
     token, expires = generate_verification_token()
@@ -89,10 +89,10 @@ async def resend_verification(
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(user_data.password, user.hashed_password):
-        raise HTTPException(status_code=400, detail="Invalid credentials")
+        raise HTTPException(status_code=400, detail="Onjuist e-mailadres of wachtwoord")
 
     if user.is_verified:
-        raise HTTPException(status_code=400, detail="Account is already verified")
+        raise HTTPException(status_code=400, detail="Je account is al bevestigd")
 
     token, expires = generate_verification_token()
     user.verification_token = token
@@ -117,7 +117,7 @@ async def verify_email(
     user = result.scalar_one_or_none()
 
     if not user:
-        raise HTTPException(status_code=400, detail="Invalid verification token")
+        raise HTTPException(status_code=400, detail="Ongeldige bevestigingslink")
 
     if user.is_verified:
         return {"message": "Email already verified. You can log in.", "already_verified": True}
@@ -127,7 +127,7 @@ async def verify_email(
         if expires.tzinfo is None:
             expires = expires.replace(tzinfo=timezone.utc)
         if expires < datetime.now(timezone.utc):
-            raise HTTPException(status_code=400, detail="Verification token has expired. Please request a new one.")
+            raise HTTPException(status_code=400, detail="De bevestigingslink is verlopen. Vraag een nieuwe aan.")
 
     user.is_verified = True
     user.verification_token = None
@@ -151,13 +151,13 @@ async def login(
     if not user or not verify_password(credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Onjuist e-mailadres of wachtwoord",
         )
 
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account is inactive",
+            detail="Dit account is niet actief",
         )
 
     if not user.is_verified:

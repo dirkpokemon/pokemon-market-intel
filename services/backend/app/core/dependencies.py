@@ -33,7 +33,7 @@ async def get_current_user(
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
+            detail="Je sessie is ongeldig of verlopen. Log opnieuw in.",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
@@ -41,7 +41,7 @@ async def get_current_user(
     if user_id_str is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials",
+            detail="Je sessie is ongeldig of verlopen. Log opnieuw in.",
         )
     
     # Convert user_id to integer
@@ -50,7 +50,7 @@ async def get_current_user(
     except (ValueError, TypeError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid user ID in token",
+            detail="Je sessie is ongeldig. Log opnieuw in.",
         )
     
     # Fetch user from database
@@ -60,13 +60,13 @@ async def get_current_user(
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
+            detail="Account niet gevonden. Log opnieuw in.",
         )
     
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Inactive user",
+            detail="Dit account is niet actief",
         )
     
     return user
@@ -97,7 +97,7 @@ async def get_current_active_user(
     if not current_user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Inactive user"
+            detail="Dit account is niet actief"
         )
     return current_user
 
@@ -114,7 +114,7 @@ async def get_current_premium_user(
     if not current_user.is_premium():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Premium subscription required. Please upgrade your account.",
+            detail="Deze functie zit in Plus. Upgrade je account om hem te gebruiken.",
         )
     return current_user
 
@@ -131,7 +131,7 @@ async def get_current_pro_user(
     if not current_user.is_pro():
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Pro subscription required. Please upgrade your account.",
+            detail="Deze functie zit in Business.",
         )
     return current_user
 
@@ -148,6 +148,6 @@ async def get_current_admin_user(
     if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required",
+            detail="Alleen voor beheerders",
         )
     return current_user

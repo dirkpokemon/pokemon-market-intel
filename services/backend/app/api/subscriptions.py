@@ -88,7 +88,7 @@ async def create_checkout_session(
     if not settings.STRIPE_SECRET_KEY:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Payments are not configured (missing STRIPE_SECRET_KEY)",
+            detail="Betalen is nog niet ingesteld (STRIPE_SECRET_KEY ontbreekt)",
         )
 
     try:
@@ -137,7 +137,7 @@ async def create_checkout_session(
         logger.error(f"Error creating checkout session: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create checkout session"
+            detail="Afrekenen kon niet worden gestart. Probeer het later opnieuw."
         )
 
 
@@ -154,18 +154,18 @@ async def upgrade_to_business(
     if current_user.role != "paid":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only Plus subscribers can upgrade to Business here.",
+            detail="Alleen Plus-abonnees kunnen hier overstappen naar Business.",
         )
     if not current_user.stripe_subscription_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No active subscription on file. Use checkout or billing portal.",
+            detail="Geen actief abonnement gevonden. Gebruik afrekenen of het betaalportaal.",
         )
     pro_price = settings.stripe_pro_price_id
     if not settings.STRIPE_SECRET_KEY or not pro_price:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Business plan price is not configured (STRIPE_PRICE_PRO).",
+            detail="De prijs voor Business is niet ingesteld (STRIPE_PRICE_PRO).",
         )
 
     try:
@@ -177,7 +177,7 @@ async def upgrade_to_business(
         if not items:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Subscription has no line items.",
+                detail="Het abonnement bevat geen producten.",
             )
         item = items[0]
         price_obj = item.get("price")
@@ -210,7 +210,7 @@ async def upgrade_to_business(
         logger.error("upgrade_to_business failed: %s", e, exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Could not upgrade subscription. Try the billing portal or contact support.",
+            detail="Overstappen is mislukt. Probeer het via het betaalportaal of neem contact op.",
         ) from e
 
 
@@ -228,7 +228,7 @@ async def create_portal_session(
     if not current_user.stripe_customer_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No subscription found"
+            detail="Geen abonnement gevonden"
         )
     
     try:
@@ -251,5 +251,5 @@ async def create_portal_session(
         logger.error(f"Error creating portal session: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to create portal session"
+            detail="Het betaalportaal kon niet worden geopend. Probeer het later opnieuw."
         )
