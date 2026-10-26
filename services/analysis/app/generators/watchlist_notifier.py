@@ -87,6 +87,11 @@ async def _send_email_alert(to_email: str, subject: str, html: str, text_body: s
 # ---------------------------------------------------------------------------
 
 
+def _eur(value: float) -> str:
+    """Dutch notation: 1.234,50"""
+    return f"{value:,.2f}".replace(",", "_").replace(".", ",").replace("_", ".")
+
+
 def _build_alert_html(
     card_name: str, card_set: Optional[str], price: float, target: float, unsub_url: Optional[str]
 ) -> str:
@@ -121,11 +126,11 @@ def _build_alert_html(
                 <tr>
                   <td style="padding:16px 20px;border-bottom:1px solid #1e293b;">
                     <span style="color:#64748b;font-size:13px;">Huidige prijs</span><br>
-                    <span style="color:#34d399;font-size:24px;font-weight:700;">&euro;{price:.2f}</span>
+                    <span style="color:#34d399;font-size:24px;font-weight:700;">&euro; {_eur(price)}</span>
                   </td>
                   <td style="padding:16px 20px;border-bottom:1px solid #1e293b;border-left:1px solid #1e293b;">
                     <span style="color:#64748b;font-size:13px;">Jouw doelprijs</span><br>
-                    <span style="color:#94a3b8;font-size:24px;font-weight:700;">&euro;{target:.2f}</span>
+                    <span style="color:#94a3b8;font-size:24px;font-weight:700;">&euro; {_eur(target)}</span>
                   </td>
                 </tr>
               </table>
@@ -156,7 +161,7 @@ def _build_alert_text(card_name: str, card_set: Optional[str], price: float, tar
     set_label = f" ({card_set})" if card_set else ""
     lines = [
         f"Prijsalert: {card_name}{set_label}",
-        f"Huidige prijs: EUR {price:.2f} (jouw doelprijs: EUR {target:.2f})",
+        f"Huidige prijs: € {_eur(price)} (jouw doelprijs: € {_eur(target)})",
         f"Bekijk deals: {settings.FRONTEND_URL.rstrip('/')}/deals",
     ]
     if unsub_url:
@@ -249,7 +254,7 @@ async def check_watchlist_alerts() -> int:
                 continue
 
             unsub_url = _unsubscribe_url(item.user_id)
-            subject = f"Prijsalert: {card_name} nu €{market_price:.2f}"
+            subject = f"Prijsalert: {card_name} nu € {_eur(market_price)}"
             ok = await _send_email_alert(
                 to_email,
                 subject,

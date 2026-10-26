@@ -30,8 +30,9 @@ def generate_verification_token() -> tuple[str, datetime]:
 
 
 def _build_verification_html(first_name: str, verify_url: str) -> str:
+    first_name = html_module.escape(first_name)
     return f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:40px 0;">
@@ -44,27 +45,27 @@ def _build_verification_html(first_name: str, verify_url: str) -> str:
             <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='18' fill='%23fafafa'/%3E%3Cpath d='M20 2c9.94 0 18 8.06 18 18H2c0-9.94 8.06-18 18-18z' fill='%23dc2626'/%3E%3Crect x='2' y='19' width='36' height='2' fill='%23111827'/%3E%3Ccircle cx='20' cy='20' r='7' fill='%23fff' stroke='%23111827' stroke-width='2'/%3E%3Ccircle cx='20' cy='20' r='3' fill='%23111827'/%3E%3C/svg%3E" width="40" height="40" alt="" style="display:block;margin:0 auto;" />
           </td></tr></table>
           <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;letter-spacing:-0.3px;">TCG Pulse</h1>
-          <p style="color:#9ca3af;font-size:13px;margin:6px 0 0;">EU market intelligence for trading card singles</p>
+          <p style="color:#9ca3af;font-size:13px;margin:6px 0 0;">Eerlijke Pokémon-prijzen in Europa</p>
         </td></tr>
 
         <!-- Body -->
         <tr><td style="padding:36px 40px 20px;">
-          <h2 style="color:#111827;font-size:20px;font-weight:700;margin:0 0 8px;">Welcome, {first_name}!</h2>
+          <h2 style="color:#111827;font-size:20px;font-weight:700;margin:0 0 8px;">Welkom, {first_name}!</h2>
           <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 28px;">
-            Thanks for signing up. Verify your email address to unlock full access to market deals, price signals, and portfolio tracking.
+            Leuk dat je er bent. Bevestig je e-mailadres om je account te activeren: dan kun je deals bekijken, prijzen checken en prijsalerts instellen.
           </p>
 
           <!-- CTA Button -->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
             <tr><td align="center" style="padding:0 0 28px;">
               <a href="{verify_url}" target="_blank" style="display:inline-block;background:#111827;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:10px;letter-spacing:0.2px;">
-                Verify My Email
+                E-mailadres bevestigen
               </a>
             </td></tr>
           </table>
 
           <p style="color:#9ca3af;font-size:13px;line-height:1.5;margin:0 0 24px;">
-            Or copy and paste this link into your browser:<br/>
+            Of kopieer deze link in je browser:<br/>
             <a href="{verify_url}" style="color:#4f46e5;word-break:break-all;font-size:12px;">{verify_url}</a>
           </p>
         </td></tr>
@@ -73,23 +74,23 @@ def _build_verification_html(first_name: str, verify_url: str) -> str:
         <tr><td style="padding:0 40px 32px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border-radius:12px;padding:20px 24px;">
             <tr><td>
-              <p style="color:#374151;font-size:14px;font-weight:600;margin:0 0 12px;">What you get access to:</p>
+              <p style="color:#374151;font-size:14px;font-weight:600;margin:0 0 12px;">Hier heb je toegang toe:</p>
               <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                 <tr>
                   <td style="padding:6px 0;color:#111827;font-size:14px;" width="28">&#9889;</td>
-                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Top Deals:</strong> best prices below market average</td>
+                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Topdeals:</strong> kaarten onder de normale prijs</td>
                 </tr>
                 <tr>
                   <td style="padding:6px 0;color:#111827;font-size:14px;">&#128200;</td>
-                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Market signals:</strong> price trends and supply shifts</td>
+                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Prijscheck:</strong> zie direct of een prijs eerlijk is</td>
                 </tr>
                 <tr>
                   <td style="padding:6px 0;color:#111827;font-size:14px;">&#127919;</td>
-                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Portfolio tracker:</strong> watch your collection&rsquo;s value</td>
+                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Lijstprijs:</strong> je hele lijst inclusief verzending</td>
                 </tr>
                 <tr>
                   <td style="padding:6px 0;color:#111827;font-size:14px;">&#128276;</td>
-                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Smart alerts:</strong> get notified when prices drop</td>
+                  <td style="padding:6px 0;color:#374151;font-size:14px;"><strong>Prijsalerts:</strong> een mail zodra je doelprijs bereikt is</td>
                 </tr>
               </table>
             </td></tr>
@@ -99,7 +100,7 @@ def _build_verification_html(first_name: str, verify_url: str) -> str:
         <!-- Footer -->
         <tr><td style="padding:24px 40px;border-top:1px solid #e5e7eb;text-align:center;">
           <p style="color:#9ca3af;font-size:12px;line-height:1.5;margin:0;">
-            This link expires in {VERIFICATION_TOKEN_HOURS} hours. If you didn&rsquo;t create an account, you can safely ignore this email.
+            Deze link is {VERIFICATION_TOKEN_HOURS} uur geldig. Heb je geen account aangemaakt? Dan kun je deze mail negeren.
           </p>
           <p style="color:#d1d5db;font-size:11px;margin:12px 0 0;">
             &copy; {datetime.now(timezone.utc).year} TCG Pulse
@@ -115,12 +116,12 @@ def _build_verification_html(first_name: str, verify_url: str) -> str:
 
 def _build_verification_text(first_name: str, verify_url: str) -> str:
     return (
-        f"Welcome, {first_name}!\n\n"
-        f"Thanks for signing up to TCG Pulse.\n"
-        f"Please verify your email address by clicking the link below:\n\n"
+        f"Welkom, {first_name}!\n\n"
+        f"Leuk dat je je hebt aangemeld bij TCG Pulse.\n"
+        f"Bevestig je e-mailadres via deze link:\n\n"
         f"{verify_url}\n\n"
-        f"This link expires in {VERIFICATION_TOKEN_HOURS} hours.\n"
-        f"If you didn't create an account, you can safely ignore this email."
+        f"De link is {VERIFICATION_TOKEN_HOURS} uur geldig.\n"
+        f"Heb je geen account aangemaakt? Dan kun je deze mail negeren."
     )
 
 
@@ -213,8 +214,9 @@ def _send_via_smtp(to_email: str, msg: MIMEMultipart) -> bool:
 
 def _build_subscription_success_html(first_name: str, plan_label: str, app_url: str) -> str:
     year = datetime.now(timezone.utc).year
+    first_name = html_module.escape(first_name)
     return f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:40px 0;">
@@ -222,22 +224,22 @@ def _build_subscription_success_html(first_name: str, plan_label: str, app_url: 
       <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
         <tr><td style="background:linear-gradient(135deg,#111827 0%,#1f2937 100%);padding:36px 40px;text-align:center;">
           <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;">TCG Pulse</h1>
-          <p style="color:#9ca3af;font-size:13px;margin:8px 0 0;">Subscription active</p>
+          <p style="color:#9ca3af;font-size:13px;margin:8px 0 0;">Abonnement actief</p>
         </td></tr>
         <tr><td style="padding:36px 40px;">
-          <h2 style="color:#111827;font-size:20px;font-weight:700;margin:0 0 12px;">You&rsquo;re in, {first_name}!</h2>
+          <h2 style="color:#111827;font-size:20px;font-weight:700;margin:0 0 12px;">Gelukt, {first_name}!</h2>
           <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 20px;">
-            Your <strong style="color:#111827;">{plan_label}</strong> subscription is active. You now have full access to Signals, deal scores, and the rest of your plan.
+            Je <strong style="color:#111827;">{plan_label}</strong>-abonnement is actief. Je hebt nu toegang tot alle deals, de volledige prijsgeschiedenis en de rest van je abonnement.
           </p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
             <tr><td align="center" style="padding:0 0 24px;">
               <a href="{app_url}" target="_blank" style="display:inline-block;background:#111827;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:10px;">
-                Open your dashboard
+                Naar je dashboard
               </a>
             </td></tr>
           </table>
           <p style="color:#9ca3af;font-size:13px;line-height:1.5;margin:0;">
-            Manage billing anytime from your account settings (Stripe customer portal).
+            Je betaalgegevens en facturen beheer je altijd via je instellingen (betaalportaal van Stripe).
           </p>
         </td></tr>
         <tr><td style="padding:20px 40px;border-top:1px solid #e5e7eb;text-align:center;">
@@ -252,17 +254,17 @@ def _build_subscription_success_html(first_name: str, plan_label: str, app_url: 
 
 def _build_subscription_success_text(first_name: str, plan_label: str, app_url: str) -> str:
     return (
-        f"Hi {first_name},\n\n"
-        f"Your {plan_label} subscription for TCG Pulse is now active.\n"
-        f"Open your dashboard: {app_url}\n\n"
-        f"You can manage billing from your account settings.\n"
+        f"Hoi {first_name},\n\n"
+        f"Je {plan_label}-abonnement voor TCG Pulse is actief.\n"
+        f"Naar je dashboard: {app_url}\n\n"
+        f"Je betaalgegevens beheer je via je instellingen.\n"
     )
 
 
 def send_subscription_success_email(to_email: str, first_name: str, plan_label: str) -> bool:
     """Send confirmation after a successful subscription checkout."""
     app_url = settings.FRONTEND_URL.rstrip("/") + "/home"
-    subject = f"Your {plan_label} subscription is active · TCG Pulse"
+    subject = f"Je {plan_label}-abonnement is actief · TCG Pulse"
     html = _build_subscription_success_html(first_name, plan_label, app_url)
     text = _build_subscription_success_text(first_name, plan_label, app_url)
 
@@ -290,7 +292,7 @@ def send_verification_email(to_email: str, first_name: str, token: str) -> bool:
     frontend_url = settings.FRONTEND_URL.rstrip("/")
     verify_url = f"{frontend_url}/verify?token={token}"
 
-    subject = "Verify your email for TCG Pulse"
+    subject = "Bevestig je e-mailadres voor TCG Pulse"
     html = _build_verification_html(first_name, verify_url)
     text = _build_verification_text(first_name, verify_url)
 

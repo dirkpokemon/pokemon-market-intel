@@ -124,7 +124,7 @@ async def delete_watchlist_item(
     )
     item = result.scalar_one_or_none()
     if item is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Watchlist item not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Deze kaart staat niet (meer) in je watchlist")
     item.is_active = False
     await db.commit()
 
