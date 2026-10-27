@@ -51,6 +51,7 @@ async def register(
         role="free",
         is_active=True,
         is_verified=False,
+        email_digest_enabled=user_data.email_digest_enabled,
         verification_token=token,
         verification_token_expires=expires,
     )

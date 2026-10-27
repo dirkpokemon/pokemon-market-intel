@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [digest, setDigest] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [registered, setRegistered] = useState(false);
@@ -27,7 +28,7 @@ export default function RegisterPage() {
 
     try {
       const fullName = `${firstName.trim()} ${lastName.trim()}`;
-      const res = await authApi.register(email, password, fullName);
+      const res = await authApi.register(email, password, fullName, digest);
       if (res.verify_url) setVerifyUrl(res.verify_url);
       setRegistered(true);
     } catch (err: any) {
@@ -198,6 +199,21 @@ export default function RegisterPage() {
             />
             <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">Minstens 8 tekens</p>
           </div>
+
+          <label htmlFor="digest" className="flex items-start gap-2.5 cursor-pointer">
+            <input
+              id="digest"
+              type="checkbox"
+              checked={digest}
+              onChange={(e) => setDigest(e.target.checked)}
+              disabled={loading}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span className="text-sm text-gray-600 dark:text-gray-300">
+              Stuur me elke ochtend een e-mail met de beste deals.{' '}
+              <span className="text-gray-400 dark:text-gray-500">Afmelden kan altijd, via de link in elke mail of bij Instellingen.</span>
+            </span>
+          </label>
 
           <button
             type="submit"
