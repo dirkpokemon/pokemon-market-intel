@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
-import { ToastProvider } from '@/components/ToastContainer';
 import CookieBanner from '@/components/CookieBanner';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -62,10 +61,8 @@ export default function RootLayout({
     <html lang="nl" suppressHydrationWarning>
       <body className={`${inter.className} bg-white text-gray-900 dark:bg-gray-950 dark:text-gray-100`}>
         <Script id="theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeInit }} />
-        <ToastProvider>
-          {children}
-          <CookieBanner />
-        </ToastProvider>
+        {children}
+        <CookieBanner />
       </body>
     </html>
   );

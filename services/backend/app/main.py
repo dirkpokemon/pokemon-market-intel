@@ -5,11 +5,13 @@ FastAPI Application Entry Point
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.config import settings
+from app.core.validation import dutch_errors
 from app.database import init_db
 
 logger = logging.getLogger(__name__)
@@ -72,6 +74,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """422 with Dutch messages (the frontend shows `msg` as is)."""
+    return JSONResponse(status_code=422, content={"detail": dutch_errors(exc.errors())})
 
 @app.get("/health")
 async def health_check():

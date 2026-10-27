@@ -15,6 +15,8 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """Schema for user registration"""
     password: str = Field(..., min_length=8, description="Password must be at least 8 characters")
+    # Opt-in for the daily digest, from an unticked checkbox on the register page
+    email_digest_enabled: bool = False
 
 
 class UserLogin(BaseModel):
