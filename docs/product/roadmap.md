@@ -63,9 +63,9 @@ Snelst groeiende segment in Europa. Let op: de analyse filtert nu op `INCLUDED_L
 
 ## Prijsstrategie
 
-Plus kost nu **€19/maand**. Concurrenten: PokéCardex ~€3,99, Pokedata $7,99, Collectr freemium.
+Plus kost sinds 28 oktober 2026 **€6/maand** (was €19). Concurrenten: PokéCardex ~€3,99, Pokedata $7,99, Collectr freemium.
 - Prijscheck (#1) gratis houden.
-- Plus richting **€5–8/maand** of een jaarabonnement.
+- Later eventueel een jaarabonnement.
 - Betaald: lijst-optimizer (#2), onbeperkt alerts, prijsgeschiedenis, graden-advies (#4).
 
 ## Beperkingen van het onderzoek & vervolg

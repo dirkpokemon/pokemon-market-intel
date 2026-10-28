@@ -8,7 +8,7 @@ import SiteFooter from '@/components/SiteFooter';
 import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
 import BrandMark from '@/components/BrandMark';
 import { ThemeIconButton } from '@/components/ThemeToggle';
-import { CTA_SUBSCRIBE_PLUS, PLAN_FEATURES } from '@/lib/plans';
+import { CTA_SUBSCRIBE_PLUS, PLAN_FEATURES, PLUS_PRICE } from '@/lib/plans';
 
 type PlanKey = 'free' | 'paid' | 'pro';
 
@@ -81,7 +81,7 @@ export default function PricingPage() {
         {
           key: 'paid' as const,
           name: 'Plus',
-          price: '€19',
+          price: PLUS_PRICE,
           period: '/maand',
           description: 'Alle deals, prijsgeschiedenis en alerts',
           features: [...PLAN_FEATURES.paid],
