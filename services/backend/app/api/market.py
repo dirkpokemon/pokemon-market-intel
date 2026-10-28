@@ -20,7 +20,7 @@ from app.schemas.market import (
 from app.core.dependencies import get_current_admin_user, get_current_premium_user, get_current_user
 from app.data.set_registry import SETS, ERAS as SET_ERAS, aliases_for
 from app.utils.cache import public_cache
-from app.core.language import RAW_LANG_SQL
+from app.core.language import LANGUAGE_OR_ALL_PATTERN, LANGUAGE_PATTERN, RAW_LANG_SQL
 
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ async def get_deal_scores(
     set_slug: Optional[str] = Query(default=None, description="Canonical set slug (preferred). Resolves to registry aliases."),
     product_set: Optional[str] = Query(default=None, description="[DEPRECATED] Filter by product set string. Prefer set_slug."),
     product_name: Optional[str] = Query(default=None, description="Filter by product name (substring, case-insensitive)"),
-    language: str = Query(default="EN", pattern="^(EN|JP|all)$", description="Listing language: EN (default), JP or all"),
+    language: str = Query(default="EN", pattern=LANGUAGE_OR_ALL_PATTERN, description="Listing language: EN (default), JP, IT or all"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -641,7 +641,7 @@ async def get_price_history(
     days: int = Query(default=30, ge=7, le=180, description="Number of days of history"),
     product_set: Optional[str] = Query(default=None, max_length=255),
     card_number: Optional[str] = Query(default=None, max_length=100, description="Variant (CardTrader blueprint id)"),
-    language: str = Query(default="EN", pattern="^(EN|JP)$"),
+    language: str = Query(default="EN", pattern=LANGUAGE_PATTERN),
     current_user: User = Depends(get_current_premium_user),
     db: AsyncSession = Depends(get_db),
 ):

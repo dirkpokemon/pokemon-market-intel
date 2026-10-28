@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, Suspense } from 'react';
+import { CARD_LANGUAGES, CardLanguage } from '@/lib/languages';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { marketApi, sparklineKey, DealScore } from '@/lib/api';
@@ -122,7 +123,7 @@ function DealsPageInner() {
   const [selectedDeal, setSelectedDeal] = useState<DealScore | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState('score-desc');
-  const [language, setLanguage] = useState<'EN' | 'JP' | 'all'>('EN');
+  const [language, setLanguage] = useState<CardLanguage | 'all'>('EN');
   const [viewMode, setViewMode] = useState<ViewMode>('all');
   const [userRole, setUserRole] = useState<string>('free');
   const [filters, setFilters] = useState<FilterOptions>({
@@ -311,12 +312,13 @@ function DealsPageInner() {
                 </select>
                 <select
                   value={language}
-                  onChange={(e) => { setLanguage(e.target.value as 'EN' | 'JP' | 'all'); setCurrentPage(1); }}
+                  onChange={(e) => { setLanguage(e.target.value as CardLanguage | 'all'); setCurrentPage(1); }}
                   aria-label="Taal van de kaarten"
                   className="px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-gray-400 dark:focus:ring-gray-600 focus:border-transparent"
                 >
-                  <option value="EN">Engelse kaarten</option>
-                  <option value="JP">Japanse kaarten</option>
+                  {CARD_LANGUAGES.map((l) => (
+                    <option key={l.code} value={l.code}>{l.plural}</option>
+                  ))}
                   <option value="all">Alle talen</option>
                 </select>
               </div>

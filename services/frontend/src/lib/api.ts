@@ -3,6 +3,8 @@
  * Handles all API requests to the backend
  */
 
+import type { CardLanguage } from '@/lib/languages';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 /** Abort slow requests so login/dashboard do not hang indefinitely if the API is wedged. */
@@ -56,7 +58,7 @@ export interface DealScore {
   card_number?: string | null;
   collector_number?: string | null;
   rarity?: string | null;
-  /** Listing language: 'EN' or 'JP' (Japanese prints are their own product line) */
+  /** Listing language: 'EN', 'JP' or 'IT' (each language is its own product line) */
   language?: string | null;
   current_price: number;
   market_avg_price?: number;
@@ -245,7 +247,7 @@ export const marketApi = {
     set_slug?: string;
     product_set?: string;
     product_name?: string;
-    language?: 'EN' | 'JP' | 'all';
+    language?: CardLanguage | 'all';
   }): Promise<DealScore[]> => {
     const entries = Object.entries(params || {})
       .filter(([, v]) => v !== undefined && v !== null && v !== '')
@@ -264,7 +266,7 @@ export const marketApi = {
     const params = new URLSearchParams({ card_name: cardName, days: String(days) });
     if (variant?.product_set) params.set('product_set', variant.product_set);
     if (variant?.card_number) params.set('card_number', variant.card_number);
-    if (variant?.language === 'JP') params.set('language', 'JP');
+    if (variant?.language && variant.language !== 'EN') params.set('language', variant.language);
     return apiRequest<PriceHistoryResponse>(`/api/v1/price_history?${params.toString()}`);
   },
 
@@ -415,7 +417,7 @@ export const priceCheckApi = {
     const params = new URLSearchParams({ name: match.product_name, category: match.category, price: String(price) });
     if (match.product_set) params.set('set', match.product_set);
     if (match.card_number) params.set('card_number', match.card_number);
-    if (match.language === 'JP') params.set('language', 'JP');
+    if (match.language && match.language !== 'EN') params.set('language', match.language);
     return apiRequest<PriceCheckResponse>(`/api/v1/price-check?${params}`);
   },
 };
@@ -462,7 +464,7 @@ export interface ListPriceResponse {
 }
 
 export const listPriceApi = {
-  calculate: async (body: { text: string; country: string; condition: 'nm' | 'lp'; language?: 'EN' | 'JP' }): Promise<ListPriceResponse> => {
+  calculate: async (body: { text: string; country: string; condition: 'nm' | 'lp'; language?: CardLanguage }): Promise<ListPriceResponse> => {
     return apiRequest<ListPriceResponse>('/api/v1/list-price', { method: 'POST', body: JSON.stringify(body) });
   },
 };

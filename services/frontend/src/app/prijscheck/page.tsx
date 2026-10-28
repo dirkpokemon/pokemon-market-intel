@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import ToolShell from '@/components/ToolShell';
+import { languageInfo } from '@/lib/languages';
 import SignalBadge, { signalExplanation } from '@/components/MarketSignal';
 import {
   notificationApi,
@@ -64,7 +65,8 @@ const VERDICTS: Record<PriceVerdictCode, { title: string; tone: string; text: (r
 };
 
 function variantLabel(m: { collector_number?: string | null; rarity?: string | null; category: string; language?: string | null }) {
-  const lang = m.language === 'JP' ? ' · Japans' : '';
+  const info = m.language && m.language !== 'EN' ? languageInfo(m.language) : undefined;
+  const lang = info ? ` · ${info.label}` : '';
   if (m.category === 'sealed') return 'Sealed product' + lang;
   return ([m.collector_number && `#${m.collector_number}`, m.rarity].filter(Boolean).join(' · ') || 'Single') + lang;
 }

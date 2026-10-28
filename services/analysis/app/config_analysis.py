@@ -24,8 +24,9 @@ class AnalysisConfig(BaseSettings):
     # Rows without a condition (e.g. CardMarket price guide = NM) are kept.
     INCLUDED_CONDITIONS: List[str] = ['near mint', 'nm', 'mint', 'm']
     # Each language is its own product line (separate statistics and deals).
+    # Keep in sync with SUPPORTED_LANGUAGES in backend app/core/language.py.
     # 'JP' also covers CardTrader's 'JA' (see LANG_EXPR).
-    INCLUDED_LANGUAGES: List[str] = ['EN', 'JP']
+    INCLUDED_LANGUAGES: List[str] = ['EN', 'JP', 'IT']
 
     # Data quality by number of distinct days a product was seen in the long window
     MIN_DAYS_EXCELLENT: int = 20

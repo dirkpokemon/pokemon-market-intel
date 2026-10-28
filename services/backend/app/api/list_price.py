@@ -28,7 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.price_check import _escape_like
 from app.core.dependencies import get_optional_user
-from app.core.language import RAW_LANG_SQL
+from app.core.language import LANGUAGE_PATTERN, RAW_LANG_SQL
 from app.core.list_price import ZERO_BIN, Offer, optimize, parse_wantlist
 from app.core.price_check import search_terms
 from app.core.rate_limit import RateLimiter
@@ -62,7 +62,7 @@ class ListPriceRequest(BaseModel):
     text: str = Field(..., min_length=2, max_length=10_000)
     country: str = Field(default="NL", pattern="^[A-Za-z]{2}$")
     condition: str = Field(default="nm", pattern="^(nm|lp)$")
-    language: str = Field(default="EN", pattern="^(EN|JP)$")
+    language: str = Field(default="EN", pattern=LANGUAGE_PATTERN)
 
 
 class Product(BaseModel):

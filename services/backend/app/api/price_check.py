@@ -20,7 +20,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.language import RAW_LANG_SQL
+from app.core.language import LANGUAGE_ADJECTIVE, LANGUAGE_PATTERN, LANGUAGE_WORDS, RAW_LANG_SQL
 from app.core.price_check import judge_price, parse_listing
 from app.core.rate_limit import RateLimiter
 from app.database import get_db
@@ -115,10 +115,11 @@ async def search_products(
     if not terms:
         return SearchResponse(terms=[], detected_price=detected_price, results=[])
 
-    # "japans" / "japanese" / "jp" in the text: show Japanese prints first
-    jp_words = {"jp", "jap", "japans", "japanse", "japanese", "jpn"}
-    want_lang = "JP" if jp_words & {t.lower() for t in terms} else "EN"
-    terms = [t for t in terms if t.lower() not in jp_words] or terms
+    # "japans" / "italiaans" / "jp" in the text: show that language's prints first
+    lowered = {t.lower() for t in terms}
+    want_lang = next((lang for lang, words in LANGUAGE_WORDS.items() if words & lowered), "EN")
+    lang_words = set().union(*LANGUAGE_WORDS.values())
+    terms = [t for t in terms if t.lower() not in lang_words] or terms
     cache_key = f"pc-search:{want_lang}:" + " ".join(terms)
     cached = public_cache.get(cache_key)
     if cached is None:
@@ -175,7 +176,7 @@ async def check_price(
     set: Optional[str] = Query(default=None, max_length=255),
     category: str = Query(default="single", pattern="^(single|sealed)$"),
     card_number: Optional[str] = Query(default=None, max_length=100, description="Variant uit de zoekresultaten"),
-    language: str = Query(default="EN", pattern="^(EN|JP)$", description="Taal van de kaart"),
+    language: str = Query(default="EN", pattern=LANGUAGE_PATTERN, description="Taal van de kaart"),
     db: AsyncSession = Depends(get_db),
 ) -> CheckResponse:
     result = await db.execute(
@@ -247,7 +248,7 @@ async def check_price(
         graded=graded,
         basis=(
             "Vraagprijzen van vergelijkbare aanbiedingen op CardTrader (singles: near-mint, "
-            + ("Japanstalig" if row.language == "JP" else "Engelstalig")
+            + LANGUAGE_ADJECTIVE.get(row.language or "EN", "Engelstalig")
             + "), laatste 30 dagen."
         ),
         reference=Reference(

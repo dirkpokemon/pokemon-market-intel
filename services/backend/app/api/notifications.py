@@ -12,6 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_user
+from app.core.language import LANGUAGE_PATTERN
 from app.core.unsubscribe import verify_token
 from app.database import get_db
 from app.models.user import User
@@ -31,7 +32,7 @@ class WatchlistCreate(BaseModel):
     card_name: str = Field(..., min_length=1, max_length=255)
     card_set: Optional[str] = Field(default=None, max_length=255)
     card_number: Optional[str] = Field(default=None, max_length=100)
-    language: Optional[str] = Field(default=None, pattern="^(EN|JP)$")
+    language: Optional[str] = Field(default=None, pattern=LANGUAGE_PATTERN)
     target_price: float = Field(..., gt=0)
 
 
