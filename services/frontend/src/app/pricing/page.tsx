@@ -2,12 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import PublicHeader from '@/components/PublicHeader';
 import { subscriptionApi } from '@/lib/api';
 import SiteFooter from '@/components/SiteFooter';
 import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
-import BrandMark from '@/components/BrandMark';
-import { ThemeIconButton } from '@/components/ThemeToggle';
 import { CTA_SUBSCRIBE_PLUS, PLAN_FEATURES, PLUS_PRICE } from '@/lib/plans';
 
 type PlanKey = 'free' | 'paid' | 'pro';
@@ -158,26 +156,7 @@ export default function PricingPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 flex flex-col text-gray-900 dark:text-gray-100">
-      <header className="border-b border-gray-100 dark:border-gray-800 sticky top-0 z-50 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-3">
-            <BrandMark size={32} />
-            <span className="text-sm font-bold text-gray-900 dark:text-white">TCG Pulse</span>
-          </Link>
-          <div className="flex gap-2 sm:gap-3 items-center">
-            <ThemeIconButton />
-            <Link href="/login" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 sm:px-4 py-2 text-sm font-medium rounded-lg">
-              Inloggen
-            </Link>
-            <Link
-              href="/register"
-              className="bg-gray-900 dark:bg-indigo-600 text-white px-4 sm:px-5 py-2 rounded-lg hover:bg-gray-800 dark:hover:bg-indigo-500 transition text-sm font-medium"
-            >
-              Gratis beginnen
-            </Link>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       <main className="flex-1 max-w-5xl mx-auto px-4 py-16 sm:py-20 sm:px-6 lg:px-8 w-full">
         <div className="text-center mb-12">

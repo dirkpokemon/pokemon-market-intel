@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { notificationApi } from '@/lib/api';
+import PublicHeader from '@/components/PublicHeader';
 import SiteFooter from '@/components/SiteFooter';
 
 type State = 'confirm' | 'loading' | 'done' | 'error';
@@ -73,6 +74,7 @@ function UnsubscribeContent() {
 export default function UnsubscribePage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
+      <PublicHeader />
       <div className="flex-1 flex items-center justify-center px-4 py-10">
         <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-gray-200 dark:border-gray-800 p-8 text-center">
           <Suspense fallback={<p className="text-sm text-gray-500 dark:text-gray-400">Laden…</p>}>

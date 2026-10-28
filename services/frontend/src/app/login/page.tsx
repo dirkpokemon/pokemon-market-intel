@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { authApi } from '@/lib/api';
+import { safeNextPath } from '@/lib/next-path';
 import BrandMark from '@/components/BrandMark';
 import SiteFooter from '@/components/SiteFooter';
 
@@ -28,7 +29,9 @@ export default function LoginPage() {
       const response = await authApi.login(email, password);
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('user', JSON.stringify(response.user));
-      router.push('/home');
+      // Back to the page that sent them here (?next=/prijscheck), else home
+      const next = safeNextPath(new URLSearchParams(window.location.search).get('next'));
+      router.push(next || '/home');
     } catch (err: any) {
       const msg = err?.message || '';
       if (msg === 'EMAIL_NOT_VERIFIED') {

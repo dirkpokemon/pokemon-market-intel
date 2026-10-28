@@ -43,6 +43,9 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
     { href: '/deals', label: 'Topdeals', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
     )},
+    { href: '/sets', label: 'Sets', icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+    )},
     { href: '/prijscheck', label: 'Prijscheck', icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" strokeWidth={1.5} /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.5 16.5L21 21M8 11l2.5 2.5L14.5 8.5" /></svg>
     )},
@@ -77,7 +80,8 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
   ];
 
   const NavLink = ({ item, compact = false }: { item: typeof navItems[0] & { premium?: boolean; beta?: boolean }, compact?: boolean }) => {
-    const isActive = pathname === item.href;
+    // Sub-pages (/sets/sv-151) keep their menu item highlighted
+    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
     return (
       <Link
         href={item.href}
@@ -126,8 +130,11 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
     <>
       {/* Mobile hamburger */}
       <button
+        type="button"
         onClick={() => setMobileOpen(true)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
+        aria-label="Menu openen"
+        aria-expanded={mobileOpen}
+        className={`lg:hidden fixed top-2 left-3 z-50 p-2 bg-white dark:bg-gray-900 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 ${mobileOpen ? 'hidden' : ''}`}
       >
         <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -147,15 +154,27 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className={`flex items-center h-16 border-b border-gray-100 dark:border-gray-800 min-w-0 ${collapsed ? 'justify-center px-2' : 'px-4 gap-3'}`}>
-          <BrandMark size={32} className="flex-shrink-0 max-w-full" />
-          {!collapsed && (
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-gray-900 dark:text-white truncate">TCG Pulse</p>
-              <p className="text-[9px] text-gray-400 dark:text-gray-500 font-medium leading-tight">
-                EU-marktdata voor ruilkaarten
-              </p>
-            </div>
-          )}
+          <Link href="/home" onClick={() => setMobileOpen(false)} className={`flex items-center min-w-0 rounded-lg ${collapsed ? '' : 'gap-3'}`} aria-label="TCG Pulse, naar home">
+            <BrandMark size={32} className="flex-shrink-0 max-w-full" />
+            {!collapsed && (
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-gray-900 dark:text-white truncate">TCG Pulse</p>
+                <p className="text-[9px] text-gray-400 dark:text-gray-500 font-medium leading-tight">
+                  EU-marktdata voor ruilkaarten
+                </p>
+              </div>
+            )}
+          </Link>
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Menu sluiten"
+            className="lg:hidden ml-auto p-2 -mr-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         {/* Main nav */}

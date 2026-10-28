@@ -1,3 +1,4 @@
+import PublicHeader from '@/components/PublicHeader';
 import Link from 'next/link';
 import SiteFooter from '@/components/SiteFooter';
 
@@ -9,16 +10,7 @@ export const metadata = {
 export default function TermsPage() {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <header className="border-b border-gray-100 bg-white">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-sm font-medium text-gray-900 hover:text-gray-600">
-            &larr; Home
-          </Link>
-          <Link href="/login" className="text-xs text-gray-500 hover:text-gray-700">
-            Sign in
-          </Link>
-        </div>
-      </header>
+      <PublicHeader />
 
       <main className="flex-1 max-w-2xl mx-auto px-4 py-10 w-full">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Terms of Service</h1>

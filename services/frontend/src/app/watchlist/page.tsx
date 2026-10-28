@@ -41,7 +41,7 @@ export default function WatchlistPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
-    if (!token) { router.push('/login'); return; }
+    if (!token) { router.push('/login?next=%2Fwatchlist'); return; }
 
     notificationApi.getWatchlist()
       .then(data => setItems(data))
