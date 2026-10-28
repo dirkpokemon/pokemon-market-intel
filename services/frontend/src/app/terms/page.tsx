@@ -3,106 +3,103 @@ import Link from 'next/link';
 import SiteFooter from '@/components/SiteFooter';
 
 export const metadata = {
-  title: 'Terms of Service',
-  description: 'Terms of service for TCG Pulse',
+  title: 'Algemene voorwaarden',
+  description: 'Algemene voorwaarden van TCG Pulse',
 };
+
+const h2 = 'text-sm font-semibold text-gray-900 dark:text-white mt-6 mb-2';
+const link = 'text-gray-900 dark:text-white underline hover:no-underline';
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950">
       <PublicHeader />
 
       <main className="flex-1 max-w-2xl mx-auto px-4 py-10 w-full">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Terms of Service</h1>
-        <p className="text-xs text-gray-400 mb-8">Last updated: April 2026</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Algemene voorwaarden</h1>
+        <p className="text-xs text-gray-400 dark:text-gray-500 mb-8">Laatst bijgewerkt: oktober 2026</p>
 
-        <div className="prose prose-sm prose-gray max-w-none space-y-6 text-gray-600">
+        <div className="prose prose-sm prose-gray max-w-none space-y-6 text-gray-600 dark:text-gray-300">
           <p>
-            By using TCG Pulse (&quot;the Service&quot;), operated by [LEGAL NAME / COMPANY] (&quot;we&quot;), you agree
-            to these terms. If you do not agree, please do not use the Service. Our full provider details are on the{' '}
-            <Link href="/legal" className="text-gray-900 underline hover:no-underline">Legal notice</Link> page.
+            Door TCG Pulse (&quot;de dienst&quot;) te gebruiken, aangeboden door [NAAM / BEDRIJFSNAAM] (&quot;wij&quot;),
+            ga je akkoord met deze voorwaarden. Ga je niet akkoord, gebruik de dienst dan niet. Alle gegevens van de
+            aanbieder staan in het <Link href="/legal" className={link}>colofon</Link>.
           </p>
 
           <section>
-            <h2 className="text-sm font-semibold text-gray-900 mt-6 mb-2">1. The service</h2>
+            <h2 className={h2}>1. De dienst</h2>
             <p>
-              We provide market data and analytics for Pokémon TCG singles for informational purposes only, based on
-              price data from CardTrader. We do not provide financial, investment, or legal advice. Prices and
-              availability on third-party marketplaces may differ from what you see here, and data may be delayed or
-              incomplete. TCG Pulse is not affiliated with Nintendo or The Pokémon Company.
+              We bieden marktgegevens en analyses over Pokémon-ruilkaarten, alleen ter informatie, op basis van prijzen op
+              CardTrader. We geven geen financieel, beleggings- of juridisch advies. Prijzen en beschikbaarheid op andere
+              marktplaatsen kunnen afwijken van wat je hier ziet, en gegevens kunnen vertraagd of onvolledig zijn. TCG Pulse
+              is niet verbonden aan Nintendo of The Pokémon Company.
             </p>
           </section>
 
           <section>
-            <h2 className="text-sm font-semibold text-gray-900 mt-6 mb-2">2. Accounts</h2>
+            <h2 className={h2}>2. Account</h2>
             <p>
-              You are responsible for keeping your login credentials secure and for activity under your account. You must
-              provide accurate registration information and keep your email address up to date. You can delete your
-              account at any time under Settings.
+              Je bent zelf verantwoordelijk voor het geheimhouden van je inloggegevens en voor wat er met je account
+              gebeurt. Geef bij registratie juiste gegevens op en houd je e-mailadres actueel. Je kunt je account altijd
+              verwijderen via Instellingen.
             </p>
           </section>
 
           <section>
-            <h2 className="text-sm font-semibold text-gray-900 mt-6 mb-2">3. Subscriptions &amp; payments</h2>
+            <h2 className={h2}>3. Abonnementen en betaling</h2>
             <p>
-              Paid plans (e.g. Plus) are billed in advance at the price shown at checkout, through our payment provider
-              Stripe. Subscriptions renew automatically for the same period until you cancel. You can cancel at any time
-              via the billing portal (Settings → Manage billing); cancellation stops the next renewal and you keep access
-              until the end of the paid period. We may change prices or features with reasonable advance notice.
+              Betaalde abonnementen (zoals Plus) betaal je vooraf, tegen de prijs die bij het afrekenen staat, via onze
+              betaalprovider Stripe. Een abonnement wordt automatisch verlengd voor dezelfde periode, totdat je opzegt.
+              Opzeggen kan altijd via Instellingen → Abonnement beheren; het abonnement wordt dan niet meer verlengd en je
+              houdt toegang tot het einde van de betaalde periode. We kunnen prijzen of functies wijzigen; dat laten we
+              ruim van tevoren weten.
             </p>
           </section>
 
           <section>
-            <h2 className="text-sm font-semibold text-gray-900 mt-6 mb-2">4. Right of withdrawal &amp; refunds</h2>
+            <h2 className={h2}>4. Herroepingsrecht en terugbetaling</h2>
             <p>
-              If you are an EU consumer, you have a statutory right to withdraw from a purchase within 14 days. Because
-              the Service is digital content/services provided immediately, by subscribing you agree that we begin
-              performance during the withdrawal period; you acknowledge you lose the statutory right of withdrawal once
-              performance has begun, to the extent permitted by law. In addition, we offer a voluntary 30-day
-              money-back guarantee on first-time paid subscriptions: contact us within 30 days of your first payment for
-              a refund.
+              Ben je consument in de EU, dan heb je bij een aankoop wettelijk 14 dagen bedenktijd. Omdat de dienst digitaal
+              is en direct start, stem je er bij het afsluiten van een abonnement mee in dat we binnen de bedenktijd
+              beginnen; voor zover de wet dat toestaat vervalt je herroepingsrecht zodra de dienst is gestart. Daarnaast
+              geven we vrijwillig 30 dagen geld-terug-garantie op je eerste betaalde abonnement: neem binnen 30 dagen na je
+              eerste betaling contact met ons op en je krijgt je geld terug.
             </p>
           </section>
 
           <section>
-            <h2 className="text-sm font-semibold text-gray-900 mt-6 mb-2">5. Acceptable use</h2>
+            <h2 className={h2}>5. Toegestaan gebruik</h2>
             <p>
-              Do not misuse the Service: no scraping or automated access beyond what we allow, no interference with our
-              infrastructure, no reselling of the data, and no use that violates applicable law or third-party rights.
+              Gebruik de dienst niet verkeerd: geen scraping of geautomatiseerde toegang buiten wat we toestaan, geen
+              verstoring van onze systemen, geen doorverkoop van de gegevens en geen gebruik dat in strijd is met de wet of
+              met rechten van anderen.
             </p>
           </section>
 
           <section>
-            <h2 className="text-sm font-semibold text-gray-900 mt-6 mb-2">6. Limitation of liability</h2>
+            <h2 className={h2}>6. Aansprakelijkheid</h2>
             <p>
-              The Service is provided &quot;as is&quot;. To the extent permitted by law, we are not liable for indirect
-              or consequential damages, or for losses arising from reliance on market data or third-party sources.
-              Nothing in these terms limits liability that cannot be limited under applicable law, including your
-              mandatory statutory consumer rights.
+              De dienst wordt geleverd zoals hij is. Voor zover de wet dat toestaat, zijn we niet aansprakelijk voor
+              indirecte schade of gevolgschade, of voor verlies doordat je op marktgegevens of bronnen van derden bent
+              afgegaan. Niets in deze voorwaarden beperkt aansprakelijkheid die volgens de wet niet beperkt mag worden,
+              waaronder je dwingende rechten als consument.
             </p>
           </section>
 
           <section>
-            <h2 className="text-sm font-semibold text-gray-900 mt-6 mb-2">7. Governing law</h2>
+            <h2 className={h2}>7. Toepasselijk recht</h2>
             <p>
-              These terms are governed by the laws of the Netherlands, without prejudice to the mandatory consumer
-              protection rules of your country of residence. Disputes are subject to the competent courts of the
-              Netherlands, unless mandatory law provides otherwise.
+              Op deze voorwaarden is Nederlands recht van toepassing, onverminderd de dwingende consumentenbescherming van
+              het land waar je woont. Geschillen worden voorgelegd aan de bevoegde rechter in Nederland, tenzij dwingend
+              recht iets anders bepaalt.
             </p>
           </section>
 
           <section>
-            <h2 className="text-sm font-semibold text-gray-900 mt-6 mb-2">8. Contact</h2>
+            <h2 className={h2}>8. Contact</h2>
             <p>
-              Questions about these terms? Use the{' '}
-              <Link href="/privacy" className="text-gray-900 underline hover:no-underline">
-                Privacy
-              </Link>{' '}
-              or{' '}
-              <Link href="/legal" className="text-gray-900 underline hover:no-underline">
-                Legal notice
-              </Link>{' '}
-              page, or the Contact link in the site footer to reach us by email.
+              Vragen over deze voorwaarden? Kijk in de <Link href="/privacy" className={link}>privacyverklaring</Link> of
+              het <Link href="/legal" className={link}>colofon</Link>, of mail ons via de contactlink onderaan de pagina.
             </p>
           </section>
         </div>

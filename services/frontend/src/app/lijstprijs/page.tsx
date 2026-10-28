@@ -10,6 +10,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import ToolShell from '@/components/ToolShell';
+import { CARD_LANGUAGES, CardLanguage } from '@/lib/languages';
 import { listPriceApi, ListPriceProduct, ListPriceResponse } from '@/lib/api';
 
 const eur = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
@@ -47,7 +48,7 @@ export default function ListPricePage() {
   const [text, setText] = useState('');
   const [country, setCountry] = useState('NL');
   const [condition, setCondition] = useState<'nm' | 'lp'>('nm');
-  const [language, setLanguage] = useState<'EN' | 'JP'>('EN');
+  const [language, setLanguage] = useState<CardLanguage>('EN');
   const [loggedIn, setLoggedIn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -161,11 +162,12 @@ export default function ListPricePage() {
               <select
                 id="lp-language"
                 value={language}
-                onChange={(e) => setLanguage(e.target.value as 'EN' | 'JP')}
+                onChange={(e) => setLanguage(e.target.value as CardLanguage)}
                 className="w-full px-3 py-3 text-base rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               >
-                <option value="EN">Engels</option>
-                <option value="JP">Japans</option>
+                {CARD_LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code}>{l.label}</option>
+                ))}
               </select>
             </div>
             <button
