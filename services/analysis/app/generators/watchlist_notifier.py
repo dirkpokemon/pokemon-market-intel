@@ -4,23 +4,25 @@ Watchlist alert checker — runs after each analysis pipeline cycle.
 Compares the current cheapest comparable listing (market_statistics.current_price)
 against user target prices and sends an email alert when a target is hit.
 """
+import asyncio
 import hashlib
 import hmac
 import html as html_module
 import logging
+import smtplib
 from datetime import datetime, timedelta, timezone
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import formataddr
 from typing import Optional
 from urllib.parse import urlencode
 
-import httpx
 from sqlalchemy import text
 
 from app.config import settings
 from app.database import AsyncSessionLocal
 
 logger = logging.getLogger(__name__)
-
-BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 # Name/set comparison key in SQL: lowercase, punctuation stripped, whitespace
 # collapsed. Older watchlist items were saved from title-cased, punctuation-
@@ -51,35 +53,38 @@ def _unsubscribe_url(user_id: int) -> Optional[str]:
     return f"{settings.FRONTEND_URL.rstrip('/')}/unsubscribe?{query}"
 
 
-async def _send_email_alert(to_email: str, subject: str, html: str, text_body: str, unsub_url: Optional[str]) -> bool:
-    """Send an email via the Brevo API."""
-    if not settings.BREVO_API_KEY:
-        logger.warning("BREVO_API_KEY not set — watchlist alert emails are disabled")
-        return False
-    payload = {
-        "sender": {"name": "TCG Pulse Alerts", "email": settings.sender_email},
-        "to": [{"email": to_email}],
-        "subject": subject,
-        "htmlContent": html,
-        "textContent": text_body,
-    }
+def _send_smtp(to_email: str, subject: str, html: str, text_body: str, unsub_url: Optional[str]) -> bool:
+    """Send over SMTP (Gmail by default), SSL on 465 or STARTTLS otherwise."""
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = formataddr(("TCG Pulse Alerts", settings.sender_email))
+    msg["To"] = to_email
     if unsub_url:
-        payload["headers"] = {"List-Unsubscribe": f"<{unsub_url}>"}
+        msg["List-Unsubscribe"] = f"<{unsub_url}>"
+    msg.attach(MIMEText(text_body, "plain", "utf-8"))
+    msg.attach(MIMEText(html, "html", "utf-8"))
     try:
-        async with httpx.AsyncClient() as client:
-            r = await client.post(
-                BREVO_API_URL,
-                json=payload,
-                headers={"api-key": settings.BREVO_API_KEY, "Content-Type": "application/json"},
-                timeout=15.0,
-            )
-            if r.status_code in (200, 201, 202):
-                return True
-            logger.error(f"Brevo error {r.status_code}: {r.text}")
-            return False
+        if settings.SMTP_PORT == 465:
+            with smtplib.SMTP_SSL(settings.SMTP_HOST, 465, timeout=15) as server:
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                server.send_message(msg)
+        else:
+            with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=15) as server:
+                server.starttls()
+                server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+                server.send_message(msg)
+        return True
     except Exception as e:
-        logger.error(f"Brevo send failed: {e}")
+        logger.error(f"SMTP send failed for {to_email}: {e}")
         return False
+
+
+async def _send_email_alert(to_email: str, subject: str, html: str, text_body: str, unsub_url: Optional[str]) -> bool:
+    """Send an alert email; smtplib blocks, so it runs in a thread."""
+    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        logger.warning("SMTP_USER/SMTP_PASSWORD not set — watchlist alert emails are disabled")
+        return False
+    return await asyncio.to_thread(_send_smtp, to_email, subject, html, text_body, unsub_url)
 
 
 # ---------------------------------------------------------------------------

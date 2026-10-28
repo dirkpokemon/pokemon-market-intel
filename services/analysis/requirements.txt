@@ -10,5 +10,3 @@ pydantic-settings==2.1.0
 # Scheduling (long-running mode; Railway uses --once)
 apscheduler==3.10.4
 
-# HTTP (Brevo alert emails)
-httpx==0.26.0
