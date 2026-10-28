@@ -190,6 +190,20 @@ export const authApi = {
     });
   },
 
+  forgotPassword: async (email: string): Promise<{ message: string }> => {
+    return apiRequest<{ message: string }>('/api/v1/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  resetPassword: async (token: string, password: string): Promise<{ message: string }> => {
+    return apiRequest<{ message: string }>('/api/v1/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    });
+  },
+
   login: async (email: string, password: string): Promise<TokenResponse> => {
     return apiRequest<TokenResponse>('/api/v1/auth/login', {
       method: 'POST',

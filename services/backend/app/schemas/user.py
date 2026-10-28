@@ -19,6 +19,15 @@ class UserCreate(UserBase):
     email_digest_enabled: bool = False
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=10, max_length=200)
+    password: str = Field(..., min_length=8)
+
+
 class UserLogin(BaseModel):
     """Schema for user login"""
     email: EmailStr

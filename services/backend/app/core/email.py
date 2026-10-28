@@ -247,6 +247,57 @@ def send_verification_email(to_email: str, first_name: str, token: str) -> bool:
     return False
 
 
+def send_password_reset_email(to_email: str, first_name: str, reset_url: str, minutes: int) -> bool:
+    """Mail a link to choose a new password."""
+    name = html_module.escape(first_name)
+    subject = "Nieuw wachtwoord instellen voor TCG Pulse"
+    html = f"""<!DOCTYPE html>
+<html lang="nl">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;background-color:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f3f4f6;padding:40px 0;">
+    <tr><td align="center">
+      <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+        <tr><td style="background:linear-gradient(135deg,#111827 0%,#1f2937 100%);padding:28px 40px;text-align:center;">
+          <h1 style="color:#ffffff;font-size:22px;font-weight:700;margin:0;">TCG Pulse</h1>
+        </td></tr>
+        <tr><td style="padding:36px 40px 20px;">
+          <h2 style="color:#111827;font-size:20px;font-weight:700;margin:0 0 8px;">Hoi {name},</h2>
+          <p style="color:#6b7280;font-size:15px;line-height:1.6;margin:0 0 28px;">
+            Je hebt gevraagd om een nieuw wachtwoord. Klik op de knop om er een te kiezen.
+          </p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr><td align="center" style="padding:0 0 28px;">
+              <a href="{reset_url}" target="_blank" style="display:inline-block;background:#111827;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;padding:14px 40px;border-radius:10px;">
+                Nieuw wachtwoord kiezen
+              </a>
+            </td></tr>
+          </table>
+          <p style="color:#9ca3af;font-size:13px;line-height:1.5;margin:0 0 24px;">
+            Of kopieer deze link in je browser:<br/>
+            <a href="{reset_url}" style="color:#4f46e5;word-break:break-all;font-size:12px;">{reset_url}</a>
+          </p>
+        </td></tr>
+        <tr><td style="padding:24px 40px;border-top:1px solid #e5e7eb;text-align:center;">
+          <p style="color:#9ca3af;font-size:12px;line-height:1.5;margin:0;">
+            De link is {minutes} minuten geldig en werkt één keer. Heb je dit niet aangevraagd? Dan kun je deze mail negeren: je wachtwoord blijft hetzelfde.
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+    text = (
+        f"Hoi {first_name},\n\n"
+        f"Je hebt gevraagd om een nieuw wachtwoord voor TCG Pulse. Kies er een via deze link:\n\n"
+        f"{reset_url}\n\n"
+        f"De link is {minutes} minuten geldig en werkt één keer.\n"
+        f"Heb je dit niet aangevraagd? Dan kun je deze mail negeren: je wachtwoord blijft hetzelfde."
+    )
+    return send_mail(to_email, subject, html, text)
+
+
 def send_feedback_inbox_email(
     submitter_email: Optional[str],
     feedback_type: str,

@@ -130,9 +130,14 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Wachtwoord
-            </label>
+            <div className="flex items-baseline justify-between mb-1.5">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Wachtwoord
+              </label>
+              <Link href="/wachtwoord-vergeten" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+                Wachtwoord vergeten?
+              </Link>
+            </div>
             <input
               id="password"
               type="password"
