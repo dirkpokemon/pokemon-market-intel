@@ -1,7 +1,8 @@
 """
 Email service for sending verification and notification emails.
-Sends over SMTP (Gmail by default: SMTP_USER + an app password). Railway
-allows outbound SMTP on the Pro plan only. These helpers block (smtplib):
+Sends through the Gmail API over HTTPS when GMAIL_REFRESH_TOKEN is set (works
+on Railway's Hobby plan), else over SMTP (Gmail: SMTP_USER + an app password;
+Railway allows outbound SMTP on the Pro plan only). These helpers block:
 call them through run_in_threadpool from async code.
 """
 
@@ -16,6 +17,7 @@ from email.utils import formataddr
 from datetime import datetime, timedelta, timezone
 
 from app.config import settings
+from app.core import gmail_api
 
 logger = logging.getLogger(__name__)
 
@@ -134,9 +136,10 @@ def send_mail(
     headers: Optional[Dict[str, str]] = None,
     from_name: str = "TCG Pulse",
 ) -> bool:
-    """Send one email over SMTP. Returns False (and logs why) when it can't."""
-    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-        logger.warning("SMTP_USER/SMTP_PASSWORD not set: email to %s not sent", to_email)
+    """Send one email (Gmail API, else SMTP). Returns False (and logs why) when it can't."""
+    use_api = bool(settings.GMAIL_REFRESH_TOKEN and settings.GMAIL_CLIENT_ID and settings.GMAIL_CLIENT_SECRET)
+    if not use_api and not (settings.SMTP_USER and settings.SMTP_PASSWORD):
+        logger.warning("No mail transport configured (GMAIL_* or SMTP_*): email to %s not sent", to_email)
         return False
 
     msg = MIMEMultipart("alternative")
@@ -149,6 +152,12 @@ def send_mail(
         msg[name] = value
     msg.attach(MIMEText(text or subject, "plain", "utf-8"))
     msg.attach(MIMEText(html, "html", "utf-8"))
+
+    if use_api:
+        if gmail_api.send(msg, settings.GMAIL_CLIENT_ID, settings.GMAIL_CLIENT_SECRET, settings.GMAIL_REFRESH_TOKEN):
+            logger.info("Email sent via Gmail API to %s", to_email)
+            return True
+        return False
 
     # SMTP_PORT first, then the other standard port (465 = SSL, else STARTTLS)
     ports = [settings.SMTP_PORT] + [p for p in (465, 587) if p != settings.SMTP_PORT]

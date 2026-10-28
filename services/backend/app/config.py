@@ -62,7 +62,14 @@ class Settings(BaseSettings):
     STRIPE_PRICE_ID_PRO: str = ""
     STRIPE_PRICE_ID_ENTERPRISE: str = ""
 
-    # Email over SMTP; Gmail by default (SMTP_USER = the Gmail address,
+    # Email through the Gmail API over HTTPS (preferred; works on Railway Hobby).
+    # OAuth client of a Google Cloud project + refresh token for gmail.send,
+    # see docs/email-gmail-api.md. When unset, mail goes over SMTP below.
+    GMAIL_CLIENT_ID: str = ""
+    GMAIL_CLIENT_SECRET: str = ""
+    GMAIL_REFRESH_TOKEN: str = ""
+
+    # Email over SMTP (needs Railway Pro); Gmail by default (SMTP_USER = the Gmail address,
     # SMTP_PASSWORD = a Google app password). Without them no mail is sent.
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 465
