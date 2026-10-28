@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import PublicHeader from '@/components/PublicHeader';
 import Link from 'next/link';
 import SiteFooter from '@/components/SiteFooter';
 import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
-import BrandMark from '@/components/BrandMark';
-import { ThemeIconButton } from '@/components/ThemeToggle';
 import { CTA_SUBSCRIBE_PLUS, PLAN_FEATURES, PLUS_PRICE } from '@/lib/plans';
 import { publicApi, DealScore } from '@/lib/api';
 import { eur } from '@/lib/format';
@@ -75,37 +74,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
-      <header className="border-b border-gray-100 dark:border-gray-800 sticky top-0 z-50 bg-white/90 dark:bg-gray-950/90 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <BrandMark size={40} />
-            <div>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white leading-tight">TCG Pulse</h1>
-              <p className="text-[10px] text-gray-400 dark:text-gray-500 font-medium leading-tight max-w-[200px] sm:max-w-none hidden sm:block">
-                Eerlijke Pokémon-prijzen in Europa
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2 sm:gap-3 items-center">
-            <ThemeIconButton />
-            <Link href="/prijscheck" className="hidden sm:inline-flex text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 sm:px-4 py-2 text-sm font-medium rounded-lg">
-              Prijscheck
-            </Link>
-            <Link href="/lijstprijs" className="hidden md:inline-flex text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 sm:px-4 py-2 text-sm font-medium rounded-lg">
-              Lijstprijs
-            </Link>
-            <Link href="/login" className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-3 sm:px-4 py-2 text-sm font-medium rounded-lg">
-              Inloggen
-            </Link>
-            <Link
-              href="/register"
-              className="bg-gray-900 dark:bg-indigo-600 text-white px-4 sm:px-5 py-2 rounded-lg hover:bg-gray-800 dark:hover:bg-indigo-500 transition text-sm font-medium"
-            >
-              Gratis beginnen
-            </Link>
-          </div>
-        </div>
-      </header>
+      <PublicHeader />
 
       {/* ═══ Hero ═══ */}
       <section className="max-w-7xl mx-auto px-4 pt-20 pb-16 sm:px-6 lg:px-8 text-center">

@@ -9,9 +9,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import BrandMark from '@/components/BrandMark';
-import SiteFooter from '@/components/SiteFooter';
-import { ThemeIconButton } from '@/components/ThemeToggle';
+import ToolShell from '@/components/ToolShell';
 import { listPriceApi, ListPriceProduct, ListPriceResponse } from '@/lib/api';
 
 const eur = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
@@ -82,31 +80,7 @@ export default function ListPricePage() {
   const short = result?.lines.filter((l) => l.matched && l.missing > 0) ?? [];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
-      <header className="border-b border-gray-200 dark:border-gray-800 bg-white/90 dark:bg-gray-950/90">
-        <div className="max-w-5xl mx-auto px-4 py-4 sm:px-6 flex justify-between items-center gap-3">
-          <Link href="/" className="flex items-center gap-3 rounded-lg">
-            <BrandMark size={36} />
-            <span className="text-lg font-bold">TCG Pulse</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <ThemeIconButton />
-            <Link
-              href="/prijscheck"
-              className="hidden sm:inline-flex px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-            >
-              Prijscheck
-            </Link>
-            <Link
-              href={loggedIn ? '/home' : '/login'}
-              className="px-3 py-2 text-sm font-medium rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-            >
-              {loggedIn ? 'Naar dashboard' : 'Inloggen'}
-            </Link>
-          </div>
-        </div>
-      </header>
-
+    <ToolShell>
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
         <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-3">
           Gratis tot 10 kaarten · zonder account
@@ -345,8 +319,6 @@ export default function ListPricePage() {
           )}
         </div>
       </main>
-
-      <SiteFooter />
-    </div>
+    </ToolShell>
   );
 }
