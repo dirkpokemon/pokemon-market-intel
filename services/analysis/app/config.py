@@ -23,8 +23,11 @@ class Settings(BaseSettings):
     # Scheduling (long-running mode only; Railway runs `--once` on a cron)
     ANALYSIS_SCHEDULE: str = "0 * * * *"  # Every hour
 
-    # Watchlist alert emails (Brevo). Same values as on the backend service.
-    BREVO_API_KEY: str = ""
+    # Watchlist alert emails over SMTP (Gmail by default). Same values as on the backend.
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 465
+    SMTP_USER: str = ""
+    SMTP_PASSWORD: str = ""
     SMTP_FROM: str = ""
     FRONTEND_URL: str = "https://charming-contentment-production-ce0e.up.railway.app"
     # Must equal the backend SECRET_KEY: signs the one-click unsubscribe links
@@ -32,7 +35,7 @@ class Settings(BaseSettings):
 
     @property
     def sender_email(self) -> str:
-        return (self.SMTP_FROM or "pokemonmarketintel@gmail.com").strip()
+        return (self.SMTP_FROM or self.SMTP_USER or "pokemonmarketintel@gmail.com").strip()
 
 
 settings = Settings()

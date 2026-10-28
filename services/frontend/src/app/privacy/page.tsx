@@ -70,7 +70,7 @@ export default function PrivacyPage() {
             <h2 className="text-sm font-semibold text-gray-900 mt-6 mb-2">Processors &amp; international transfers</h2>
             <p>
               We rely on service providers who process data on our behalf: <strong className="text-gray-800">Railway</strong> (hosting/database),
-              <strong className="text-gray-800"> Brevo</strong> (email delivery), and <strong className="text-gray-800">Stripe</strong> (payments).
+              <strong className="text-gray-800"> Google</strong> (email delivery via Gmail), and <strong className="text-gray-800">Stripe</strong> (payments).
               Some of these providers process data outside the EU/EEA, including in the United States. Where that happens,
               transfers are covered by appropriate safeguards such as the EU Standard Contractual Clauses. Payment card
               details are handled directly by Stripe; we never see or store full card numbers.

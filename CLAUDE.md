@@ -64,7 +64,7 @@ Data flows one way through the shared database:
    - Each run logs the database size and warns above `DB_SIZE_WARN_GB`.
    - `DealScoreCalculator` → `deal_scores`. A deal is the cheapest listing on the latest day vs. the product's usual floor (median of the daily cheapest listing). `avg_price_*` columns hold medians, not means.
    - `market_statistics` and `deal_scores` are fully replaced in one transaction per run (TRUNCATE + insert; DELETE left dead rows behind).
-   - `watchlist_notifier` emails users (via Brevo) whose target is at or below `market_statistics.current_price`.
+   - `watchlist_notifier` emails users (over SMTP, Gmail by default) whose target is at or below `market_statistics.current_price`.
 3. **Backend** serves everything under `/api/v1` (routers in `app/api/`). Request validation errors (422) get Dutch messages from `app/core/validation.py`; add a label to `FIELD_LABELS` for new user-facing fields. It also runs the daily email digest in-process (APScheduler, 08:00 UTC).
 4. **Frontend** calls the backend via `src/lib/api.ts`. The JWT is stored in `localStorage` as `access_token`. `NEXT_PUBLIC_API_URL` is inlined at build time, so the frontend must be rebuilt when it changes.
 
@@ -84,7 +84,7 @@ Cross-service gotchas:
 
   Keep `PLAN_FEATURES` in sync with these gates.
 - **Stripe**: `stripe_webhook.py` must accept both pre- and post-2025-03-31 payload shapes (`current_period_end` on items; `invoice.parent.subscription_details`). Deleting an account deletes the Stripe customer first and aborts if that fails.
-- **Email**: the digest is opt-in (`email_digest_enabled` defaults to false; an unticked checkbox on the register page or the toggle in settings turns it on) and goes only to verified users. Every digest/alert carries a signed one-click unsubscribe link (`/unsubscribe` page → `POST /api/v1/notifications/unsubscribe`). The token is an HMAC with `SECRET_KEY`, built in both `backend/app/core/unsubscribe.py` and `analysis/app/generators/watchlist_notifier.py`, so both services need the same `SECRET_KEY`. The sync email helpers in `backend/app/core/email.py` block, so call them via `run_in_threadpool`.
+- **Email**: the digest is opt-in (`email_digest_enabled` defaults to false; an unticked checkbox on the register page or the toggle in settings turns it on) and goes only to verified users. Every digest/alert carries a signed one-click unsubscribe link (`/unsubscribe` page → `POST /api/v1/notifications/unsubscribe`). The token is an HMAC with `SECRET_KEY`, built in both `backend/app/core/unsubscribe.py` and `analysis/app/generators/watchlist_notifier.py`, so both services need the same `SECRET_KEY`. Mail goes out over SMTP (`backend/app/core/email.py` `send_mail`; Gmail with `SMTP_USER` + a Google app password by default, ~500 mails/day). Railway allows outbound SMTP on the Pro plan only, and sending as @gmail.com through any other provider fails DMARC, so a third-party email API needs our own domain first. The sync helpers block, so call them via `run_in_threadpool`.
 - Telegram support was removed for now. The `users.telegram_*` columns still exist in production but are unused.
 
 ## Legal constraints (don't regress)

@@ -257,8 +257,7 @@ export default function Sidebar({ user, collapsed, onCollapsedChange }: SidebarP
                   <div className="text-sm text-gray-600 dark:text-gray-300 mb-6 text-left space-y-2">
                     <p>Je bericht is opgeslagen, maar er is <strong>geen e-mail verstuurd</strong> naar de feedback-inbox.</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Op Railway: open direct na het versturen de logs van de <strong>backend</strong> en zoek naar &quot;Brevo HTTP&quot;-fouten of &quot;Feedback email NOT delivered&quot;.
-                      Meestal is er een <code className="text-[11px] bg-gray-100 dark:bg-gray-800 px-1 rounded">BREVO_API_KEY</code> nodig plus een <strong>geverifieerde afzender</strong> in Brevo (dezelfde als voor de verificatiemail), of werkende SMTP-variabelen.
+                      We lezen het alsnog, maar het kan iets langer duren voor we reageren.
                     </p>
                   </div>
                 )}

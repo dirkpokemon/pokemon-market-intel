@@ -6,7 +6,7 @@ from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-# Verified Brevo sender used when SMTP_FROM is not configured
+# Sender used when neither SMTP_FROM nor SMTP_USER is configured
 DEFAULT_SENDER_EMAIL = "pokemonmarketintel@gmail.com"
 
 
@@ -62,16 +62,16 @@ class Settings(BaseSettings):
     STRIPE_PRICE_ID_PRO: str = ""
     STRIPE_PRICE_ID_ENTERPRISE: str = ""
 
-    # Email (optional)
-    BREVO_API_KEY: str = ""
-    SMTP_HOST: str = ""
-    SMTP_PORT: int = 587
+    # Email over SMTP; Gmail by default (SMTP_USER = the Gmail address,
+    # SMTP_PASSWORD = a Google app password). Without them no mail is sent.
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 465
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
-    # Sender address for all mail. Must be a verified sender in Brevo.
+    # Sender address; Gmail only accepts SMTP_USER or one of its verified aliases
     SMTP_FROM: str = ""
 
-    # Product feedback: Brevo/SMTP sends submissions here (see POST /api/v1/feedback)
+    # Product feedback: submissions are mailed here (see POST /api/v1/feedback)
     FEEDBACK_INBOX_EMAIL: str = ""
 
     # Rate Limiting

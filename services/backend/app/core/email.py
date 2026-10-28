@@ -1,20 +1,19 @@
 """
 Email service for sending verification and notification emails.
-Uses the Brevo HTTPS API with SMTP fallback. These helpers block (urllib /
-smtplib): call them through run_in_threadpool from async code.
+Sends over SMTP (Gmail by default: SMTP_USER + an app password). Railway
+allows outbound SMTP on the Pro plan only. These helpers block (smtplib):
+call them through run_in_threadpool from async code.
 """
 
 import html as html_module
 import logging
 import secrets
 import smtplib
-import json
-from typing import Optional
+from typing import Dict, Optional
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr
 from datetime import datetime, timedelta, timezone
-from urllib.request import Request, urlopen
-from urllib.error import HTTPError, URLError
 
 from app.config import settings
 
@@ -125,90 +124,52 @@ def _build_verification_text(first_name: str, verify_url: str) -> str:
     )
 
 
-def _send_via_brevo(
+def send_mail(
     to_email: str,
     subject: str,
     html: str,
     text: str,
     *,
-    reply_to_email: Optional[str] = None,
+    reply_to: Optional[str] = None,
+    headers: Optional[Dict[str, str]] = None,
+    from_name: str = "TCG Pulse",
 ) -> bool:
-    """Send email via Brevo (Sendinblue) HTTPS API (free tier, no domain required)."""
-    api_key = settings.BREVO_API_KEY
-    if not api_key:
+    """Send one email over SMTP. Returns False (and logs why) when it can't."""
+    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        logger.warning("SMTP_USER/SMTP_PASSWORD not set: email to %s not sent", to_email)
         return False
 
-    sender_email = settings.sender_email
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = formataddr((from_name, settings.sender_email))
+    msg["To"] = to_email
+    if reply_to and "@" in reply_to:
+        msg["Reply-To"] = reply_to.strip()
+    for name, value in (headers or {}).items():
+        msg[name] = value
+    msg.attach(MIMEText(text or subject, "plain", "utf-8"))
+    msg.attach(MIMEText(html, "html", "utf-8"))
 
-    body: dict = {
-        "sender": {"name": "TCG Pulse", "email": sender_email},
-        "to": [{"email": to_email}],
-        "subject": subject,
-        "htmlContent": html,
-        "textContent": text,
-    }
-    if reply_to_email and "@" in reply_to_email:
-        body["replyTo"] = {
-            "email": reply_to_email.strip(),
-            "name": reply_to_email.split("@", 1)[0][:78],
-        }
-
-    payload = json.dumps(body).encode()
-
-    req = Request(
-        "https://api.brevo.com/v3/smtp/email",
-        data=payload,
-        headers={
-            "api-key": api_key,
-            "Content-Type": "application/json",
-        },
-    )
-
-    try:
-        with urlopen(req, timeout=15) as resp:
-            logger.info("Email sent via Brevo to %s (status %d)", to_email, resp.status)
-            return True
-    except HTTPError as exc:
+    # SMTP_PORT first, then the other standard port (465 = SSL, else STARTTLS)
+    ports = [settings.SMTP_PORT] + [p for p in (465, 587) if p != settings.SMTP_PORT]
+    for port in ports:
         try:
-            err_body = exc.read().decode(errors="replace")
-        except Exception:
-            err_body = str(exc)
-        logger.warning(
-            "Brevo HTTP %s for %s: %s",
-            exc.code,
-            to_email,
-            err_body[:2500],
-        )
-        return False
-    except URLError as exc:
-        logger.warning("Brevo API failed for %s: %s", to_email, exc)
-        return False
-
-
-def _send_via_smtp(to_email: str, msg: MIMEMultipart) -> bool:
-    """Send email via SMTP (works locally; often blocked on cloud)."""
-    if not settings.SMTP_HOST or not settings.SMTP_USER:
-        return False
-
-    for port, use_ssl in [(465, True), (587, False)]:
-        try:
-            if use_ssl:
-                with smtplib.SMTP_SSL(settings.SMTP_HOST, port, timeout=10) as server:
+            if port == 465:
+                with smtplib.SMTP_SSL(settings.SMTP_HOST, port, timeout=15) as server:
                     server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
                     server.send_message(msg)
             else:
-                with smtplib.SMTP(settings.SMTP_HOST, port, timeout=10) as server:
-                    server.ehlo()
+                with smtplib.SMTP(settings.SMTP_HOST, port, timeout=15) as server:
                     server.starttls()
-                    server.ehlo()
                     server.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
                     server.send_message(msg)
             logger.info("Email sent via SMTP to %s (port %d)", to_email, port)
             return True
+        except smtplib.SMTPAuthenticationError as exc:
+            logger.error("SMTP login failed for %s: %s", settings.SMTP_USER, exc)
+            return False
         except Exception as exc:
             logger.warning("SMTP port %d failed for %s: %s", port, to_email, exc)
-            continue
-
     return False
 
 
@@ -268,24 +229,7 @@ def send_subscription_success_email(to_email: str, first_name: str, plan_label: 
     html = _build_subscription_success_html(first_name, plan_label, app_url)
     text = _build_subscription_success_text(first_name, plan_label, app_url)
 
-    if _send_via_brevo(to_email, subject, html, text):
-        return True
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = settings.sender_email
-    if not msg["From"]:
-        logger.warning("No SMTP_FROM/SMTP_USER for subscription success email")
-        return False
-    msg["To"] = to_email
-    msg.attach(MIMEText(text, "plain"))
-    msg.attach(MIMEText(html, "html"))
-
-    if _send_via_smtp(to_email, msg):
-        return True
-
-    logger.warning("Could not send subscription success email to %s (no Brevo/SMTP)", to_email)
-    return False
+    return send_mail(to_email, subject, html, text)
 
 
 def send_verification_email(to_email: str, first_name: str, token: str) -> bool:
@@ -296,25 +240,10 @@ def send_verification_email(to_email: str, first_name: str, token: str) -> bool:
     html = _build_verification_html(first_name, verify_url)
     text = _build_verification_text(first_name, verify_url)
 
-    # 1) Try Brevo API (HTTPS, works on cloud)
-    if _send_via_brevo(to_email, subject, html, text):
+    if send_mail(to_email, subject, html, text):
         return True
-
-    # 2) Try SMTP (works locally)
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = settings.sender_email
-    msg["To"] = to_email
-    msg.attach(MIMEText(text, "plain"))
-    msg.attach(MIMEText(html, "html"))
-
-    if _send_via_smtp(to_email, msg):
-        return True
-
-    # 3) Fallback: print link to console
-    logger.warning(
-        "No email transport available. Verification link:\n  %s", verify_url,
-    )
+    # The register endpoint then shows the link on screen instead
+    logger.warning("Verification email not sent to %s", to_email)
     return False
 
 
@@ -323,7 +252,7 @@ def send_feedback_inbox_email(
     feedback_type: str,
     message: str,
 ) -> bool:
-    """Notify product inbox about user feedback (Brevo API, then SMTP)."""
+    """Notify the product inbox about user feedback."""
     to_addr = (settings.FEEDBACK_INBOX_EMAIL or "").strip()
     if not to_addr:
         logger.info(
@@ -348,38 +277,8 @@ def send_feedback_inbox_email(
 <pre style="white-space:pre-wrap;background:#f9fafb;padding:16px;border-radius:8px;">{esc(safe_msg)}</pre>
 </body></html>"""
 
-    if _send_via_brevo(
-        to_addr,
-        subject,
-        html,
-        text,
-        reply_to_email=submitter_email,
-    ):
-        logger.info("Feedback email sent via Brevo to inbox %s", to_addr)
+    if send_mail(to_addr, subject, html, text, reply_to=submitter_email):
+        logger.info("Feedback email sent to inbox %s", to_addr)
         return True
-
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = settings.sender_email
-    if not msg["From"]:
-        logger.error(
-            "Feedback email failed: no BREVO_API_KEY and no SMTP_FROM/SMTP_USER. "
-            "Set BREVO_API_KEY on the backend (same as verification emails), or configure SMTP.",
-        )
-        return False
-    msg["To"] = to_addr
-    if submitter_email and "@" in submitter_email:
-        msg["Reply-To"] = submitter_email.strip()
-    msg.attach(MIMEText(text, "plain"))
-    msg.attach(MIMEText(html, "html"))
-
-    if _send_via_smtp(to_addr, msg):
-        logger.info("Feedback email sent via SMTP to inbox %s", to_addr)
-        return True
-
-    logger.error(
-        "Feedback email NOT delivered to %s. Check Railway logs above for Brevo HTTP errors, "
-        "or SMTP failures. Confirm BREVO_API_KEY and a verified sender in Brevo.",
-        to_addr,
-    )
+    logger.error("Feedback email NOT delivered to %s (see the SMTP log lines above)", to_addr)
     return False
