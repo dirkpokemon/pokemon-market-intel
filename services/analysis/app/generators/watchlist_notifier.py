@@ -19,6 +19,7 @@ from urllib.parse import urlencode
 
 from sqlalchemy import text
 
+from app import gmail_api
 from app.config import settings
 from app.database import AsyncSessionLocal
 
@@ -53,8 +54,12 @@ def _unsubscribe_url(user_id: int) -> Optional[str]:
     return f"{settings.FRONTEND_URL.rstrip('/')}/unsubscribe?{query}"
 
 
-def _send_smtp(to_email: str, subject: str, html: str, text_body: str, unsub_url: Optional[str]) -> bool:
-    """Send over SMTP (Gmail by default), SSL on 465 or STARTTLS otherwise."""
+def _use_gmail_api() -> bool:
+    return bool(settings.GMAIL_REFRESH_TOKEN and settings.GMAIL_CLIENT_ID and settings.GMAIL_CLIENT_SECRET)
+
+
+def _send_blocking(to_email: str, subject: str, html: str, text_body: str, unsub_url: Optional[str]) -> bool:
+    """Gmail API when configured, else SMTP (SSL on 465 or STARTTLS otherwise)."""
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = formataddr(("TCG Pulse Alerts", settings.sender_email))
@@ -63,6 +68,8 @@ def _send_smtp(to_email: str, subject: str, html: str, text_body: str, unsub_url
         msg["List-Unsubscribe"] = f"<{unsub_url}>"
     msg.attach(MIMEText(text_body, "plain", "utf-8"))
     msg.attach(MIMEText(html, "html", "utf-8"))
+    if _use_gmail_api():
+        return gmail_api.send(msg, settings.GMAIL_CLIENT_ID, settings.GMAIL_CLIENT_SECRET, settings.GMAIL_REFRESH_TOKEN)
     try:
         if settings.SMTP_PORT == 465:
             with smtplib.SMTP_SSL(settings.SMTP_HOST, 465, timeout=15) as server:
@@ -80,11 +87,11 @@ def _send_smtp(to_email: str, subject: str, html: str, text_body: str, unsub_url
 
 
 async def _send_email_alert(to_email: str, subject: str, html: str, text_body: str, unsub_url: Optional[str]) -> bool:
-    """Send an alert email; smtplib blocks, so it runs in a thread."""
-    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-        logger.warning("SMTP_USER/SMTP_PASSWORD not set — watchlist alert emails are disabled")
+    """Send an alert email; sending blocks, so it runs in a thread."""
+    if not _use_gmail_api() and not (settings.SMTP_USER and settings.SMTP_PASSWORD):
+        logger.warning("No mail transport configured (GMAIL_* or SMTP_*) — watchlist alert emails are disabled")
         return False
-    return await asyncio.to_thread(_send_smtp, to_email, subject, html, text_body, unsub_url)
+    return await asyncio.to_thread(_send_blocking, to_email, subject, html, text_body, unsub_url)
 
 
 # ---------------------------------------------------------------------------

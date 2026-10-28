@@ -23,7 +23,11 @@ class Settings(BaseSettings):
     # Scheduling (long-running mode only; Railway runs `--once` on a cron)
     ANALYSIS_SCHEDULE: str = "0 * * * *"  # Every hour
 
-    # Watchlist alert emails over SMTP (Gmail by default). Same values as on the backend.
+    # Watchlist alert emails: Gmail API when GMAIL_REFRESH_TOKEN is set, else SMTP
+    # (Gmail by default). Same values as on the backend.
+    GMAIL_CLIENT_ID: str = ""
+    GMAIL_CLIENT_SECRET: str = ""
+    GMAIL_REFRESH_TOKEN: str = ""
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 465
     SMTP_USER: str = ""
