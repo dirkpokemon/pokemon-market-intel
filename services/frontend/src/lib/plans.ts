@@ -55,6 +55,9 @@ export function isSubscriberRole(role: string | undefined | null): boolean {
   return r === 'paid' || r === 'pro' || r === 'admin';
 }
 
+/** Plus price as shown on the site; keep in sync with the Stripe price (STRIPE_PRICE_ID_PAID). */
+export const PLUS_PRICE = '€6';
+
 export const PLAN_FEATURES = {
   free: [
     'Top 20 dealscores (score ≥ 55)',

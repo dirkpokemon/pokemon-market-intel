@@ -7,7 +7,7 @@ import SiteFooter from '@/components/SiteFooter';
 import BusinessWaitlistActions from '@/components/BusinessWaitlistActions';
 import BrandMark from '@/components/BrandMark';
 import { ThemeIconButton } from '@/components/ThemeToggle';
-import { CTA_SUBSCRIBE_PLUS, PLAN_FEATURES } from '@/lib/plans';
+import { CTA_SUBSCRIBE_PLUS, PLAN_FEATURES, PLUS_PRICE } from '@/lib/plans';
 import { publicApi, DealScore } from '@/lib/api';
 import { eur } from '@/lib/format';
 
@@ -443,7 +443,7 @@ export default function LandingPage() {
               </div>
               <h4 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Plus</h4>
               <div className="mb-5">
-                <span className="text-3xl font-bold text-gray-900 dark:text-white">&euro;19</span>
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">{PLUS_PRICE}</span>
                 <span className="text-gray-400 dark:text-gray-500 text-sm">/maand</span>
               </div>
               <ul className="space-y-2.5 mb-6">
