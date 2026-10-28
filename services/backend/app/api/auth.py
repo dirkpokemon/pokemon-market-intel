@@ -8,22 +8,34 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.database import get_db
 from app.models.user import User
 from app.schemas.user import (
     UserCreate, UserLogin, UserResponse, TokenResponse,
+    ForgotPasswordRequest, ResetPasswordRequest,
     NotificationPrefsUpdate, NotificationPrefsResponse,
 )
 from app.core.security import verify_password, get_password_hash, create_access_token
 from app.core.dependencies import get_current_user
-from app.core.email import generate_verification_token, send_verification_email
+from app.core.email import generate_verification_token, send_verification_email, send_password_reset_email
+from app.core import password_reset
+from app.core.rate_limit import RateLimiter
 from app.config import settings
 
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+
+# Each request can send a mail, so keep it tight per IP
+forgot_limit = RateLimiter(limit=5, window_seconds=600)
+reset_limit = RateLimiter(limit=10, window_seconds=600)
+
+FORGOT_MESSAGE = (
+    "Als er een account met dit e-mailadres bestaat, hebben we een link gestuurd "
+    "om een nieuw wachtwoord te kiezen. Kijk ook in je spammap."
+)
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -215,6 +227,54 @@ async def change_password(
 
     logger.info("Password changed for user: %s", current_user.email)
     return {"message": "Wachtwoord succesvol gewijzigd"}
+
+
+@router.post("/forgot-password", dependencies=[Depends(forgot_limit)])
+async def forgot_password(
+    payload: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Mail a reset link. Always answers the same, so it can't reveal which emails have an account."""
+    result = await db.execute(select(User).where(func.lower(User.email) == payload.email.lower()))
+    user = result.scalar_one_or_none()
+    if user and user.is_active:
+        token = password_reset.make_token(user.id, user.hashed_password)
+        reset_url = f"{settings.FRONTEND_URL.rstrip('/')}/wachtwoord-herstellen?token={token}"
+        first_name = (user.full_name or user.email).split()[0]
+        sent = await run_in_threadpool(
+            send_password_reset_email, user.email, first_name, reset_url, password_reset.RESET_TOKEN_MINUTES
+        )
+        logger.info("Password reset requested for user id=%s (mail sent: %s)", user.id, sent)
+    return {"message": FORGOT_MESSAGE}
+
+
+@router.post("/reset-password", dependencies=[Depends(reset_limit)])
+async def reset_password(
+    payload: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Set a new password with the token from the reset mail."""
+    invalid = HTTPException(
+        status_code=400,
+        detail="Deze link is ongeldig of verlopen. Vraag een nieuwe aan.",
+    )
+    user_id = password_reset.token_user_id(payload.token)
+    if user_id is None:
+        raise invalid
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not user or not user.is_active or not password_reset.verify_token(payload.token, user.id, user.hashed_password):
+        raise invalid
+
+    user.hashed_password = get_password_hash(payload.password)
+    # The mail reached them, so the address is theirs
+    if not user.is_verified:
+        user.is_verified = True
+        user.verification_token = None
+        user.verification_token_expires = None
+    await db.commit()
+
+    logger.info("Password reset for user id=%s", user.id)
+    return {"message": "Je wachtwoord is gewijzigd. Je kunt nu inloggen."}
 
 
 @router.post("/logout")
