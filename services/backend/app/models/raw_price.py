@@ -30,5 +30,7 @@ class RawPrice(Base):
     seller_rating = Column(Numeric(3, 2))
     stock_quantity = Column(Integer)
     graded = Column(Boolean)  # graded (slabbed) listing, excluded from statistics
+    grading_company = Column(String(10))  # PSA, BGS, CGC... parsed from the seller's description
+    grade = Column(Numeric(3, 1))  # 10, 9.5, ...; NULL when the description doesn't say
     scraped_at = Column(DateTime(timezone=True))
     created_at = Column(DateTime(timezone=True))

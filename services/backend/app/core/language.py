@@ -6,18 +6,27 @@ English one while sharing the same CardTrader blueprint id.
 """
 
 # Keep in sync with INCLUDED_LANGUAGES in services/analysis/app/config_analysis.py
-SUPPORTED_LANGUAGES = ("EN", "JP", "IT")
+SUPPORTED_LANGUAGES = ("EN", "JP", "IT", "DE", "ES")
 LANGUAGE_PATTERN = "^(" + "|".join(SUPPORTED_LANGUAGES) + ")$"
 LANGUAGE_OR_ALL_PATTERN = "^(" + "|".join(SUPPORTED_LANGUAGES) + "|all)$"
 
 # "Engelstalig" etc., for explanations shown to users
-LANGUAGE_ADJECTIVE = {"EN": "Engelstalig", "JP": "Japanstalig", "IT": "Italiaanstalig"}
+LANGUAGE_ADJECTIVE = {
+    "EN": "Engelstalig",
+    "JP": "Japanstalig",
+    "IT": "Italiaanstalig",
+    "DE": "Duitstalig",
+    "ES": "Spaanstalig",
+}
 
 # Words in a pasted listing that ask for a language ("Charizard ex japans")
 LANGUAGE_WORDS = {
     "JP": {"jp", "jap", "japans", "japanse", "japanese", "jpn"},
     # not "it": too common in English listing text
     "IT": {"ita", "italiaans", "italiaanse", "italian", "italiano"},
+    # not "de" / "es": Dutch and Spanish articles
+    "DE": {"ger", "duits", "duitse", "german", "deutsch", "deutsche"},
+    "ES": {"esp", "spa", "spaans", "spaanse", "spanish", "espanol", "español"},
 }
 
 # raw_prices.language normalised like the analysis service (LANG_EXPR there):

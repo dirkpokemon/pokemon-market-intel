@@ -12,6 +12,7 @@ import hashlib
 import hmac
 import logging
 import asyncio
+from collections import Counter
 import re
 from datetime import datetime
 from typing import List, Dict, Any, Optional
@@ -24,6 +25,8 @@ from app.models.scrape_log import ScrapeLog
 from app.config import settings
 from app.config_cardtrader import config
 from app.database import AsyncSessionLocal
+
+from app.scrapers.grading import parse_grade
 
 logger = logging.getLogger(__name__)
 
@@ -183,6 +186,8 @@ class CardTraderScraperV2:
         self.skipped_on_vacation = 0
         self.total_blueprints_processed = 0
         self.errors_count = 0
+        self.graded_listings = 0
+        self.graded_grades: Counter = Counter()  # (company, grade) found in descriptions
         self.last_error: Optional[str] = None
         self._consecutive_failures = 0
         self._logged_blueprint_shape = False
@@ -205,6 +210,8 @@ class CardTraderScraperV2:
         self.skipped_on_vacation = 0
         self.total_blueprints_processed = 0
         self.errors_count = 0
+        self.graded_listings = 0
+        self.graded_grades: Counter = Counter()  # (company, grade) found in descriptions
         self.last_error = None
         self._consecutive_failures = 0
         start_time = datetime.utcnow()
@@ -302,6 +309,7 @@ class CardTraderScraperV2:
         logger.info(f"   Blueprints processed: {self.total_blueprints_processed}")
         logger.info(f"   Listings scraped: {self.total_listings_scraped}")
         logger.info(f"   Skipped (seller on vacation): {self.skipped_on_vacation}")
+        self._log_graded_summary()
         logger.info(f"   Errors: {self.errors_count}")
         logger.info(f"   Duration: {duration:.1f}s")
         logger.info("=" * 60)
@@ -404,6 +412,19 @@ class CardTraderScraperV2:
             return data[str(blueprint_id)]
         return []
 
+    def _log_graded_summary(self) -> None:
+        """How often the seller's description names company + grade (decides roadmap #4)."""
+        found = sum(self.graded_grades.values())
+        pct = 100 * found / self.graded_listings if self.graded_listings else 0
+        companies = Counter()
+        for (company, _), n in self.graded_grades.items():
+            companies[company] += n
+        logger.info(
+            "   Graded listings: %d, company+grade found in %d (%.0f%%); companies %s; top grades %s",
+            self.graded_listings, found, pct, dict(companies.most_common()),
+            [f"{c} {g:g}: {n}" for (c, g), n in self.graded_grades.most_common(8)],
+        )
+
     async def _save_listings(
         self,
         listings: List[Dict[str, Any]],
@@ -449,6 +470,13 @@ class CardTraderScraperV2:
                         if listing_rarity:
                             rarity = str(listing_rarity)[:100]
                     seller_key, seller_country, ships_via_zero = _seller_fields(listing, is_sealed)
+                    is_graded = bool(listing.get('graded'))
+                    grading_company, grade = (None, None)
+                    if is_graded:
+                        grading_company, grade = parse_grade(listing.get('description'))
+                        self.graded_listings += 1
+                        if grading_company:
+                            self.graded_grades[(grading_company, grade)] += 1
 
                     # Create raw_price entry
                     raw_price = RawPrice(
@@ -469,7 +497,9 @@ class CardTraderScraperV2:
                         seller_key=seller_key,
                         seller_country=seller_country,
                         ships_via_zero=ships_via_zero,
-                        graded=bool(listing.get('graded')),
+                        graded=is_graded,
+                        grading_company=grading_company,
+                        grade=grade,
                         scraped_at=datetime.utcnow()
                     )
                     
