@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import ToolShell from '@/components/ToolShell';
+import { parseEuro } from '@/lib/format';
 import { languageInfo } from '@/lib/languages';
 import SignalBadge, { signalExplanation } from '@/components/MarketSignal';
 import {
@@ -22,12 +23,6 @@ import {
 
 const eur = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
 const fmt = (n: number | null | undefined) => (n == null ? '—' : eur.format(n));
-
-function parsePrice(raw: string): number | null {
-  const cleaned = raw.replace(/[€\s]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
-  const n = Number(cleaned);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
 
 const VERDICTS: Record<PriceVerdictCode, { title: string; tone: string; text: (r: PriceCheckResponse) => string }> = {
   suspicious_low: {
@@ -123,7 +118,7 @@ export default function PriceCheckPage() {
     return () => clearTimeout(handle);
   }, [query]);
 
-  const price = parsePrice(priceText);
+  const price = parseEuro(priceText);
 
   const runCheck = async (e?: React.FormEvent) => {
     e?.preventDefault();

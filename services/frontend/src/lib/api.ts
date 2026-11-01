@@ -407,6 +407,46 @@ export interface PriceCheckResponse {
   basis: string;
 }
 
+export interface GradedOffer {
+  company: string | null;
+  grade: number | null;
+  min_price: number;
+  listings: number;
+}
+
+export interface GradingService {
+  id: string;
+  label: string;
+  fee: number;
+  shipping: number;
+  turnaround: string;
+  note: string;
+}
+
+export interface GradingData {
+  product_name: string;
+  product_set?: string | null;
+  card_number: string;
+  collector_number?: string | null;
+  rarity?: string | null;
+  language: string;
+  raw: { floor_price: number; typical_price: number; days_observed: number; observations: number };
+  graded: GradedOffer[];
+  services: GradingService[];
+  presets_checked: string;
+  selling_fee_pct: number;
+}
+
+export const gradingApi = {
+  /** Raw reference price, graded copies on offer and cost presets for one card. */
+  get: async (match: PriceCheckMatch): Promise<GradingData> => {
+    const params = new URLSearchParams({ name: match.product_name, card_number: match.card_number ?? '' });
+    if (match.product_set) params.set('set', match.product_set);
+    if (match.language && match.language !== 'EN') params.set('language', match.language);
+    return apiRequest<GradingData>(`/api/v1/grading?${params}`);
+  },
+};
+
 export const priceCheckApi = {
   /** Paste a card name or a whole listing; returns matches + the euro amount found in it. */
   search: async (q: string): Promise<PriceCheckSearchResponse> => {

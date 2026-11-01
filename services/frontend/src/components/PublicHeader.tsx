@@ -10,6 +10,7 @@ import { loginHref } from '@/lib/next-path';
 const LINKS = [
   { href: '/prijscheck', label: 'Prijscheck' },
   { href: '/lijstprijs', label: 'Lijstprijs' },
+  { href: '/graden', label: 'Graden' },
   { href: '/pricing', label: 'Prijzen' },
 ];
 
