@@ -47,9 +47,11 @@ Probleem 2. Plak een wantlist of decklist → goedkoopste combinatie over CardTr
 `scoring.market_signal` vergelijkt de laatste 7 afgeronde dagen met de dagen daarvoor (laagste vraagprijs en aanbod per dag). Labels: Koopmoment / Wachten / Stijgend / Dalend / Stabiel, op de dealkaarten, in de deal-popup en in de prijscheck.
 Probleem 4. Stijgt het aantal listings terwijl de laagste prijs zakt → wachten is waarschijnlijk slim. Die data hebben we al (`volume_*`, `volume_trend_7d`, daily aggregates). Past beter bij een correctiejaar dan alleen "deal scores".
 
-### 4. Graden: wel of niet? — *geparkeerd (oktober 2026)*
+### 4. Graden: wel of niet? — *rekenhulp gebouwd (november 2026)*
 
 CardTrader geeft per listing alleen `graded: true`, niet het cijfer (PSA 9/10) of het bedrijf (PSA/BGS/CGC); juist dat bepaalt de prijs. Een eerlijke rekenhulp kan daarom niet op deze data. Tussenstap: de prijscheck toont "gegradeerde exemplaren vanaf € X" met die waarschuwing. Vervolg (november 2026): de scraper haalt bedrijf en cijfer nu uit de verkopersbeschrijving ("PSA 10") en logt per run hoe vaak dat lukt. Is dat voor een flink deel van de gegradeerde listings, dan kan de rekenhulp op CardTrader-data. Anders: PokeTrace Pro (~$20/mnd, gegradeerde Cardmarket-prijzen per bedrijf en cijfer, commercieel gebruik toegestaan).
+
+Meting 1 november: 370 gegradeerde listings per scrape, bij 137 (37%) bedrijf + cijfer herkend. Te weinig voor een prijs per cijfer per kaart. Daarom gebouwd: `/graden` rekent uit vanaf welke verkoopprijs graden loont (ongegradeerde prijs + EU-kosten), toont wat er op CardTrader gegradeerd te koop staat, en laat de gebruiker de PSA 10/9-prijs en de kans invullen. Later uit te breiden met echte graded-prijzen (eBay-API of PokeTrace).
 
 Probleem 6. Rekenhulp met EU-kosten (PSA Frankfurt, AP Grading, douane, verzending) tegenover de meerprijs van een graded kaart. Vereist graded-prijsdata (nog te bepalen welke bron).
 
