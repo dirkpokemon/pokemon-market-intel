@@ -45,6 +45,8 @@ class RawPrice(Base):
     ships_via_zero = Column(Boolean)
     # Graded (slabbed) listing: kept out of the comparable-listing statistics
     graded = Column(Boolean)
+    grading_company = Column(String(10))  # PSA, BGS, CGC... parsed from the seller's description
+    grade = Column(Numeric(3, 1))  # 10, 9.5, ...; NULL when the description doesn't say
     
     # Timestamps
     scraped_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)

@@ -49,7 +49,7 @@ Probleem 4. Stijgt het aantal listings terwijl de laagste prijs zakt → wachten
 
 ### 4. Graden: wel of niet? — *geparkeerd (oktober 2026)*
 
-CardTrader geeft per listing alleen `graded: true`, niet het cijfer (PSA 9/10) of het bedrijf (PSA/BGS/CGC); juist dat bepaalt de prijs. Een eerlijke rekenhulp kan daarom niet op deze data. Tussenstap: de prijscheck toont "gegradeerde exemplaren vanaf € X" met die waarschuwing. Vervolg: een bron met cijfers zoeken (het cijfer uit vrije verkopersbeschrijvingen halen is te onbetrouwbaar).
+CardTrader geeft per listing alleen `graded: true`, niet het cijfer (PSA 9/10) of het bedrijf (PSA/BGS/CGC); juist dat bepaalt de prijs. Een eerlijke rekenhulp kan daarom niet op deze data. Tussenstap: de prijscheck toont "gegradeerde exemplaren vanaf € X" met die waarschuwing. Vervolg (november 2026): de scraper haalt bedrijf en cijfer nu uit de verkopersbeschrijving ("PSA 10") en logt per run hoe vaak dat lukt. Is dat voor een flink deel van de gegradeerde listings, dan kan de rekenhulp op CardTrader-data. Anders: PokeTrace Pro (~$20/mnd, gegradeerde Cardmarket-prijzen per bedrijf en cijfer, commercieel gebruik toegestaan).
 
 Probleem 6. Rekenhulp met EU-kosten (PSA Frankfurt, AP Grading, douane, verzending) tegenover de meerprijs van een graded kaart. Vereist graded-prijsdata (nog te bepalen welke bron).
 

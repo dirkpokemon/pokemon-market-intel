@@ -26,7 +26,7 @@ class AnalysisConfig(BaseSettings):
     # Each language is its own product line (separate statistics and deals).
     # Keep in sync with SUPPORTED_LANGUAGES in backend app/core/language.py.
     # 'JP' also covers CardTrader's 'JA' (see LANG_EXPR).
-    INCLUDED_LANGUAGES: List[str] = ['EN', 'JP', 'IT']
+    INCLUDED_LANGUAGES: List[str] = ['EN', 'JP', 'IT', 'DE', 'ES']
 
     # Data quality by number of distinct days a product was seen in the long window
     MIN_DAYS_EXCELLENT: int = 20
