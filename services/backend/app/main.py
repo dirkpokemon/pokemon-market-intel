@@ -44,8 +44,17 @@ async def lifespan(app: FastAPI):
             id="daily_digest",
             max_instances=1,
         )
+        from app.jobs.watchdog import check_analysis_freshness
+
+        # Every six hours, a quarter past (the analysis runs at 07:30 and 19:30 UTC)
+        scheduler.add_job(
+            check_analysis_freshness,
+            CronTrigger(hour="*/6", minute=15),
+            id="analysis_watchdog",
+            max_instances=1,
+        )
         scheduler.start()
-        logger.info("APScheduler started — daily digest scheduled at 08:00 UTC")
+        logger.info("APScheduler started — daily digest at 08:00 UTC, analysis watchdog every 6 h")
     except Exception as e:
         logger.error(f"Scheduler startup failed: {e}")
 
@@ -113,7 +122,7 @@ async def root():
 
 
 # Import and include routers
-from app.api import auth, market, subscriptions, stripe_webhook, admin, feedback, notifications, price_check, list_price, grading
+from app.api import auth, market, subscriptions, stripe_webhook, admin, feedback, notifications, price_check, list_price, grading, cards
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(market.router, prefix="/api/v1")
@@ -125,3 +134,4 @@ app.include_router(notifications.router, prefix="/api/v1", tags=["Notifications"
 app.include_router(price_check.router, prefix="/api/v1")
 app.include_router(list_price.router, prefix="/api/v1")
 app.include_router(grading.router, prefix="/api/v1")
+app.include_router(cards.router, prefix="/api/v1")

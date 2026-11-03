@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import ToolShell from '@/components/ToolShell';
 import { parseEuro } from '@/lib/format';
+import { cardPath } from '@/lib/cardUrl';
 import { languageInfo } from '@/lib/languages';
 import SignalBadge, { signalExplanation } from '@/components/MarketSignal';
 import {
@@ -79,6 +80,12 @@ export default function PriceCheckPage() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [alertState, setAlertState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const priceTouched = useRef(false);
+
+  // Links from a card page: /prijscheck?q=Charizard%20ex%20199
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('q');
+    if (q) setQuery(q);
+  }, []);
 
   useEffect(() => {
     try {
@@ -385,6 +392,14 @@ export default function PriceCheckPage() {
                   `, bijgewerkt ${new Date(result.reference.calculated_at).toLocaleString('nl-NL', { dateStyle: 'medium', timeStyle: 'short' })}`}
                 . Dit is een indicatie, geen garantie en geen oordeel over een verkoper.
               </p>
+              {result.card_number && result.category === 'single' && (
+                <Link
+                  href={cardPath({ ...result, card_number: result.card_number })}
+                  className="inline-block text-sm text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  Alle prijzen van deze kaart →
+                </Link>
+              )}
             </section>
           )}
         </div>

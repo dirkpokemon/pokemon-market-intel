@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = ""
+    # Operator alerts (failed scrape/analysis, database nearly full); default: the sender address
+    ALERT_EMAIL: str = ""
     FRONTEND_URL: str = "https://charming-contentment-production-ce0e.up.railway.app"
     # Must equal the backend SECRET_KEY: signs the one-click unsubscribe links
     SECRET_KEY: str = ""

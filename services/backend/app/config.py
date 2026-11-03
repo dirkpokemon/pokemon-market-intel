@@ -78,6 +78,9 @@ class Settings(BaseSettings):
     # Sender address; Gmail only accepts SMTP_USER or one of its verified aliases
     SMTP_FROM: str = ""
 
+    # Operator alerts (analysis stopped running); default: the sender address
+    ALERT_EMAIL: str = ""
+
     # Product feedback: submissions are mailed here (see POST /api/v1/feedback)
     FEEDBACK_INBOX_EMAIL: str = ""
 

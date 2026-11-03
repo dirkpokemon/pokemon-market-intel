@@ -7,10 +7,12 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import ToolShell from '@/components/ToolShell';
 import LanguageBadge from '@/components/LanguageBadge';
 import { gradingApi, priceCheckApi, GradingData, PriceCheckMatch } from '@/lib/api';
 import { eur, parseEuro } from '@/lib/format';
+import { cardPath } from '@/lib/cardUrl';
 import { breakEvenPrice, costPerCard, expectedGain } from '@/lib/grading';
 
 const CUSTOM = 'custom';
@@ -42,6 +44,12 @@ export default function GradingPage() {
   const [data, setData] = useState<GradingData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Links from a card page: /prijscheck?q=Charizard%20ex%20199
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('q');
+    if (q) setQuery(q);
+  }, []);
 
   // Calculator inputs (text, so "49,99" can be typed naturally)
   const [service, setService] = useState('psa_frankfurt');
@@ -225,7 +233,10 @@ export default function GradingPage() {
               <h2 className="text-lg font-bold mb-1">Wat staat er nu te koop?</h2>
               <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                 Ongegradeerd (near-mint) is de gebruikelijke laagste vraagprijs <strong>{eur(data.raw.floor_price)}</strong>,
-                gemiddeld {eur(data.raw.typical_price)} (CardTrader, laatste 30 dagen).
+                gemiddeld {eur(data.raw.typical_price)} (CardTrader, laatste 30 dagen).{' '}
+                <Link href={cardPath(data)} className="text-indigo-600 dark:text-indigo-400 hover:underline">
+                  Alle prijzen van deze kaart
+                </Link>
               </p>
               {data.graded.length > 0 ? (
                 <>
