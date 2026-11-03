@@ -3,11 +3,10 @@ import { Inter } from 'next/font/google';
 import Script from 'next/script';
 import './globals.css';
 import CookieBanner from '@/components/CookieBanner';
+import { SITE_URL } from '@/lib/site';
 
 const inter = Inter({ subsets: ['latin'] });
 
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || 'https://charming-contentment-production-ce0e.up.railway.app';
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
