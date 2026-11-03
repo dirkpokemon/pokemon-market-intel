@@ -78,6 +78,10 @@ class Settings(BaseSettings):
     # Sender address; Gmail only accepts SMTP_USER or one of its verified aliases
     SMTP_FROM: str = ""
 
+    # Show Cardmarket's price guide next to ours. Off until Cardmarket has given
+    # written permission for display on this (commercial) site.
+    CARDMARKET_DISPLAY: bool = False
+
     # Operator alerts (analysis stopped running); default: the sender address
     ALERT_EMAIL: str = ""
 
