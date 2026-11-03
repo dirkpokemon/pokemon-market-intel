@@ -79,8 +79,8 @@ async def prune_raw_prices_older_than_retention() -> int:
     return total
 
 
-async def log_database_size() -> None:
-    """Log the database and largest table sizes; warn when nearing the volume limit."""
+async def log_database_size() -> float:
+    """Log the database and largest table sizes; warn when nearing the volume limit. Returns GB."""
     async with AsyncSessionLocal() as session:
         db_bytes = (await session.execute(text("SELECT pg_database_size(current_database())"))).scalar() or 0
         tables = (await session.execute(text(
@@ -102,3 +102,4 @@ async def log_database_size() -> None:
         )
     else:
         logger.info("Database size %.2f GB (%s)", gb, sizes)
+    return gb

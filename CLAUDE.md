@@ -65,6 +65,7 @@ Data flows one way through the shared database:
    - `DealScoreCalculator` → `deal_scores`. A deal is the cheapest listing on the latest day vs. the product's usual floor (median of the daily cheapest listing). `avg_price_*` columns hold medians, not means.
    - `market_statistics` and `deal_scores` are fully replaced in one transaction per run (TRUNCATE + insert; DELETE left dead rows behind).
    - `watchlist_notifier` emails users (Gmail API, else SMTP) whose target is at or below `market_statistics.current_price`.
+   - `ops_alerts.check_and_alert` mails `ALERT_EMAIL` (default: the sender address) when the latest scrape is missing, failed or much smaller than usual, when stats/deals came out empty, or when the database passes `DB_SIZE_WARN_GB`. The backend's `jobs/watchdog.py` (every 6 h) mails when `market_statistics` is older than 14 h, i.e. the analysis itself stopped. Problems are always logged as "Ops alert: …".
 3. **Backend** serves everything under `/api/v1` (routers in `app/api/`). Request validation errors (422) get Dutch messages from `app/core/validation.py`; add a label to `FIELD_LABELS` for new user-facing fields. It also runs the daily email digest in-process (APScheduler, 08:00 UTC).
 4. **Frontend** calls the backend via `src/lib/api.ts`. The JWT is stored in `localStorage` as `access_token`. `NEXT_PUBLIC_API_URL` is inlined at build time, so the frontend must be rebuilt when it changes.
 

@@ -152,10 +152,11 @@ class AnalysisService:
         # Step 1: Market statistics (also updates the daily_prices history)
         stats_count = await self.calculate_market_stats()
 
+        db_gb = None
         try:
             from app.raw_prices_retention import log_database_size
 
-            await log_database_size()
+            db_gb = await log_database_size()
         except Exception as e:
             logger.error(f"Database size check failed (non-fatal): {e}")
 
@@ -172,6 +173,11 @@ class AnalysisService:
                 logger.info(f"Watchlist alerts sent: {alerts_sent}")
         except Exception as e:
             logger.error(f"Watchlist alert check failed (non-fatal): {e}", exc_info=True)
+
+        # Step 4: tell the operator when something went wrong (scrape, analysis, disk)
+        from app.ops_alerts import check_and_alert
+
+        await check_and_alert(stats_count, deal_count, db_gb)
 
         logger.info("=" * 60)
         logger.info(f"Analysis complete: {stats_count} stats, {deal_count} deals")

@@ -44,8 +44,17 @@ async def lifespan(app: FastAPI):
             id="daily_digest",
             max_instances=1,
         )
+        from app.jobs.watchdog import check_analysis_freshness
+
+        # Every six hours, a quarter past (the analysis runs at 07:30 and 19:30 UTC)
+        scheduler.add_job(
+            check_analysis_freshness,
+            CronTrigger(hour="*/6", minute=15),
+            id="analysis_watchdog",
+            max_instances=1,
+        )
         scheduler.start()
-        logger.info("APScheduler started — daily digest scheduled at 08:00 UTC")
+        logger.info("APScheduler started — daily digest at 08:00 UTC, analysis watchdog every 6 h")
     except Exception as e:
         logger.error(f"Scheduler startup failed: {e}")
 
