@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cardmarket import CardmarketPrices, cardmarket_prices
 from app.core.language import LANGUAGE_PATTERN
 from app.database import get_db
 from app.utils.cache import public_cache
@@ -53,6 +54,7 @@ class CardPage(BaseModel):
     supply_change_7d: Optional[float] = None
     other_languages: List[CardRef]
     same_set: List[CardRef]
+    cardmarket: Optional[CardmarketPrices] = None  # all languages together; see app/core/cardmarket.py
 
 
 def _f(v) -> Optional[float]:
@@ -144,4 +146,5 @@ async def card_page(
         supply_change_7d=_f(row.supply_change_7d),
         other_languages=[_ref(r) for r in others],
         same_set=[_ref(r) for r in same_set],
+        cardmarket=await cardmarket_prices(db, row.card_number),
     )

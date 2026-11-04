@@ -20,6 +20,7 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cardmarket import CardmarketPrices, cardmarket_prices
 from app.core.language import LANGUAGE_ADJECTIVE, LANGUAGE_PATTERN, LANGUAGE_WORDS, RAW_LANG_SQL
 from app.core.price_check import judge_price, parse_listing
 from app.core.rate_limit import RateLimiter
@@ -96,6 +97,7 @@ class CheckResponse(BaseModel):
     reference: Reference
     graded: Optional[GradedOffers] = None
     basis: str
+    cardmarket: Optional[CardmarketPrices] = None  # all languages together
 
 
 def _escape_like(value: str) -> str:
@@ -246,6 +248,7 @@ async def check_price(
         price=price,
         verdict=VerdictOut(**verdict.__dict__),
         graded=graded,
+        cardmarket=await cardmarket_prices(db, row.card_number) if row.category == "single" else None,
         basis=(
             "Vraagprijzen van vergelijkbare aanbiedingen op CardTrader (singles: near-mint, "
             + LANGUAGE_ADJECTIVE.get(row.language or "EN", "Engelstalig")

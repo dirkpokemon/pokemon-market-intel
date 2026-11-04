@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import ToolShell from '@/components/ToolShell';
+import CardmarketPrices from '@/components/CardmarketPrices';
 import { parseEuro } from '@/lib/format';
 import { cardPath } from '@/lib/cardUrl';
 import { languageInfo } from '@/lib/languages';
@@ -392,6 +393,7 @@ export default function PriceCheckPage() {
                   `, bijgewerkt ${new Date(result.reference.calculated_at).toLocaleString('nl-NL', { dateStyle: 'medium', timeStyle: 'short' })}`}
                 . Dit is een indicatie, geen garantie en geen oordeel over een verkoper.
               </p>
+              <CardmarketPrices prices={result.cardmarket} />
               {result.card_number && result.category === 'single' && (
                 <Link
                   href={cardPath({ ...result, card_number: result.card_number })}

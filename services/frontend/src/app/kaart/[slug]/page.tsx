@@ -7,6 +7,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 import ToolShell from '@/components/ToolShell';
+import CardmarketPrices from '@/components/CardmarketPrices';
 import LanguageBadge from '@/components/LanguageBadge';
 import SignalBadge, { signalExplanation } from '@/components/MarketSignal';
 import { cardPath, cardSlug, parseCardSlug } from '@/lib/cardUrl';
@@ -43,6 +44,7 @@ interface CardPageData {
   supply_change_7d?: number | null;
   other_languages: CardRef[];
   same_set: CardRef[];
+  cardmarket?: { trend?: number | null; avg30?: number | null; low?: number | null; updated_at?: string | null } | null;
 }
 
 async function fetchCard(slug: string): Promise<CardPageData | null> {
@@ -169,6 +171,12 @@ export default async function CardPage({ params }: { params: { slug: string } })
           {data.days_observed} dagen{updated ? `, bijgewerkt ${updated}` : ''}.{' '}
           {data.market_signal ? signalExplanation(data.market_signal, data.floor_change_7d, data.supply_change_7d) : ''}
         </p>
+
+        {data.cardmarket && (
+          <section className="mt-6">
+            <CardmarketPrices prices={data.cardmarket} />
+          </section>
+        )}
 
         <section className="mt-8 grid sm:grid-cols-3 gap-3">
           <Link href={`/prijscheck?q=${query}`} className={`${stat} hover:border-indigo-400 transition`}>

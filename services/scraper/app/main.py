@@ -15,7 +15,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from app.config import settings
 from app.database import init_db, AsyncSessionLocal
 from app.scrapers.cardtrader_scraper_new import CardTraderScraperV2
-from app.scrapers.cardmarket_api import CardMarketAPIClient
+from app.scrapers.cardmarket_price_guide import import_price_guide
 from app.models.scrape_log import ScrapeLog
 
 # Configure logging
@@ -35,7 +35,6 @@ class ScraperService:
         self.scheduler = AsyncIOScheduler()
         self.running = False
         self.cardtrader_scraper = CardTraderScraperV2()
-        self.cardmarket_scraper = CardMarketAPIClient()
         logger.info("CardTrader API scraper enabled")
         logger.info("CardMarket API scraper enabled")
 
@@ -129,27 +128,13 @@ class ScraperService:
         logger.info("--once run complete, exiting")
 
     async def run_cardmarket_scrape(self):
-        """
-        Run a standalone CardMarket price guide scrape cycle (every 12 hours).
-        """
-        logger.info("=" * 60)
-        logger.info("Starting CardMarket scrape cycle...")
-        logger.info("=" * 60)
-
-        cycle_start = datetime.utcnow()
-
+        """Import Cardmarket's public price guide (rebuilt nightly; skipped when unchanged)."""
         try:
-            cm_total = await self.cardmarket_scraper.scrape_all()
-            logger.info(f"✅ CardMarket API scrape completed: {cm_total} prices")
+            imported = await import_price_guide()
+            if imported:
+                logger.info(f"✅ Cardmarket price guide: {imported} products")
         except Exception as e:
-            logger.error(f"❌ CardMarket scrape failed: {e}")
-
-        cycle_duration = (datetime.utcnow() - cycle_start).total_seconds()
-
-        logger.info("=" * 60)
-        logger.info(f"CardMarket scrape cycle completed in {cycle_duration:.2f}s")
-        logger.info("=" * 60)
-
+            logger.error(f"❌ Cardmarket price guide import failed: {e}")
 
 async def main():
     """

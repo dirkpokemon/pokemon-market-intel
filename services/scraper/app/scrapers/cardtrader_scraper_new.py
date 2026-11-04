@@ -4,7 +4,8 @@ Scrapes Pokemon card listings from CardTrader.com via API
 
 API Structure:
 1. GET /api/v2/expansions (all Pokemon expansions)
-2. GET /api/v2/blueprints?expansion_id={id} (cards in expansion)
+2. GET /api/v2/blueprints/export?expansion_id={id} (cards in expansion, incl. card_market_ids;
+   falls back to /blueprints)
 3. GET /api/v2/marketplace/products?blueprint_id={id} (actual listings with prices)
 """
 
@@ -26,6 +27,7 @@ from app.config import settings
 from app.config_cardtrader import config
 from app.database import AsyncSessionLocal
 
+from app.scrapers.cardmarket_price_guide import save_cardmarket_map
 from app.scrapers.grading import parse_grade
 
 logger = logging.getLogger(__name__)
@@ -186,6 +188,9 @@ class CardTraderScraperV2:
         self.skipped_on_vacation = 0
         self.total_blueprints_processed = 0
         self.errors_count = 0
+        self._use_blueprint_export = True
+        self.blueprints_seen = 0
+        self.blueprints_with_cardmarket = 0
         self.graded_listings = 0
         self.graded_grades: Counter = Counter()  # (company, grade) found in descriptions
         self.last_error: Optional[str] = None
@@ -210,6 +215,9 @@ class CardTraderScraperV2:
         self.skipped_on_vacation = 0
         self.total_blueprints_processed = 0
         self.errors_count = 0
+        self._use_blueprint_export = True
+        self.blueprints_seen = 0
+        self.blueprints_with_cardmarket = 0
         self.graded_listings = 0
         self.graded_grades: Counter = Counter()  # (company, grade) found in descriptions
         self.last_error = None
@@ -257,6 +265,18 @@ class CardTraderScraperV2:
                     if blueprints is None:
                         continue
                     logger.info(f"  Found {len(blueprints)} blueprints")
+                    pairs = [
+                        (str(bp['id']), int(cm))
+                        for bp in blueprints
+                        for cm in (bp.get('card_market_ids') or [])
+                        if str(cm).isdigit()
+                    ]
+                    self.blueprints_seen += len(blueprints)
+                    self.blueprints_with_cardmarket += len({c for c, _ in pairs})
+                    try:
+                        await save_cardmarket_map(pairs)
+                    except Exception as e:
+                        logger.warning(f"  Could not store Cardmarket ids: {e}")
                     if blueprints and not self._logged_blueprint_shape:
                         # Once per run, to verify which fields CardTrader sends
                         first = blueprints[0]
@@ -310,6 +330,10 @@ class CardTraderScraperV2:
         logger.info(f"   Listings scraped: {self.total_listings_scraped}")
         logger.info(f"   Skipped (seller on vacation): {self.skipped_on_vacation}")
         self._log_graded_summary()
+        logger.info(
+            "   Cardmarket ids: %d of %d blueprints",
+            self.blueprints_with_cardmarket, self.blueprints_seen,
+        )
         logger.info(f"   Errors: {self.errors_count}")
         logger.info(f"   Duration: {duration:.1f}s")
         logger.info("=" * 60)
@@ -396,8 +420,16 @@ class CardTraderScraperV2:
 
     async def _fetch_blueprints(self, client: httpx.AsyncClient, expansion_id: int) -> List[Dict[str, Any]]:
         """
-        Fetch all blueprints (cards) for a given expansion
+        Fetch all blueprints (cards) for a given expansion. /blueprints/export
+        returns full blueprints (with card_market_ids for the Cardmarket price
+        guide); /blueprints is the fallback when export isn't available.
         """
+        if self._use_blueprint_export:
+            try:
+                return await self._get(client, "/blueprints/export", {"expansion_id": expansion_id})
+            except httpx.HTTPStatusError as e:
+                logger.warning(f"/blueprints/export failed ({e.response.status_code}); using /blueprints for this run")
+                self._use_blueprint_export = False
         return await self._get(client, "/blueprints", {"expansion_id": expansion_id})
 
     async def _fetch_marketplace_listings(self, client: httpx.AsyncClient, blueprint_id: int) -> List[Dict[str, Any]]:

@@ -370,7 +370,16 @@ export interface PriceCheckSearchResponse {
 
 export type PriceVerdictCode = 'suspicious_low' | 'below_floor' | 'normal' | 'high' | 'very_high';
 
+/** Cardmarket's public price guide for the card (all languages together); only sent once display is allowed. */
+export interface CardmarketPrices {
+  trend?: number | null;
+  avg30?: number | null;
+  low?: number | null;
+  updated_at?: string | null;
+}
+
 export interface PriceCheckResponse {
+  cardmarket?: CardmarketPrices | null;
   product_name: string;
   product_set?: string | null;
   category: 'single' | 'sealed';
