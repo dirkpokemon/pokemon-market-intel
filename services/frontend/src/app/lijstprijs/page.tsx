@@ -10,6 +10,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import ToolShell from '@/components/ToolShell';
+import { isSubscriberRole } from '@/lib/plans';
 import { CARD_LANGUAGES, CardLanguage } from '@/lib/languages';
 import { listPriceApi, ListPriceProduct, ListPriceResponse } from '@/lib/api';
 
@@ -50,6 +51,7 @@ export default function ListPricePage() {
   const [condition, setCondition] = useState<'nm' | 'lp'>('nm');
   const [language, setLanguage] = useState<CardLanguage>('EN');
   const [loggedIn, setLoggedIn] = useState(false);
+  const [subscriber, setSubscriber] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<ListPriceResponse | null>(null);
@@ -57,6 +59,7 @@ export default function ListPricePage() {
   useEffect(() => {
     try {
       setLoggedIn(Boolean(localStorage.getItem('access_token')));
+      setSubscriber(isSubscriberRole(JSON.parse(localStorage.getItem('user') || '{}')?.role));
     } catch {
       /* private mode */
     }
@@ -84,7 +87,7 @@ export default function ListPricePage() {
     <ToolShell>
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
         <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-3">
-          Gratis tot 10 kaarten · zonder account
+          {subscriber ? 'Plus · tot 60 kaarten' : loggedIn ? 'Gratis tot 10 kaarten · met Plus tot 60' : 'Gratis tot 10 kaarten · zonder account'}
         </p>
         <h1 className="text-3xl sm:text-4xl font-bold leading-tight mb-3">Wat kost je lijst écht?</h1>
         <p className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
