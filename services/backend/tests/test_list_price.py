@@ -23,10 +23,12 @@ Trainer: 2
 Rare Candy x3
 4 charizard ex
 """
+    # The export line pins a variant (OBF 125), so it stays apart from the bare name
     assert parse_wantlist(text) == [
-        WantLine(quantity=8, query="Charizard ex"),
+        WantLine(quantity=4, query="Charizard ex", set_code="OBF", number="125"),
         WantLine(quantity=2, query="Pikachu"),
         WantLine(quantity=3, query="Rare Candy"),
+        WantLine(quantity=4, query="charizard ex"),
     ]
 
 
@@ -110,3 +112,18 @@ def test_never_worse_than_naive():
         assert plan.total <= plan.naive_total + 0.01
         assigned = sum(n for s in plan.shipments for _, n in s.items)
         assert assigned + sum(plan.missing.values()) == sum(needs)
+
+
+def test_deck_export_keeps_set_code_and_number():
+    lines = parse_wantlist("4 Charizard ex OBF 125\n2 Charizard ex OBF 223\n1 Iono PAL 185\n1 Comfey LOR TG05")
+    assert [(l.query, l.set_code, l.number, l.quantity) for l in lines] == [
+        ("Charizard ex", "OBF", "125", 4),
+        ("Charizard ex", "OBF", "223", 2),   # another variant: not merged with 125
+        ("Iono", "PAL", "185", 1),
+        ("Comfey", "LOR", "TG05", 1),
+    ]
+
+
+def test_same_variant_twice_is_merged():
+    lines = parse_wantlist("2 Rare Candy SVI 191\n2 rare candy SVI 191")
+    assert [(l.query, l.number, l.quantity) for l in lines] == [("Rare Candy", "191", 4)]

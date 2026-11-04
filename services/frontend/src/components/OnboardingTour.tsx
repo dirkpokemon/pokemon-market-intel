@@ -84,10 +84,25 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
       {/* Modal */}
       <div className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md px-4">
         <div
-          className={`bg-white dark:bg-gray-900 dark:border dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden transition-opacity duration-150 ${
+          role="dialog"
+          aria-modal="true"
+          aria-label="Rondleiding"
+          className={`relative bg-white dark:bg-gray-900 dark:border dark:border-gray-800 rounded-2xl shadow-2xl overflow-hidden transition-opacity duration-150 ${
             animating ? 'opacity-0' : 'opacity-100'
           }`}
         >
+          {/* Skippable on every step, not only the last */}
+          <button
+            type="button"
+            onClick={handleFinishDirect}
+            aria-label="Rondleiding overslaan"
+            title="Overslaan"
+            className="absolute top-3 right-3 p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:hover:text-gray-200 dark:hover:bg-gray-800"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
           {/* Progress dots */}
           <div className="flex justify-center gap-1.5 pt-5 pb-1">
             {[1, 2, 3].map(n => (

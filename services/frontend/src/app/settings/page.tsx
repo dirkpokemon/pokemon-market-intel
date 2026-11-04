@@ -132,7 +132,6 @@ export default function SettingsPage() {
     try {
       await notificationApi.updatePrefs({
         alerts_enabled: prefs.email_enabled,
-        alert_email: prefs.email_enabled ? (prefs.email_address || user?.email) : undefined,
       });
     } catch (err) {
       console.warn('Failed to sync notification prefs to backend:', err);
@@ -303,17 +302,11 @@ export default function SettingsPage() {
                   label="Meldingen per e-mail"
                   description="Ontvang watchlist-alerts per e-mail"
                 />
-                {prefs.email_enabled && (
-                  <div className="pl-0 py-2 pb-3 border-b border-gray-100 dark:border-gray-800">
-                    <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">E-mailadres</label>
-                    <input
-                      type="email"
-                      value={prefs.email_address || user?.email || ''}
-                      onChange={(e) => updatePref('email_address', e.target.value)}
-                      placeholder={user?.email || 'jij@voorbeeld.nl'}
-                      className="w-full max-w-sm px-3 py-2 text-sm border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500/40 dark:focus:ring-indigo-400/40 focus:border-indigo-500 dark:focus:border-indigo-500"
-                    />
-                  </div>
+                {prefs.email_enabled && user?.email && (
+                  <p className="pb-3 border-b border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
+                    Meldingen gaan naar <span className="font-medium text-gray-700 dark:text-gray-200">{user.email}</span>, het
+                    e-mailadres van je account.
+                  </p>
                 )}
                 {/* Email digest */}
                 <div className="py-3">

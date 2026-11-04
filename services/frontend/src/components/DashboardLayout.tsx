@@ -12,11 +12,21 @@ import TourBanner from './TourBanner';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  /** Called instead of redirecting to /login when the session has expired (public pages). */
-  onSignedOut?: () => void;
 }
 
-export default function DashboardLayout({ children, onSignedOut }: DashboardLayoutProps) {
+/** Mobile sticky top bar — keeps content below the floating hamburger button. Shared with ToolShell. */
+export function DashboardTopBar() {
+  return (
+    <header className="lg:hidden sticky top-0 z-30 h-14 flex items-center pl-16 pr-4 gap-2 bg-white/95 dark:bg-gray-950/95 backdrop-blur border-b border-gray-200 dark:border-gray-800 shrink-0">
+      <Link href="/home" className="flex items-center gap-2 rounded">
+        <span className="text-sm font-bold text-gray-900 dark:text-white">TCG Pulse</span>
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 font-semibold uppercase tracking-wide">EU</span>
+      </Link>
+    </header>
+  );
+}
+
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -61,8 +71,7 @@ export default function DashboardLayout({ children, onSignedOut }: DashboardLayo
         if (status === 401) {
           localStorage.removeItem('access_token');
           localStorage.removeItem('user');
-          if (onSignedOut) onSignedOut();
-          else router.push(loginHref(window.location.pathname + window.location.search));
+          router.push(loginHref(window.location.pathname + window.location.search));
           return;
         }
       } finally {
@@ -73,7 +82,7 @@ export default function DashboardLayout({ children, onSignedOut }: DashboardLayo
     return () => {
       cancelled = true;
     };
-  }, [router, onSignedOut]);
+  }, [router]);
 
   if (!authChecked) {
     return (
@@ -94,13 +103,7 @@ export default function DashboardLayout({ children, onSignedOut }: DashboardLayo
           sidebarCollapsed ? 'lg:ml-[68px]' : 'lg:ml-[240px]'
         }`}
       >
-        {/* Mobile sticky top bar — keeps content below the floating hamburger button */}
-        <header className="lg:hidden sticky top-0 z-30 h-14 flex items-center pl-16 pr-4 gap-2 bg-white/95 dark:bg-gray-950/95 backdrop-blur border-b border-gray-200 dark:border-gray-800 shrink-0">
-          <Link href="/home" className="flex items-center gap-2 rounded">
-            <span className="text-sm font-bold text-gray-900 dark:text-white">TCG Pulse</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 font-semibold uppercase tracking-wide">EU</span>
-          </Link>
-        </header>
+        <DashboardTopBar />
         <TourBanner />
         <main className="flex-1 min-w-0">{children}</main>
         <SiteFooter />

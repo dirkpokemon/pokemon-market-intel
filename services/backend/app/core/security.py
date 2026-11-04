@@ -52,6 +52,15 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 
+def password_version(hashed_password: str) -> str:
+    """Short fingerprint of the password hash, carried in tokens as "pv": a new
+    password changes it, so sessions from before a reset or change stop working."""
+    import hashlib
+    import hmac
+
+    return hmac.new(settings.SECRET_KEY.encode(), (hashed_password or "").encode(), hashlib.sha256).hexdigest()[:16]
+
+
 def decode_access_token(token: str) -> Optional[dict]:
     """
     Decode and verify a JWT access token

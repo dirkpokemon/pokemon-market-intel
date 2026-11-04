@@ -187,14 +187,18 @@ def _build_alert_text(card_name: str, card_set: Optional[str], price: float, tar
 
 
 PRICE_LOOKUP_SQL = f"""
-    SELECT COALESCE(current_price, avg_price_7d) AS price
-    FROM market_statistics
-    WHERE {_key('product_name')} = btrim({_KEY_SQL.format(col=':name')})
-      AND (CAST(:set AS text) IS NULL OR {_key('product_set')} = btrim({_KEY_SQL.format(col='CAST(:set AS text)')}))
-      AND (CAST(:card AS text) IS NULL OR card_number = CAST(:card AS text))
-      AND COALESCE(language, 'EN') = COALESCE(CAST(:lang AS text), 'EN')
-      AND COALESCE(current_price, avg_price_7d) IS NOT NULL
-    ORDER BY COALESCE(current_price, avg_price_7d) ASC
+    WITH m AS (
+        SELECT COALESCE(current_price, avg_price_7d) AS price, card_number
+        FROM market_statistics
+        WHERE {_key('product_name')} = btrim({_KEY_SQL.format(col=':name')})
+          AND (CAST(:set AS text) IS NULL OR {_key('product_set')} = btrim({_KEY_SQL.format(col='CAST(:set AS text)')}))
+          AND (CAST(:card AS text) IS NULL OR card_number = CAST(:card AS text))
+          AND COALESCE(language, 'EN') = COALESCE(CAST(:lang AS text), 'EN')
+          AND COALESCE(current_price, avg_price_7d) IS NOT NULL
+    )
+    SELECT price, (SELECT count(DISTINCT card_number) FROM m) AS variants
+    FROM m
+    ORDER BY price ASC
     LIMIT 1
 """
 
@@ -246,6 +250,12 @@ async def check_watchlist_alerts() -> int:
             price_result = price_row.fetchone()
             if price_result is None:
                 continue
+            if item.card_number is None and price_result.variants > 1:
+                # Old item saved without a variant, and the name fits several
+                # (regular vs. special illustration rare): the cheapest would
+                # be the wrong card, so don't guess
+                logger.info("Skipping watchlist item %s: no variant and %d match", item.item_id, price_result.variants)
+                continue
 
             market_price = float(price_result.price)
             await session.execute(
@@ -263,7 +273,8 @@ async def check_watchlist_alerts() -> int:
                 if now - notified_at < cooldown:
                     continue
 
-            to_email = item.alert_email or item.email
+            # Only the verified account address (alert_email is no longer accepted)
+            to_email = item.email
             if not to_email:
                 continue
 
@@ -281,6 +292,9 @@ async def check_watchlist_alerts() -> int:
                     text("UPDATE watchlist_items SET notified_at = :now WHERE id = :id"),
                     {"now": now, "id": item.item_id},
                 )
+                # Record each sent alert at once: a later failure must not
+                # undo the cooldown and resend it next run
+                await session.commit()
                 alerts_sent += 1
                 logger.info(
                     f"Watchlist alert sent for {card_name} "

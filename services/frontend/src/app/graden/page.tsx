@@ -45,10 +45,14 @@ export default function GradingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Links from a card page: /prijscheck?q=Charizard%20ex%20199
+  // Links from a card page: /graden?q=Charizard%20ex%20199&card=123456&lang=EN picks that exact card
+  const [wanted, setWanted] = useState<{ card: string; lang: string } | null>(null);
   useEffect(() => {
-    const q = new URLSearchParams(window.location.search).get('q');
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('q');
     if (q) setQuery(q);
+    const card = params.get('card');
+    if (card) setWanted({ card, lang: params.get('lang') || 'EN' });
   }, []);
 
   // Calculator inputs (text, so "49,99" can be typed naturally)
@@ -81,7 +85,9 @@ export default function GradingPage() {
         const singles = res.results.filter((m) => m.category === 'single' && m.card_number);
         setMatches(singles);
         setSearched(true);
-        if (singles.length === 1) setSelected(singles[0]);
+        const exact = wanted && singles.find((m) => m.card_number === wanted.card && (m.language ?? 'EN') === wanted.lang);
+        if (exact) setSelected(exact);
+        else if (singles.length === 1) setSelected(singles[0]);
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : 'Zoeken mislukt.');
       } finally {
@@ -89,7 +95,7 @@ export default function GradingPage() {
       }
     }, 350);
     return () => clearTimeout(handle);
-  }, [query]);
+  }, [query, wanted]);
 
   // Load the card's data and fill the calculator with its numbers
   useEffect(() => {

@@ -28,19 +28,24 @@ class RateLimiter:
         self.window = window_seconds
         self._hits: Dict[str, Deque[float]] = defaultdict(deque)
 
-    def __call__(self, request: Request) -> None:
+    def allow(self, key: str) -> bool:
+        """Count one hit for `key`; False when it is over the limit (not counted then)."""
         now = time.monotonic()
-        key = client_ip(request)
         hits = self._hits[key]
         while hits and now - hits[0] > self.window:
             hits.popleft()
         if len(hits) >= self.limit:
+            return False
+        hits.append(now)
+        if len(self._hits) > 10_000:  # keep memory bounded
+            for k in [k for k, h in self._hits.items() if not h or now - h[-1] > self.window]:
+                del self._hits[k]
+        return True
+
+    def __call__(self, request: Request) -> None:
+        if not self.allow(client_ip(request)):
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail="Te veel verzoeken. Probeer het over een minuut opnieuw.",
                 headers={"Retry-After": str(self.window)},
             )
-        hits.append(now)
-        if len(self._hits) > 10_000:  # keep memory bounded
-            for ip in [ip for ip, h in self._hits.items() if not h or now - h[-1] > self.window]:
-                del self._hits[ip]

@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.database import get_db
-from app.core.security import decode_access_token
+from app.core.security import decode_access_token, password_version
 from app.models.user import User
 
 
@@ -68,7 +68,17 @@ async def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Dit account is niet actief",
         )
-    
+
+    # Tokens from before the last password change or reset are no longer valid.
+    # (Tokens without "pv" predate this check and simply expire.)
+    pv = payload.get("pv")
+    if pv is not None and pv != password_version(user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Je wachtwoord is gewijzigd. Log opnieuw in.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     return user
 
 

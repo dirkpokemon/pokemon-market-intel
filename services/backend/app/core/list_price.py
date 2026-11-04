@@ -57,8 +57,9 @@ def seller_shipping(seller_country: Optional[str], buyer_country: str, subtotal:
 # "4 Charizard ex OBF 125", "4x Pikachu", "Pikachu x2", "2 Rare Candy SVI 191"
 _QTY_PREFIX = re.compile(r"^\s*(\d{1,3})\s*[x×]?\s+(.+)$", re.IGNORECASE)
 _QTY_SUFFIX = re.compile(r"^(.+?)\s+[x×]\s*(\d{1,3})\s*$", re.IGNORECASE)
-# Pokémon TCG Live / Limitless export: trailing set code and number ("OBF 125", "PR-SV 12")
-_SET_CODE_SUFFIX = re.compile(r"\s+[A-Z][A-Z0-9]{1,4}(?:-[A-Z0-9]{1,4})?\s+\d{1,3}[a-z]?\s*$")
+# Pokémon TCG Live / Limitless export: trailing set code and number ("OBF 125",
+# "PR-SV 12", "LOR TG05"); both are kept to pick the right variant
+_SET_CODE_SUFFIX = re.compile(r"\s+([A-Z][A-Z0-9]{1,4}(?:-[A-Z0-9]{1,4})?)\s+([A-Z]{0,2}\d{1,3}[a-z]?)\s*$")
 # Section headers of a decklist export
 _HEADER = re.compile(r"^\s*(pok[eé]mon|trainers?|energy|energie|total cards)\b.*?:?\s*\d*\s*$", re.IGNORECASE)
 
@@ -69,6 +70,8 @@ MAX_QTY_PER_LINE = 20
 class WantLine:
     quantity: int
     query: str
+    set_code: Optional[str] = None   # "OBF" from a deck export
+    number: Optional[str] = None     # collector number from a deck export ("125")
 
 
 def parse_wantlist(text: str) -> List[WantLine]:
@@ -86,15 +89,19 @@ def parse_wantlist(text: str) -> List[WantLine]:
             m = _QTY_SUFFIX.match(line)
             if m:
                 line, qty = m.group(1).strip(), int(m.group(2))
-        line = _SET_CODE_SUFFIX.sub("", line).strip()
+        set_code = number = None
+        m = _SET_CODE_SUFFIX.search(line)
+        if m:
+            set_code, number = m.group(1), m.group(2)
+            line = line[:m.start()].strip()
         if len(line) < 2 or qty <= 0:
             continue
         qty = min(qty, MAX_QTY_PER_LINE)
-        key = line.lower()
+        key = f"{line.lower()}|{set_code or ''}|{(number or '').lstrip('0')}"
         if key in merged:
             qty = min(merged[key].quantity + qty, MAX_QTY_PER_LINE)
             line = merged[key].query
-        merged[key] = WantLine(quantity=qty, query=line)
+        merged[key] = WantLine(quantity=qty, query=line, set_code=set_code, number=number)
     return list(merged.values())
 
 

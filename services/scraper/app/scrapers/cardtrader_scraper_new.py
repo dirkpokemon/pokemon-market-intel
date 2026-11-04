@@ -274,7 +274,10 @@ class CardTraderScraperV2:
                     self.blueprints_seen += len(blueprints)
                     self.blueprints_with_cardmarket += len({c for c, _ in pairs})
                     try:
-                        await save_cardmarket_map(pairs)
+                        # Only export blueprints carry card_market_ids; the /blueprints
+                        # fallback must not wipe mappings it simply doesn't know
+                        if self._use_blueprint_export:
+                            await save_cardmarket_map(pairs, [str(bp['id']) for bp in blueprints])
                     except Exception as e:
                         logger.warning(f"  Could not store Cardmarket ids: {e}")
                     if blueprints and not self._logged_blueprint_shape:

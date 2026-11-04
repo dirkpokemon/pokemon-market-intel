@@ -176,7 +176,7 @@ async def send_daily_digest() -> int:
     subject = f"TCG Pulse — Marktupdate {today}"
 
     for user in users:
-        to_email = user.alert_email or user.email
+        to_email = user.email  # the verified account address only
         unsub_url = unsubscribe_url(user.id, "digest")
         try:
             ok = await send_email(
