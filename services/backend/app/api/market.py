@@ -779,6 +779,9 @@ async def get_price_sparklines(
     """
     if not card_names:
         return {}
+    # Longer history is the Plus price history (/price_history); Free gets a week
+    if not current_user.is_premium():
+        days = min(days, 7)
 
     # Limit to 200 cards per request to avoid abuse
     card_names = card_names[:200]

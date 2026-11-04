@@ -213,6 +213,29 @@ def aliases_for(slug: str) -> List[str]:
     return list(s["aliases"]) if s else []
 
 
+# Set codes in Pokémon TCG Live / Limitless deck exports ("4 Charizard ex OBF 125")
+PTCGL_CODES: Dict[str, str] = {
+    "MEG": "me01-mega-evolution", "PFL": "me02-phantasmal-flames", "ASC": "me-ascended-heroes",
+    "BLK": "sv-black-bolt", "WHT": "sv-white-flare", "DRI": "sv10-destined-rivals",
+    "JTG": "sv09-journey-together", "PRE": "sv-prismatic-evolutions", "SSP": "sv08-surging-sparks",
+    "SCR": "sv07-stellar-crown", "SFA": "sv-shrouded-fable", "TWM": "sv06-twilight-masquerade",
+    "TEF": "sv05-temporal-forces", "PAF": "sv-paldean-fates", "PAR": "sv04-paradox-rift",
+    "MEW": "sv-151", "OBF": "sv03-obsidian-flames", "PAL": "sv02-paldea-evolved", "SVI": "sv01-base",
+    "CRZ": "crown-zenith", "SIT": "swsh12-silver-tempest", "LOR": "swsh11-lost-origin",
+    "PGO": "pokemon-go", "ASR": "swsh10-astral-radiance", "BRS": "swsh09-brilliant-stars",
+    "FST": "swsh08-fusion-strike", "CEL": "celebrations", "EVS": "swsh07-evolving-skies",
+    "CRE": "swsh06-chilling-reign", "BST": "swsh05-battle-styles", "SHF": "shining-fates",
+    "VIV": "swsh04-vivid-voltage", "CPA": "champions-path", "DAA": "swsh03-darkness-ablaze",
+    "RCL": "swsh02-rebel-clash", "SSH": "swsh01-base",
+}
+
+
+def aliases_for_code(code: Optional[str]) -> List[str]:
+    """Set name aliases for a PTCGL set code ("OBF"); empty when unknown."""
+    slug = PTCGL_CODES.get((code or "").upper())
+    return aliases_for(slug) if slug else []
+
+
 def all_known_aliases_lowercase() -> List[str]:
     """Flat lowercase list of every known alias across all sets."""
     out = []

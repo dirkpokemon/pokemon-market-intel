@@ -187,7 +187,7 @@ export default async function CardPage({ params }: { params: { slug: string } })
             <p className="font-semibold">Prijsalert zetten</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Krijg een mail zodra hij onder je doelprijs komt.</p>
           </Link>
-          <Link href={`/graden?q=${query}`} className={`${stat} hover:border-indigo-400 transition`}>
+          <Link href={`/graden?q=${query}&card=${c.card_number}&lang=${c.language}`} className={`${stat} hover:border-indigo-400 transition`}>
             <p className="font-semibold">Loont graden?</p>
             <p className="text-sm text-gray-500 dark:text-gray-400">Reken uit vanaf welke prijs een slab loont.</p>
           </Link>

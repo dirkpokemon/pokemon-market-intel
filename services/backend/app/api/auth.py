@@ -17,7 +17,7 @@ from app.schemas.user import (
     ForgotPasswordRequest, ResetPasswordRequest,
     NotificationPrefsUpdate, NotificationPrefsResponse,
 )
-from app.core.security import verify_password, get_password_hash, create_access_token
+from app.core.security import verify_password, get_password_hash, create_access_token, password_version
 from app.core.dependencies import get_current_user
 from app.core.email import generate_verification_token, send_verification_email, send_password_reset_email
 from app.core import password_reset
@@ -30,6 +30,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 # Each request can send a mail, so keep it tight per IP
 forgot_limit = RateLimiter(limit=5, window_seconds=600)
+forgot_per_address = RateLimiter(limit=3, window_seconds=3600)
 reset_limit = RateLimiter(limit=10, window_seconds=600)
 
 FORGOT_MESSAGE = (
@@ -38,16 +39,27 @@ FORGOT_MESSAGE = (
 )
 
 
+async def _users_by_email(db: AsyncSession, email: str) -> list:
+    """Accounts with this address, ignoring case; an exact-case match first.
+
+    Older accounts were stored with the case people typed, so "Sam@x.nl" and
+    "sam@x.nl" can both exist; new ones are stored lower-cased.
+    """
+    result = await db.execute(
+        select(User)
+        .where(func.lower(User.email) == email.strip().lower())
+        .order_by((User.email == email.strip()).desc(), User.id)
+    )
+    return list(result.scalars().all())
+
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(
     user_data: UserCreate,
     db: AsyncSession = Depends(get_db),
 ):
     """Register a new user and send a verification email."""
-    result = await db.execute(select(User).where(User.email == user_data.email))
-    existing_user = result.scalar_one_or_none()
-
-    if existing_user:
+    if await _users_by_email(db, user_data.email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Er bestaat al een account met dit e-mailadres",
@@ -57,7 +69,7 @@ async def register(
     hashed_password = get_password_hash(user_data.password)
 
     new_user = User(
-        email=user_data.email,
+        email=user_data.email.strip().lower(),
         hashed_password=hashed_password,
         full_name=user_data.full_name,
         role="free",
@@ -98,10 +110,12 @@ async def resend_verification(
     db: AsyncSession = Depends(get_db),
 ):
     """Resend the verification email (requires correct password)."""
-    result = await db.execute(select(User).where(User.email == user_data.email))
-    user = result.scalar_one_or_none()
+    user = next(
+        (u for u in await _users_by_email(db, user_data.email) if verify_password(user_data.password, u.hashed_password)),
+        None,
+    )
 
-    if not user or not verify_password(user_data.password, user.hashed_password):
+    if not user:
         raise HTTPException(status_code=400, detail="Onjuist e-mailadres of wachtwoord")
 
     if user.is_verified:
@@ -143,8 +157,8 @@ async def verify_email(
             raise HTTPException(status_code=400, detail="De bevestigingslink is verlopen. Vraag een nieuwe aan.")
 
     user.is_verified = True
-    user.verification_token = None
-    user.verification_token_expires = None
+    # The token stays, so opening the link again (double click, refresh, a mail
+    # scanner) answers "already verified" instead of "invalid link"
     await db.commit()
 
     logger.info("User verified: %s", user.email)
@@ -157,11 +171,13 @@ async def login(
     credentials: UserLogin,
     db: AsyncSession = Depends(get_db),
 ):
-    """Login with email and password. Account must be verified."""
-    result = await db.execute(select(User).where(User.email == credentials.email))
-    user = result.scalar_one_or_none()
+    """Login with email and password (address case doesn't matter). Account must be verified."""
+    user = next(
+        (u for u in await _users_by_email(db, credentials.email) if verify_password(credentials.password, u.hashed_password)),
+        None,
+    )
 
-    if not user or not verify_password(credentials.password, user.hashed_password):
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Onjuist e-mailadres of wachtwoord",
@@ -185,7 +201,7 @@ async def login(
     logger.info("User logged in: %s", user.email)
 
     access_token = create_access_token(
-        data={"sub": str(user.id)},
+        data={"sub": str(user.id), "pv": password_version(user.hashed_password)},
         expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
     )
 
@@ -235,9 +251,10 @@ async def forgot_password(
     db: AsyncSession = Depends(get_db),
 ):
     """Mail a reset link. Always answers the same, so it can't reveal which emails have an account."""
-    result = await db.execute(select(User).where(func.lower(User.email) == payload.email.lower()))
-    user = result.scalar_one_or_none()
-    if user and user.is_active:
+    users = [u for u in await _users_by_email(db, payload.email) if u.is_active]
+    user = users[0] if users else None
+    # Also limited per address, so nobody can flood someone's inbox from many IPs
+    if user and forgot_per_address.allow(payload.email.strip().lower()):
         token = password_reset.make_token(user.id, user.hashed_password)
         reset_url = f"{settings.FRONTEND_URL.rstrip('/')}/wachtwoord-herstellen?token={token}"
         first_name = (user.full_name or user.email).split()[0]
@@ -361,7 +378,15 @@ async def update_notification_prefs(
     if prefs.alerts_enabled is not None:
         current_user.alerts_enabled = prefs.alerts_enabled
     if prefs.alert_email is not None:
-        current_user.alert_email = prefs.alert_email
+        # Alerts only go to the verified account address: a free-form address
+        # would let anyone send our mails to strangers
+        wanted = prefs.alert_email.strip()
+        if wanted and wanted.lower() != (current_user.email or "").lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Meldingen gaan naar het e-mailadres van je account.",
+            )
+        current_user.alert_email = None
 
     await db.commit()
     await db.refresh(current_user)

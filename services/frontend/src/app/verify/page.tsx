@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { authApi } from '@/lib/api';
@@ -13,8 +13,12 @@ function VerifyContent() {
   const token = searchParams.get('token');
   const [state, setState] = useState<VerifyState>('loading');
   const [errorMsg, setErrorMsg] = useState('');
+  // Verify once per page load (React may run the effect twice in development)
+  const started = useRef(false);
 
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
     if (!token) {
       setState('error');
       setErrorMsg('Geen bevestigingscode gevonden. Gebruik de link uit je e-mail.');

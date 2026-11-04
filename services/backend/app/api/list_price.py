@@ -29,9 +29,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.price_check import _escape_like
 from app.core.dependencies import get_optional_user
 from app.core.language import LANGUAGE_PATTERN, RAW_LANG_SQL
-from app.core.list_price import ZERO_BIN, Offer, optimize, parse_wantlist
+from app.core.list_price import ZERO_BIN, Offer, WantLine, optimize, parse_wantlist
 from app.core.price_check import search_terms
 from app.core.rate_limit import RateLimiter
+from app.data.set_registry import aliases_for_code
 from app.database import get_db
 from app.models.user import User
 
@@ -114,44 +115,69 @@ class ListPriceResponse(BaseModel):
     shipping_note: str = SHIPPING_NOTE
 
 
-async def _match_line(db: AsyncSession, query: str, language: str) -> List[Product]:
-    """Products for one list line in this language, best match first (exact name, then most observed)."""
-    terms = search_terms(query)
+# Search text per product: name, set, printed number and rarity (like the price check)
+_HAYSTACK = (
+    "(product_name || ' ' || COALESCE(product_set, '') || ' ' || COALESCE(collector_number, '')"
+    " || ' ' || COALESCE(rarity, ''))"
+)
+# Printed number without "/197" and leading zeros, to compare with "125" or "TG05"
+_NUMBER_SQL = "ltrim(upper(split_part(COALESCE(collector_number, ''), '/', 1)), '0')"
+
+
+async def _match_line(db: AsyncSession, want: WantLine, language: str) -> List[Product]:
+    """Products for one list line in this language, best match first.
+
+    A deck export's set code and number ("OBF 125") pin the variant; without
+    them the most observed product wins. When nothing matches, the number,
+    then the set, then trailing name words are dropped.
+    """
+    terms = search_terms(want.query)
     if not terms:
         return []
-    params = {f"t{i}": f"%{_escape_like(t)}%" for i, t in enumerate(terms)}
-    params["full"] = query.strip().lower()
-    params["lang"] = language
-    for n in range(len(terms), 0, -1):
-        conditions = " AND ".join(
-            f"(product_name || ' ' || COALESCE(product_set, '') || ' ' || COALESCE(rarity, ''))"
-            f" ILIKE :t{i} ESCAPE '\\'"
-            for i in range(n)
-        )
-        result = await db.execute(
-            text(f"""
-                SELECT product_name, product_set, category, card_number, rarity
-                FROM market_statistics
-                WHERE {conditions}
-                  AND COALESCE(language, 'EN') = :lang
-                ORDER BY (lower(product_name) = :full) DESC,
-                         days_observed DESC NULLS LAST, volume_30d DESC NULLS LAST
-                LIMIT 5
-            """),
-            {k: v for k, v in params.items() if k in ("full", "lang") or int(k[1:]) < n},
-        )
-        rows = result.fetchall()
-        if rows:
-            return [
-                Product(
-                    product_name=r.product_name,
-                    product_set=r.product_set,
-                    category=r.category or "single",
-                    card_number=r.card_number or None,
-                    rarity=r.rarity,
-                )
-                for r in rows
-            ]
+    set_aliases = [a.lower() for a in aliases_for_code(want.set_code)]
+    number = (want.number or "").upper().lstrip("0") or None
+    base = {"full": want.query.strip().lower(), "lang": language,
+            "aliases": set_aliases, "number": number}
+    filters = []
+    if set_aliases and number:
+        filters.append((True, True))
+    if number:
+        filters.append((False, True))
+    if set_aliases:
+        filters.append((True, False))
+    filters.append((False, False))
+
+    for use_set, use_number in filters:
+        for n in range(len(terms), 0, -1):
+            conditions = [f"{_HAYSTACK} ILIKE :t{i} ESCAPE '\\'" for i in range(n)]
+            if use_set:
+                conditions.append("lower(COALESCE(product_set, '')) = ANY(:aliases)")
+            if use_number:
+                conditions.append(f"{_NUMBER_SQL} = :number")
+            params = {**base, **{f"t{i}": f"%{_escape_like(t)}%" for i, t in enumerate(terms[:n])}}
+            rows = (await db.execute(
+                text(f"""
+                    SELECT product_name, product_set, category, card_number, rarity
+                    FROM market_statistics
+                    WHERE {' AND '.join(conditions)}
+                      AND COALESCE(language, 'EN') = :lang
+                    ORDER BY (lower(product_name) = :full) DESC,
+                             days_observed DESC NULLS LAST, volume_30d DESC NULLS LAST
+                    LIMIT 5
+                """),
+                params,
+            )).fetchall()
+            if rows:
+                return [
+                    Product(
+                        product_name=r.product_name,
+                        product_set=r.product_set,
+                        category=r.category or "single",
+                        card_number=r.card_number or None,
+                        rarity=r.rarity,
+                    )
+                    for r in rows
+                ]
     return []
 
 
@@ -175,23 +201,28 @@ async def list_price(
 
     lines: List[LineResult] = []
     for w in wanted:
-        matches = await _match_line(db, w.query, body.language)
+        matches = await _match_line(db, w, body.language)
         lines.append(LineResult(
             query=w.query, quantity=w.quantity,
             matched=matches[0] if matches else None,
             alternatives=matches[1:],
         ))
 
-    single_lines: Dict[str, List[int]] = {}
-    sealed_lines: Dict[str, List[int]] = {}
+    # Lines for the same product ("Pikachu" and "Pikachu 025") share listings, so
+    # the optimizer sees one demand per product: a listing's stock counts once.
+    groups: List[List[int]] = []          # product group -> its lines, in list order
+    single_lines: Dict[str, int] = {}     # card_number -> group
+    sealed_lines: Dict[str, int] = {}     # sealed key -> group
     for i, line in enumerate(lines):
         p = line.matched
         if p is None:
             continue
-        if p.card_number:
-            single_lines.setdefault(p.card_number, []).append(i)
-        else:
-            sealed_lines.setdefault(_sealed_key(p.product_name, p.product_set), []).append(i)
+        index = single_lines if p.card_number else sealed_lines
+        key = p.card_number or _sealed_key(p.product_name, p.product_set)
+        if key not in index:
+            index[key] = len(groups)
+            groups.append([])
+        groups[index[key]].append(i)
 
     rows = []
     if single_lines or sealed_lines:
@@ -231,25 +262,38 @@ async def list_price(
 
     offers: List[Offer] = []
     offer_urls: List[Optional[str]] = []
-    per_line: Dict[int, int] = {}
+    per_group: Dict[int, int] = {}
     as_of: Optional[datetime] = None
     for r in rows:
-        targets = (single_lines.get(r.card_number) if r.card_number
-                   else sealed_lines.get(_sealed_key(r.card_name, r.card_set)))
-        for line_idx in targets or []:
-            if per_line.get(line_idx, 0) >= OFFERS_PER_LINE:
-                continue
-            per_line[line_idx] = per_line.get(line_idx, 0) + 1
-            offers.append(Offer(
-                line=line_idx, price=float(r.price), quantity=max(1, int(r.stock_quantity or 1)),
-                seller_key=r.seller_key, seller_country=r.seller_country,
-                ships_via_zero=bool(r.ships_via_zero), ref=len(offers),
-            ))
-            offer_urls.append(r.source_url)
-            if as_of is None or r.scraped_at > as_of:
-                as_of = r.scraped_at
+        group = (single_lines.get(r.card_number) if r.card_number
+                 else sealed_lines.get(_sealed_key(r.card_name, r.card_set)))
+        if group is None or per_group.get(group, 0) >= OFFERS_PER_LINE:
+            continue
+        per_group[group] = per_group.get(group, 0) + 1
+        offers.append(Offer(
+            line=group, price=float(r.price), quantity=max(1, int(r.stock_quantity or 1)),
+            seller_key=r.seller_key, seller_country=r.seller_country,
+            ships_via_zero=bool(r.ships_via_zero), ref=len(offers),
+        ))
+        offer_urls.append(r.source_url)
+        if as_of is None or r.scraped_at > as_of:
+            as_of = r.scraped_at
 
-    plan = await run_in_threadpool(optimize, [l.quantity for l in lines], offers, body.country)
+    needs = [sum(lines[i].quantity for i in g) for g in groups]
+    plan = await run_in_threadpool(optimize, needs, offers, body.country)
+
+    def take(group: int, copies: int) -> int:
+        """Book bought copies on the group's lines in list order; the first line taking them."""
+        first = None
+        for i in groups[group]:
+            if copies <= 0:
+                break
+            n = min(copies, lines[i].quantity - lines[i].found)
+            if n > 0:
+                lines[i].found += n
+                copies -= n
+                first = i if first is None else first
+        return first if first is not None else groups[group][0]
 
     shipments: List[ShipmentOut] = []
     seller_no = 0
@@ -257,11 +301,11 @@ async def list_price(
         items = []
         for offer_idx, copies in sh.items:
             o = offers[offer_idx]
-            lines[o.line].found += copies
-            matched = lines[o.line].matched
+            line_idx = take(o.line, copies)
+            matched = lines[line_idx].matched
             items.append(ShipmentItem(
-                line=o.line,
-                product_name=matched.product_name if matched else lines[o.line].query,
+                line=line_idx,
+                product_name=matched.product_name if matched else lines[line_idx].query,
                 product_set=matched.product_set if matched else None,
                 price=o.price, copies=copies, url=offer_urls[o.ref],
             ))

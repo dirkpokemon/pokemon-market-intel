@@ -64,8 +64,10 @@ async def import_price_guide() -> int:
         if current is not None and created_at is not None and current >= created_at:
             logger.info("Cardmarket price guide of %s already imported", created_at.isoformat())
             return 0
-        # Full replacement in one transaction (like market_statistics)
-        await session.execute(text("TRUNCATE cardmarket_prices"))
+        # Full replacement in one transaction. DELETE rather than TRUNCATE: card
+        # pages keep reading the old rows until the commit instead of waiting
+        # on TRUNCATE's exclusive lock (autovacuum reclaims the old rows).
+        await session.execute(text("DELETE FROM cardmarket_prices"))
         for i in range(0, len(rows), BATCH):
             await session.execute(
                 text("""
@@ -79,11 +81,18 @@ async def import_price_guide() -> int:
     return len(rows)
 
 
-async def save_cardmarket_map(pairs: List[tuple[str, int]]) -> None:
-    """Store (CardTrader card_number, Cardmarket idProduct) pairs from blueprint.card_market_ids."""
-    if not pairs:
+async def save_cardmarket_map(pairs: List[tuple[str, int]], card_numbers: List[str]) -> None:
+    """Store (CardTrader card_number, Cardmarket idProduct) pairs from blueprint.card_market_ids.
+
+    card_numbers are all blueprints the pairs were read from: their old
+    mappings are replaced, so ids CardTrader corrected or removed disappear.
+    """
+    if not card_numbers:
         return
     async with AsyncSessionLocal() as session, session.begin():
+        await session.execute(
+            text("DELETE FROM cardmarket_map WHERE card_number = ANY(:cards)"), {"cards": card_numbers}
+        )
         for i in range(0, len(pairs), BATCH):
             await session.execute(
                 text("""
