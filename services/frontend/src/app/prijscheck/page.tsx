@@ -167,7 +167,7 @@ export default function PriceCheckPage() {
     <ToolShell>
       <main className="flex-1 w-full max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
         <p className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-3">
-          Gratis prijscheck · zonder account
+          {loggedIn ? 'Gratis prijscheck' : 'Gratis prijscheck · zonder account'}
         </p>
         <h1 className="text-3xl sm:text-4xl font-bold leading-tight mb-3">Is dit een eerlijke prijs?</h1>
         <p className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
