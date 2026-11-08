@@ -3,8 +3,8 @@ Watchdog: mail the operator when the analysis has stopped running.
 
 The analysis service mails about failed scrapes and its own problems (see
 analysis app/ops_alerts.py), but it can't report a run that never starts or
-crashes on start-up. Market statistics are replaced every run (07:30 and
-19:30 UTC), so when the newest one is older than STALE_AFTER the analysis is
+crashes on start-up. Market statistics are replaced every run (08:30 and
+20:30 UTC), so when the newest one is older than STALE_AFTER the analysis is
 stuck. Checked every six hours by the backend's scheduler.
 """
 

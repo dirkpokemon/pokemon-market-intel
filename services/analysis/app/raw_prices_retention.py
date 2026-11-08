@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import text
 
 from app.config_analysis import analysis_config
-from app.database import AsyncSessionLocal
+from app.database import AsyncSessionLocal, engine
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +70,15 @@ async def prune_raw_prices_older_than_retention() -> int:
             days,
             cutoff.isoformat(),
         )
+        # Make the freed space reusable now, so the next scrape fills it instead
+        # of growing the files (autovacuum may come too late on a full volume)
+        try:
+            async with engine.connect() as conn:
+                conn = await conn.execution_options(isolation_level="AUTOCOMMIT")
+                await conn.execute(text("VACUUM raw_prices"))
+            logger.info("raw_prices vacuumed")
+        except Exception as e:
+            logger.warning("VACUUM raw_prices failed (autovacuum will catch up): %s", e)
     else:
         logger.info(
             "raw_prices retention: nothing to delete (retention=%s days)",

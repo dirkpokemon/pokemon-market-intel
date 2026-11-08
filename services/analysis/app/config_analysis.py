@@ -99,13 +99,14 @@ class AnalysisConfig(BaseSettings):
     }
     DEFAULT_POPULARITY: float = 50.0
 
-    # Storage. Every scrape stores every listing again (~340k rows, twice a
-    # day, a few hundred MB per day incl. indexes), so raw_prices only keeps a
-    # few days; the history lives in daily_prices (one row per product per
-    # day, a few thousand rows / under 1 MB per day).
-    RAW_PRICES_RETENTION_DAYS: int = 3
-    RAW_PRICES_PRUNE_BATCH_ROWS: int = 40000
-    RAW_PRICES_PRUNE_MAX_BATCHES_PER_RUN: int = 25
+    # Storage. Every scrape stores every listing again (~2M rows of full sets,
+    # ~0.6 GB, twice a day), so raw_prices keeps one day: the two latest
+    # scrapes. The history lives in daily_prices (one row per product per day).
+    # With 3 days the 5 GB volume filled up in November 2026.
+    RAW_PRICES_RETENTION_DAYS: int = 1
+    RAW_PRICES_PRUNE_BATCH_ROWS: int = 50000
+    # High enough to remove a whole scrape (~2M rows) in one run
+    RAW_PRICES_PRUNE_MAX_BATCHES_PER_RUN: int = 400
     # Never below LONG_WINDOW_DAYS + 1 (enforced when pruning)
     DAILY_PRICES_RETENTION_DAYS: int = 180
     # Log a warning when the whole database grows past this (Railway volume is 5 GB)
