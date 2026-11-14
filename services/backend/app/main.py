@@ -46,7 +46,7 @@ async def lifespan(app: FastAPI):
         )
         from app.jobs.watchdog import check_analysis_freshness
 
-        # Every six hours, a quarter past (the analysis runs at 07:30 and 19:30 UTC)
+        # Every six hours, a quarter past (the analysis runs at 08:30 and 20:30 UTC)
         scheduler.add_job(
             check_analysis_freshness,
             CronTrigger(hour="*/6", minute=15),

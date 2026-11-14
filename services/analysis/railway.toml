@@ -4,5 +4,5 @@ dockerfilePath = "services/analysis/Dockerfile"
 
 [deploy]
 startCommand = "python -m app.main --once"
-cronSchedule = "30 7,19 * * *"
+cronSchedule = "30 8,20 * * *"
 restartPolicyType = "NEVER"

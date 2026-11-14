@@ -32,6 +32,12 @@ from app.scrapers.grading import parse_grade
 
 logger = logging.getLogger(__name__)
 
+# Listing languages the app shows (CardTrader spells Japanese "JA"); keep in
+# sync with SUPPORTED_LANGUAGES in backend app/core/language.py
+STORED_LANGUAGES = {"EN", "JP", "JA", "IT", "DE", "ES"}
+# Conditions the statistics (NM) and the list price (up to lightly played) use
+STORED_CONDITIONS = {"mint", "m", "near mint", "nm", "slightly played", "lightly played", "excellent"}
+
 # Keywords that identify a blueprint as a sealed product rather than a single card.
 # CardTrader uses the same blueprints endpoint for both — we detect by name.
 SEALED_KEYWORDS = [
@@ -191,6 +197,9 @@ class CardTraderScraperV2:
         self._use_blueprint_export = True
         self.blueprints_seen = 0
         self.blueprints_with_cardmarket = 0
+        self.skipped_unused = 0
+        self._pace_lock = asyncio.Lock()
+        self._next_request_at = 0.0
         self.graded_listings = 0
         self.graded_grades: Counter = Counter()  # (company, grade) found in descriptions
         self.last_error: Optional[str] = None
@@ -218,6 +227,9 @@ class CardTraderScraperV2:
         self._use_blueprint_export = True
         self.blueprints_seen = 0
         self.blueprints_with_cardmarket = 0
+        self.skipped_unused = 0
+        self._pace_lock = asyncio.Lock()
+        self._next_request_at = 0.0
         self.graded_listings = 0
         self.graded_grades: Counter = Counter()  # (company, grade) found in descriptions
         self.last_error = None
@@ -289,12 +301,21 @@ class CardTraderScraperV2:
                         )
                         self._logged_blueprint_shape = True
 
-                    for blueprint in blueprints:
-                        listings = await self._fetch_or_skip(
-                            self._fetch_marketplace_listings(client, blueprint['id']),
-                            f"listings for blueprint {blueprint['id']}",
-                        )
+                    # Listings of several blueprints are fetched at once (paced to
+                    # FETCH_RATE_PER_SECOND, well under CardTrader's 200 per 10 s);
+                    # saving stays one blueprint at a time
+                    sem = asyncio.Semaphore(config.FETCH_CONCURRENCY)
 
+                    async def fetch(bp):
+                        async with sem:
+                            await self._pace()
+                            return await self._fetch_or_skip(
+                                self._fetch_marketplace_listings(client, bp['id']),
+                                f"listings for blueprint {bp['id']}",
+                            )
+
+                    all_listings = await asyncio.gather(*(fetch(bp) for bp in blueprints))
+                    for blueprint, listings in zip(blueprints, all_listings):
                         if listings:
                             if not self._logged_listing_shape:
                                 logger.info("Listing shape: %s", _describe_listing(listings[0]))
@@ -308,12 +329,9 @@ class CardTraderScraperV2:
                             await self._save_listings(listings, blueprint, expansion)
                             self.total_blueprints_processed += 1
 
-                            # Log progress every 10 blueprints
-                            if self.total_blueprints_processed % 10 == 0:
+                            # Log progress every 100 blueprints
+                            if self.total_blueprints_processed % 100 == 0:
                                 logger.info(f"    Progress: {self.total_blueprints_processed} blueprints, {self.total_listings_scraped} listings")
-
-                        # Be respectful to the API between marketplace calls
-                        await asyncio.sleep(config.MIN_DELAY_SECONDS)
 
             if self.errors_count:
                 status = "partial"
@@ -332,6 +350,7 @@ class CardTraderScraperV2:
         logger.info(f"   Blueprints processed: {self.total_blueprints_processed}")
         logger.info(f"   Listings scraped: {self.total_listings_scraped}")
         logger.info(f"   Skipped (seller on vacation): {self.skipped_on_vacation}")
+        logger.info(f"   Skipped (language or condition we don't use): {self.skipped_unused}")
         self._log_graded_summary()
         logger.info(
             "   Cardmarket ids: %d of %d blueprints",
@@ -361,6 +380,15 @@ class CardTraderScraperV2:
                 await session.commit()
         except Exception as e:
             logger.error(f"Could not write scrape log: {e}")
+
+    async def _pace(self) -> None:
+        """Start at most FETCH_RATE_PER_SECOND marketplace requests per second."""
+        async with self._pace_lock:
+            now = asyncio.get_running_loop().time()
+            wait = self._next_request_at - now
+            if wait > 0:
+                await asyncio.sleep(wait)
+            self._next_request_at = max(now, self._next_request_at) + 1.0 / config.FETCH_RATE_PER_SECOND
 
     async def _fetch_or_skip(self, coro, what: str):
         """
@@ -491,6 +519,18 @@ class CardTraderScraperV2:
                     
                     # Condition (if available)
                     condition = properties.get('condition', 'NM')
+
+                    # Store only what the app uses: the supported languages and, for
+                    # ungraded singles, near mint up to lightly played (the volume
+                    # is 5 GB and a full scrape is ~2M listings)
+                    is_graded_listing = bool(listing.get('graded'))
+                    if language not in STORED_LANGUAGES or (
+                        not is_graded_listing
+                        and not _is_sealed_product(card_name)
+                        and str(condition).strip().lower() not in STORED_CONDITIONS
+                    ):
+                        self.skipped_unused += 1
+                        continue
                     
                     # Detect sealed products: leave card_number=None so the
                     # analysis engine sets category='sealed' automatically.

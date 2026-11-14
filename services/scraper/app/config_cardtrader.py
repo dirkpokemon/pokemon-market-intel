@@ -27,6 +27,10 @@ class CardTraderScraperConfig(BaseSettings):
     
     # Rate Limiting (Optimized)
     MIN_DELAY_SECONDS: float = 0.3  # Faster but still respectful
+    # Marketplace listings: requests in flight and started per second
+    # (CardTrader allows 200 requests per 10 seconds across all endpoints)
+    FETCH_CONCURRENCY: int = 6
+    FETCH_RATE_PER_SECOND: float = 12.0
     MAX_DELAY_SECONDS: float = 0.5
     REQUEST_TIMEOUT: int = 30
 
