@@ -18,3 +18,12 @@ def test_stale_analysis_is_reported():
 
 def test_no_statistics_at_all():
     assert "nooit" in stale_message(None, NOW)
+
+
+def test_database_size_warning():
+    from app.jobs.watchdog import size_message
+
+    assert size_message(None) is None
+    assert size_message(1.2) is None
+    msg = size_message(2.8)
+    assert msg and "2.80 GB" in msg

@@ -5,7 +5,9 @@ The analysis service mails about failed scrapes and its own problems (see
 analysis app/ops_alerts.py), but it can't report a run that never starts or
 crashes on start-up. Market statistics are replaced every run (08:30 and
 20:30 UTC), so when the newest one is older than STALE_AFTER the analysis is
-stuck. Checked every six hours by the backend's scheduler.
+stuck. It also watches the database size, because a full volume crashes
+Postgres (November 2026) and the analysis can't warn when it isn't running.
+Checked every six hours by the backend's scheduler.
 """
 
 import logging
@@ -22,6 +24,8 @@ from app.database import AsyncSessionLocal
 logger = logging.getLogger(__name__)
 
 STALE_AFTER = timedelta(hours=14)
+# The volume is 5 GB (4.6 usable); the scraper stops storing at 3.0 GB
+DB_SIZE_WARN_GB = 2.5
 
 
 def stale_message(last_run: Optional[datetime], now: datetime) -> Optional[str]:
@@ -40,18 +44,34 @@ def stale_message(last_run: Optional[datetime], now: datetime) -> Optional[str]:
     )
 
 
+def size_message(db_gb: Optional[float]) -> Optional[str]:
+    """Dutch warning when the database nears the volume limit, else None."""
+    if db_gb is None or db_gb < DB_SIZE_WARN_GB:
+        return None
+    return (
+        f"De database is {db_gb:.2f} GB, boven de waarschuwingsgrens van {DB_SIZE_WARN_GB:.1f} GB. "
+        "Het volume is 5 GB en Postgres crasht als het vol raakt; de scraper stopt zelf bij 3 GB. "
+        "Kijk welke tabel groeit (meestal raw_prices) in de logs van de analysis-service."
+    )
+
+
 async def check_analysis_freshness() -> None:
+    messages = []
     try:
         async with AsyncSessionLocal() as session:
             last_run = (await session.execute(text("SELECT max(calculated_at) FROM market_statistics"))).scalar()
-        message = stale_message(last_run, datetime.now(timezone.utc))
+            db_bytes = (await session.execute(text("SELECT pg_database_size(current_database())"))).scalar()
+        messages.append(stale_message(last_run, datetime.now(timezone.utc)))
+        messages.append(size_message(db_bytes / 1024 ** 3 if db_bytes is not None else None))
     except Exception as e:
-        message = f"De backend kon market_statistics niet lezen: {e}"
-    if not message:
+        messages.append(f"De backend kon de database niet lezen: {e}")
+    messages = [m for m in messages if m]
+    if not messages:
         return
-    logger.warning("Ops alert: %s", message)
+    for message in messages:
+        logger.warning("Ops alert: %s", message)
     to = (settings.ALERT_EMAIL or settings.sender_email).strip()
     if to:
-        await run_in_threadpool(
-            send_mail, to, "TCG Pulse: de analyse draait niet", f"<p>{message}</p>", message,
-        )
+        text_body = "\n\n".join(messages)
+        html = "".join(f"<p>{m}</p>" for m in messages)
+        await run_in_threadpool(send_mail, to, "TCG Pulse: actie nodig", html, text_body)
