@@ -109,8 +109,10 @@ class AnalysisConfig(BaseSettings):
     RAW_PRICES_PRUNE_MAX_BATCHES_PER_RUN: int = 400
     # Never below LONG_WINDOW_DAYS + 1 (enforced when pruning)
     DAILY_PRICES_RETENTION_DAYS: int = 180
-    # Log a warning when the whole database grows past this (Railway volume is 5 GB)
-    DB_SIZE_WARN_GB: float = 3.5
+    # Warn (log + ops alert mail) when the whole database grows past this.
+    # The volume is 5 GB (4.6 usable) and the scraper stops storing at 3.0 GB
+    # (SCRAPE_STOP_DB_GB), so this leaves time to act.
+    DB_SIZE_WARN_GB: float = 2.5
 
     LOG_LEVEL: str = "INFO"
 

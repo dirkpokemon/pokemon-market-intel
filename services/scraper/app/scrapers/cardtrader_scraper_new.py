@@ -23,6 +23,7 @@ import httpx
 
 from app.models.raw_price import RawPrice
 from app.models.scrape_log import ScrapeLog
+from app.disk_guard import database_gb, prune_stale_raw_prices, too_big_message
 from app.config import settings
 from app.config_cardtrader import config
 from app.database import AsyncSessionLocal
@@ -244,6 +245,17 @@ class CardTraderScraperV2:
             return 0
 
         try:
+            await prune_stale_raw_prices()
+        except Exception as e:
+            logger.warning(f"Could not prune old raw_prices before scraping: {e}")
+        stop = await self._database_too_big()
+        if stop:
+            self.last_error = stop
+            await self._write_scrape_log(start_time, "failed")
+            return 0
+        self._blueprints_at_last_check = 0
+
+        try:
             async with httpx.AsyncClient(
                 base_url=self.api_base, headers=self.headers, timeout=config.REQUEST_TIMEOUT
             ) as client:
@@ -267,6 +279,8 @@ class CardTraderScraperV2:
 
                 # Step 2: For each expansion, get blueprints and marketplace listings
                 for i, expansion in enumerate(recent_expansions, 1):
+                    if self.last_error and self.last_error.startswith("Database "):
+                        break  # stopped by the disk guard
                     expansion_name = expansion.get('name', '?')
                     logger.info(f"[{i}/{len(recent_expansions)}] Processing: {expansion_name}")
 
@@ -326,6 +340,13 @@ class CardTraderScraperV2:
                                     # Once per run: which grading fields CardTrader sends (roadmap #4)
                                     logger.info("Graded listing shape: %s", _describe_listing(graded))
                                     self._logged_graded_shape = True
+                            if self.total_blueprints_processed - self._blueprints_at_last_check >= config.DB_CHECK_EVERY_BLUEPRINTS:
+                                self._blueprints_at_last_check = self.total_blueprints_processed
+                                stop = await self._database_too_big()
+                                if stop:
+                                    self.last_error = stop
+                                    self.errors_count += 1
+                                    break
                             await self._save_listings(listings, blueprint, expansion)
                             self.total_blueprints_processed += 1
 
@@ -362,6 +383,19 @@ class CardTraderScraperV2:
 
         await self._write_scrape_log(start_time, status)
         return self.total_listings_scraped
+
+    async def _database_too_big(self) -> Optional[str]:
+        """The disk guard's stop reason when the database is too big, else None."""
+        try:
+            db_gb = await database_gb()
+        except Exception as e:
+            logger.warning(f"Could not read the database size: {e}")
+            return None
+        if db_gb >= config.SCRAPE_STOP_DB_GB:
+            message = too_big_message(db_gb)
+            logger.error(f"Ops alert: {message}")
+            return message
+        return None
 
     async def _write_scrape_log(self, start_time: datetime, status: str) -> None:
         end_time = datetime.utcnow()

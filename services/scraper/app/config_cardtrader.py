@@ -32,6 +32,16 @@ class CardTraderScraperConfig(BaseSettings):
     FETCH_CONCURRENCY: int = 6
     FETCH_RATE_PER_SECOND: float = 12.0
     MAX_DELAY_SECONDS: float = 0.5
+
+    # Disk guard (app/disk_guard.py): the Railway volume is 5 GB (4.6 usable)
+    # and Postgres crashed when it filled up in November 2026. Stop storing
+    # above this database size, leaving room for WAL (max_wal_size 1 GB) and
+    # temporary files (temp_file_limit 512 MB, migration 016).
+    SCRAPE_STOP_DB_GB: float = 3.0
+    DB_CHECK_EVERY_BLUEPRINTS: int = 300
+    # Backstop for a failing analysis: listings older than this are removed
+    # before a scrape (the analysis normally keeps one day)
+    RAW_PRICES_MAX_AGE_HOURS: int = 36
     REQUEST_TIMEOUT: int = 30
 
     # Logging
